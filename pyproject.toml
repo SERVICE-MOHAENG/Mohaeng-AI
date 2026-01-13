@@ -1,0 +1,7 @@
+[project]
+name = "mohaeng-ai"
+version = "0.1.0"
+description = "Monhaeng service AI server."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
