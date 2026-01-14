@@ -102,3 +102,5 @@ Desktop.ini
 *.key
 *.crt
 *.pfx
+.env
+.venv/
