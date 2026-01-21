@@ -1,0 +1,34 @@
+name: CI (Code Quality & Test)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: UV 설치
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: "latest"
+
+      - name: Python 설정
+        run: uv python install 3.14
+
+      - name: 의존성 설치
+        run: uv sync --all-extras --dev
+
+      - name: 린트 검사 (Ruff)
+        run: uv run ruff check .
+
+      - name: 포맷 검사 (Ruff Format)
+        run: uv run ruff format --check .
+
+      - name: 테스트 실행 (Pytest)
+        run: uv run pytest
