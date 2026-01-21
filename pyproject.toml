@@ -11,8 +11,27 @@ dependencies = [
     "python-dotenv>=1.2.1",
 ]
 
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+ignore = []
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
 [dependency-groups]
 dev = [
+    "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "ruff>=0.14.11",
 ]
