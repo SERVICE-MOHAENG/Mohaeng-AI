@@ -21,7 +21,6 @@ ENV/
 # uv / pip / poetry
 ############################
 .uv/
-uv.lock
 poetry.lock
 pip-wheel-metadata/
 *.egg-info/
