@@ -5,10 +5,15 @@ description = "Monhaeng service AI server."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.14.3",
     "langchain-openai>=1.1.7",
     "langgraph>=1.0.6",
+    "openai>=2.15.0",
+    "psycopg2-binary>=2.9.11",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    "sqlalchemy>=2.0.46",
 ]
 
 [tool.ruff]
