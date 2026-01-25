@@ -1,46 +1,49 @@
 import os
 import sys
 
-# 현재 폴더를 python 경로에 추가
+# 현재 폴더 경로 추가 (모듈 import용)
 sys.path.append(os.getcwd())
 
 from app.services.crawler import CityCrawler
-from scripts.city_data import NAME_MAPPING, TARGET_CITIES
+from scripts.city_data import TARGET_CITIES
 
 
-def main():
+def test_crawler():
+    print("🕵️ 크롤러 단위 테스트 시작...")
+
     crawler = CityCrawler()
 
-    # 테스트용으로 앞부분 3개 도시만 선택 (서울, 부산, 제주)
-    test_targets = TARGET_CITIES[:3]
-
-    print(f"🚀 통합 크롤러 테스트 시작 (대상: {len(test_targets)}개 도시)\n")
+    # 테스트할 도시 3개만 선정 (서울, 뉴욕, 이상한 이름 테스트용 제주)
+    # 실제 TARGET_CITIES 리스트에서 인덱스로 뽑거나 직접 지정
+    test_targets = [
+        TARGET_CITIES[0],  # 서울 (Seoul)
+        TARGET_CITIES[30],  # 뉴욕 (New York City)
+        TARGET_CITIES[2],  # 제주 (Jeju City / Jeju) - 딕셔너리 구조 테스트
+    ]
 
     for city_data in test_targets:
         korean_name = city_data["name"]
-        mapping = NAME_MAPPING.get(korean_name, korean_name)
 
-        if isinstance(mapping, dict):
-            wiki_query = mapping.get("wikipedia", korean_name)
-            travel_query = mapping.get("wikitravel", korean_name)
-            print(f"🏙️  Target: {korean_name} (Wiki: {wiki_query}, Travel: {travel_query})")
-        else:
-            wiki_query = mapping
-            travel_query = mapping
-            print(f"🏙️  Target: {korean_name} ({wiki_query})")
+        # 1. 검색어 결정 로직 (ingest_data.py와 동일)
+        from scripts.ingest_data import get_search_term
 
-        # 1. Wikipedia API 테스트
-        wiki_text = crawler.get_wikipedia_summary(wiki_query)
-        wiki_status = f"✅ 성공 ({len(wiki_text)}자)" if wiki_text else "❌ 실패"
-        print(f"   [Wikipedia]   {wiki_status}")
+        search_term = get_search_term(korean_name)
 
-        # 2. Wikitravel 크롤링 테스트
-        travel_text = crawler.get_wikitravel_info(travel_query)
-        travel_status = f"✅ 성공 ({len(travel_text)}자)" if travel_text else "❌ 실패 (데이터 없음)"
-        print(f"   [Wikitravel]  {travel_status}")
+        print(f"\n🧪 테스트 중: {korean_name} (검색어: {search_term})")
 
-        print("-" * 40)
+        # 2. 크롤링 실행
+        try:
+            result = crawler.get_city_info(search_term)
+
+            print(f"   ✅ [Wiki] 내용 길이: {len(result['content'])}자")
+            print(f"   ✅ [Travel] 내용 길이: {len(result['travel_info'])}자")
+
+            # 내용 미리보기
+            print(f"   📄 위키 내용: {result['content'][:50]}...")
+
+        except Exception as e:
+            print(f"   ❌ 실패: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    test_crawler()

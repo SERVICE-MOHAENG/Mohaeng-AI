@@ -1,79 +1,62 @@
-import socket
+import logging
 
 import requests
-import requests.packages.urllib3.util.connection as urllib3_cn
+import wikipedia
 from bs4 import BeautifulSoup
 
-
-# [네트워크 패치] 강제로 IPv4만 사용 (DNS/속도 이슈 해결)
-def allowed_gai_family():
-    return socket.AF_INET
-
-
-urllib3_cn.allowed_gai_family = allowed_gai_family
+# 로거 설정 (에러 발생 시 로그를 남김)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class CityCrawler:
-    """
-    도시 데이터 수집기
-    - Wikipedia: API 사용 (정확한 개요)
-    - Wikitravel: 웹 크롤링 (여행 팁, 분위기)
-    """
-
     def __init__(self):
-        self.wiki_api_url = "https://en.wikipedia.org/api/rest_v1/page/summary/"
-        self.wikitravel_base_url = "https://wikitravel.org/en/"
+        # 위키백과 언어 설정 (영어)
+        wikipedia.set_lang("en")
 
-        # 봇 차단 방지 헤더 (필수)
-        self.headers = {"User-Agent": "Mohaeng-AI-Bot/1.0 (Target: Education/Testing)"}
+    def get_city_info(self, city_name_or_dict):
+        """
+        도시 이름(문자열) 또는 설정 딕셔너리를 받아서
+        위키백과 요약 + 위키트래블 여행 정보를 긁어옵니다.
+        """
+        # 1. 검색어 정리 (단순 문자열 vs 딕셔너리 처리)
+        if isinstance(city_name_or_dict, dict):
+            wiki_query = city_name_or_dict["wikipedia"]
+            travel_query = city_name_or_dict["wikitravel"]
+        else:
+            wiki_query = city_name_or_dict
+            travel_query = city_name_or_dict
 
-    def get_wikipedia_summary(self, city_name: str) -> str:
-        """[API] Wikipedia 요약 가져오기"""
+        # 2. 결과 담을 그릇
+        result = {"content": "", "travel_info": ""}
+
+        # 3. 위키백과 검색 (Wikipedia)
         try:
-            formatted_name = city_name.strip().replace(" ", "_")
-            url = f"{self.wiki_api_url}{formatted_name}"
-
-            response = requests.get(url, headers=self.headers, timeout=5)
-
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("type") == "disambiguation":
-                    return ""
-                return data.get("extract", "")
-            return ""
-
+            # auto_suggest=False: 정확한 제목 검색
+            page = wikipedia.page(wiki_query, auto_suggest=False)
+            result["content"] = page.summary[:2000]  # 너무 길면 2000자에서 자름
         except Exception as e:
-            print(f"   ⚠️ [Wiki Error] {city_name}: {e}")
-            return ""
+            # 검색 실패 시 로그 남기고 빈 내용 반환
+            logger.warning(f"[Wiki Error] {wiki_query}: {e}")
+            result["content"] = "상세 정보가 없습니다."
 
-    def get_wikitravel_info(self, city_name: str) -> str:
-        """[Crawling] Wikitravel 본문 텍스트 가져오기"""
+        # 4. 위키트래블 크롤링 (Wikitravel)
         try:
-            # URL 생성 (공백 -> 언더바)
-            formatted_name = city_name.strip().replace(" ", "_")
-            url = f"{self.wikitravel_base_url}{formatted_name}"
-
-            # 크롤링 요청
-            response = requests.get(url, headers=self.headers, timeout=20)
+            url = f"https://wikitravel.org/en/{travel_query}"
+            response = requests.get(url, timeout=5)  # 5초 타임아웃
 
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
-
-                # Wikitravel 본문 추출 로직
-                # 'mw-parser-output' 클래스를 가진 div를 직접 찾습니다.
-                content_div = soup.find("div", {"class": "mw-parser-output"})
-
-                if content_div:
-                    # div 안의 모든 문단(p)을 가져옵니다. (recursive=False 제거)
-                    paragraphs = content_div.find_all("p")
-                    # 빈 문단 제외하고 텍스트만 추출
-                    text_list = [p.get_text().strip() for p in paragraphs if p.get_text().strip()]
-
-                    # 상위 5개 문단만 합쳐서 반환
-                    return " ".join(text_list[:5])
-
-            return ""
+                # 본문(p 태그) 내용을 긁어옴
+                paragraphs = soup.find_all("p")
+                # 앞부분 5문단만 가져오기
+                text_content = " ".join([p.get_text() for p in paragraphs[:5]])
+                result["travel_info"] = text_content[:2000]
+            else:
+                result["travel_info"] = "여행 가이드 정보가 없습니다."
 
         except Exception as e:
-            print(f"   ⚠️ [Wikitravel Error] {city_name}: {e}")
-            return ""
+            logger.warning(f"[Wikitravel Error] {travel_query}: {e}")
+            result["travel_info"] = "여행 가이드 정보를 가져올 수 없습니다."
+
+        return result

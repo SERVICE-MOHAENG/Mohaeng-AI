@@ -1,4 +1,4 @@
-from app.main import create_graph
+from app.test_graph import create_graph
 
 
 def test_graph_invocation():
