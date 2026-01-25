@@ -17,17 +17,33 @@ embedder = EmbeddingService()
 
 
 class SearchRequest(BaseModel):
+    """검색 요청을 위한 Pydantic 모델."""
+
     query: str
     top_k: int = Field(default=3, ge=1, le=20)
 
 
 @app.get("/")
 def health_check():
+    """서버의 상태를 확인하는 Health Check 엔드포인트."""
     return {"status": "ok", "message": "Mohaeng AI Server is running 🚀"}
 
 
 @app.post("/search")
 def search_cities(request: SearchRequest, db: Session = Depends(get_db)):  # noqa: B008
+    """
+    사용자의 쿼리를 받아 의미적으로 유사한 도시를 검색하여 추천.
+
+    Args:
+        request (SearchRequest): 사용자 쿼리와 top_k 값이 포함된 요청 모델.
+        db (Session, optional): FastAPI 의존성 주입으로 생성된 DB 세션.
+
+    Raises:
+        HTTPException: 임베딩 생성에 실패했을 때 500 오류를 발생시킴.
+
+    Returns:
+        dict: 사용자의 쿼리와 추천 도시 목록이 포함된 응답.
+    """
     print(f"🔍 [New Request] 질문: {request.query}")
     query_vector = embedder.get_embedding(request.query)
     if not query_vector:

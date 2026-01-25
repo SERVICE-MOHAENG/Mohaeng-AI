@@ -6,6 +6,19 @@ from app.models.base import Base
 
 
 class City(Base):
+    """
+    도시 정보를 저장하는 SQLAlchemy 모델.
+
+    Attributes:
+        id (int): 고유 식별자.
+        name (str): 도시의 한글 이름.
+        country (str): 국가 코드 (예: KR).
+        continent (str): 대륙 정보.
+        description (str): 도시에 대한 간략한 설명.
+        content (str): 임베딩 생성을 위한 원본 텍스트.
+        embedding (Vector): 도시 정보로부터 생성된 1536차원 벡터.
+    """
+
     __tablename__ = "cities"
 
     id = Column(Integer, primary_key=True, index=True)
