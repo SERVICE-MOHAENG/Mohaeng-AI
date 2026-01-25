@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -7,6 +9,7 @@ from app.models.city import City
 from app.services.embedding import EmbeddingService
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
 
 # [권장] EmbeddingService를 모듈 로드 시점에 초기화하면,
 # OPENAI_API_KEY가 설정되지 않았을 때 서버 시작과 동시에 실패하게 됩니다.
@@ -44,12 +47,19 @@ def search_cities(request: SearchRequest, db: Session = Depends(get_db)):  # noq
     Returns:
         dict: 사용자의 쿼리와 추천 도시 목록이 포함된 응답.
     """
-    print(f"🔍 [New Request] 질문: {request.query}")
+    logger.info(f"🔍 [New Request] 질문: {request.query}")
     query_vector = embedder.get_embedding(request.query)
     if not query_vector:
         raise HTTPException(status_code=500, detail="임베딩 생성 실패")
 
-    results = db.query(City).order_by(City.embedding.cosine_distance(query_vector)).limit(request.top_k).all()
+    results = (
+        db.query(City)
+        .filter(City.embedding.isnot(None))  # NULL 임베딩 제외
+        .order_by(City.embedding.cosine_distance(query_vector))
+        .limit(request.top_k)
+        .all()
+    )
+    logger.info(f"🔍 검색 완료: {len(results)}건의 도시 반환")
 
     recommendations = []
     for city in results:

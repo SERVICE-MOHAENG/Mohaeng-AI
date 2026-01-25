@@ -10,7 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class CityCrawler:
+    """
+    Wikipedia와 Wikitravel에서 도시 정보를 크롤링하는 서비스.
+    """
+
     def __init__(self):
+        """
+        CityCrawler를 초기화하고 Wikipedia-API 클라이언트를 설정합니다.
+        """
         # 위키백과 API 초기화 (영어)
         # User-Agent 설정은 위키미디어 정책 준수를 위해 권장됨
         self.wiki_wiki = wikipediaapi.Wikipedia(
@@ -19,10 +26,21 @@ class CityCrawler:
             extract_format=wikipediaapi.ExtractFormat.WIKI,
         )
 
-    def get_city_info(self, city_name_or_dict):
+    def get_city_info(self, city_name_or_dict: str | dict) -> dict[str, str]:
         """
-        도시 이름(문자열) 또는 설정 딕셔너리를 받아서
-        위키백과 요약 + 위키트래블 여행 정보를 긁어옵니다.
+        도시 이름으로 Wikipedia 요약과 Wikitravel 정보를 크롤링합니다.
+
+        Args:
+            city_name_or_dict (str | dict): 크롤링할 도시의 이름(str) 또는
+                {"wikipedia": "...", "wikitravel": "..."} 형식의 딕셔너리.
+
+        Raises:
+            ValueError: 딕셔너리가 주어졌지만 유효한 검색어가 없는 경우.
+
+        Returns:
+            dict[str, str]: 'content'와 'travel_info' 키를 가진 딕셔너리.
+                            'content'는 Wikipedia 요약, 'travel_info'는
+                            Wikitravel 정보입니다.
         """
         # 1. 검색어 정리 (단순 문자열 vs 딕셔너리 처리)
         if isinstance(city_name_or_dict, dict):

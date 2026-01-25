@@ -17,7 +17,12 @@ from scripts.city_data import NAME_MAPPING, TARGET_CITIES
 
 
 def init_db():
-    """DB 테이블 생성 및 pgvector 설정"""
+    """
+    데이터베이스를 초기화하고 필요한 pgvector 확장을 활성화합니다.
+
+    - `vector` PostgreSQL 확장이 없는 경우 생성합니다.
+    - SQLAlchemy 모델 메타데이터를 기반으로 모든 테이블을 생성합니다.
+    """
     try:
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
@@ -28,15 +33,33 @@ def init_db():
         print(f"⚠️ DB 초기화 중 메시지: {e}")
 
 
-def get_search_term(korean_name):
+def get_search_term(korean_name: str) -> str | dict:
     """
-    한국어 이름(서울) -> 매핑된 영어 검색어(Seoul) 변환
-    NAME_MAPPING에 없으면 그냥 한국어 이름 반환
+    도시의 한글 이름을 영문 검색어로 변환합니다.
+
+    `NAME_MAPPING` 딕셔너리를 참조하여 한글 이름에 해당하는 영문 검색어를 찾습니다.
+    매핑 정보가 없는 경우, 원본 한글 이름을 그대로 반환합니다.
+
+    Args:
+        korean_name (str): 변환할 도시의 한글 이름.
+
+    Returns:
+        str | dict: 변환된 영문 검색어 또는 검색어 설정 딕셔너리.
     """
     return NAME_MAPPING.get(korean_name, korean_name)
 
 
 def main():
+    """
+    데이터 수집 및 임베딩 파이프라인의 메인 실행 함수.
+
+    이 스크립트는 다음 순서로 작업을 수행합니다:
+    1. `TARGET_CITIES` 목록의 각 도시에 대해 순차적으로 처리합니다.
+    2. 데이터베이스에 이미 도시 정보가 있는지 확인하고, 있으면 건너뜁니다.
+    3. `CityCrawler`를 사용하여 Wikipedia, Wikitravel에서 도시 정보를 크롤링합니다.
+    4. `EmbeddingService`를 사용하여 수집된 텍스트 정보의 임베딩 벡터를 생성합니다.
+    5. 최종적으로 도시 정보와 임베딩 벡터를 데이터베이스의 `cities` 테이블에 저장합니다.
+    """
     print("🚀 고품질 데이터 적재 시작 (TARGET_CITIES 사용)...")
 
     init_db()
