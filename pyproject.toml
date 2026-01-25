@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.3",
-    "chromadb>=1.4.1",
+    "fastapi[standard]>=0.128.0",
     "langchain-openai>=1.1.7",
     "langgraph>=1.0.6",
     "openai>=2.15.0",
@@ -16,6 +16,7 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "requests>=2.32.5",
     "sqlalchemy>=2.0.46",
+    "wikipedia>=1.4.0",
 ]
 
 [tool.ruff]
