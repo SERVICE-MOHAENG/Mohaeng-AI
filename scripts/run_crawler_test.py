@@ -10,11 +10,18 @@ from scripts.ingest_data import get_search_term
 
 
 def test_crawler():
-    """
-    CityCrawler 서비스의 단위 테스트를 수행합니다.
+    """`CityCrawler` 서비스의 핵심 기능에 대한 단위 테스트를 수행합니다.
 
-    미리 정의된 테스트 대상 도시 목록(서울, 뉴욕, 제주)에 대해
-    크롤링이 정상적으로 작동하고, 유의미한 콘텐츠를 반환하는지 검증합니다.
+    이 테스트는 미리 정의된 도시 목록(`test_city_names`)을 사용하여
+    `CityCrawler.get_city_info`가 정상적으로 정보를 크롤링하는지,
+    그리고 반환된 콘텐츠가 비어 있지 않은지를 검증합니다.
+
+    테스트는 다음을 확인합니다:
+    - Wikipedia와 Wikitravel에서 모두 10자 이상의 콘텐츠를 가져오는가.
+    - 예외 발생 없이 크롤링 프로세스가 완료되는가.
+
+    하나의 도시라도 크롤링에 실패하면 `AssertionError`를 발생시켜 테스트가
+    중단됩니다.
     """
     print("🕵️ 크롤러 단위 테스트 시작...")
 

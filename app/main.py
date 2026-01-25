@@ -20,32 +20,46 @@ embedder = EmbeddingService()
 
 
 class SearchRequest(BaseModel):
-    """검색 요청을 위한 Pydantic 모델."""
+    """검색 API에 대한 요청 본문(body) 모델.
+
+    Attributes:
+        query (str): 사용자가 검색할 자연어 텍스트.
+        top_k (int): 반환받을 추천 도시의 최대 개수. 1에서 20 사이의 값.
+    """
 
     query: str
-    top_k: int = Field(default=3, ge=1, le=20)
+    top_k: int = Field(default=3, ge=1, le=20, description="추천받을 도시의 수")
 
 
 @app.get("/")
-def health_check():
-    """서버의 상태를 확인하는 Health Check 엔드포인트."""
+def health_check() -> dict:
+    """서버의 현재 동작 상태를 확인합니다.
+
+    Returns:
+        dict: 서버가 정상적으로 실행 중임을 나타내는 상태 메시지.
+    """
     return {"status": "ok", "message": "Mohaeng AI Server is running 🚀"}
 
 
 @app.post("/search")
-def search_cities(request: SearchRequest, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    사용자의 쿼리를 받아 의미적으로 유사한 도시를 검색하여 추천.
+def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> dict:  # noqa: B008
+    """사용자 쿼리를 기반으로 의미상 가장 유사한 도시 목록을 반환합니다.
+
+    이 엔드포인트는 다음 단계를 거칩니다:
+    1. 요청 본문에서 받은 쿼리 텍스트를 임베딩 벡터로 변환합니다.
+    2. 데이터베이스에 저장된 도시들의 임베딩과 코사인 유사도를 계산합니다.
+    3. 가장 유사도가 높은 상위 k개의 도시를 조회하여 반환합니다.
 
     Args:
-        request (SearchRequest): 사용자 쿼리와 top_k 값이 포함된 요청 모델.
-        db (Session, optional): FastAPI 의존성 주입으로 생성된 DB 세션.
+        request (SearchRequest): 사용자의 쿼리 및 top_k 설정이 담긴 요청 모델.
+        db (Session): FastAPI의 의존성 주입을 통해 제공되는 데이터베이스 세션.
 
     Raises:
-        HTTPException: 임베딩 생성에 실패했을 때 500 오류를 발생시킴.
+        HTTPException: 쿼리 텍스트를 임베딩으로 변환하는 데 실패할 경우,
+            상태 코드 500으로 오류를 발생시킵니다.
 
     Returns:
-        dict: 사용자의 쿼리와 추천 도시 목록이 포함된 응답.
+        dict: 원본 쿼리와 함께 추천된 도시 목록('results')을 포함하는 딕셔너리.
     """
     logger.info(f"🔍 [New Request] 질문: {request.query}")
     query_vector = embedder.get_embedding(request.query)
