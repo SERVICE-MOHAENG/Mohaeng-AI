@@ -21,7 +21,7 @@ def main():
 
     vector = service.get_embedding(text)
 
-    if vector:
+    if vector is not None:
         print(f"✅ 성공! 벡터 차원수: {len(vector)}")
         print(f"🔢 벡터 일부: {vector[:5]}...")
     else:

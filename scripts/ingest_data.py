@@ -31,6 +31,7 @@ def init_db():
         print("✅ DB 초기화 완료")
     except Exception as e:
         print(f"⚠️ DB 초기화 중 메시지: {e}")
+        raise
 
 
 def get_search_term(korean_name: str) -> str | dict:
@@ -96,7 +97,7 @@ def main():
 
                 # 2. 크롤링 (영어 검색어 사용)
                 # city_data에 있는 regionDescription을 우선 사용하고, 크롤링 데이터는 보강용으로 씀
-                crawled_info = crawler.get_city_info(crawl_target)
+                crawled_info = crawler.get_city_info(crawl_target) or {}
 
                 # 3. 텍스트 조합 (기존 데이터 + 크롤링 데이터)
                 # 님의 파일에 있는 좋은 설명(regionDescription)을 적극 활용
@@ -104,8 +105,8 @@ def main():
                     f"도시명: {korean_name}. "
                     f"국가: {city_data['countryCode']}. "
                     f"특징: {city_data['regionDescription']}. "
-                    f"상세 정보: {crawled_info['content']} "
-                    f"여행 정보: {crawled_info['travel_info']}"
+                    f"상세 정보: {crawled_info.get('content', '')} "
+                    f"여행 정보: {crawled_info.get('travel_info', '')}"
                 )
 
                 # 4. 임베딩 생성

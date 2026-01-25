@@ -23,11 +23,11 @@ class SearchRequest(BaseModel):
     """검색 API에 대한 요청 본문(body) 모델.
 
     Attributes:
-        query (str): 사용자가 검색할 자연어 텍스트.
+        query (str): 사용자가 검색할 자연어 텍스트. 최소 1자 이상이어야 합니다.
         top_k (int): 반환받을 추천 도시의 최대 개수. 1에서 20 사이의 값.
     """
 
-    query: str
+    query: str = Field(..., min_length=1, description="검색할 자연어 텍스트 (최소 1자 이상)")
     top_k: int = Field(default=3, ge=1, le=20, description="추천받을 도시의 수")
 
 
