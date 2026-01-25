@@ -13,7 +13,7 @@ class EmbeddingService:
         # .env 파일에서 API 키 로드
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            print("⚠️ [Warning] OPENAI_API_KEY가 설정되지 않았습니다.")
+            raise RuntimeError("OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.")
 
         self.client = OpenAI(api_key=api_key)
 

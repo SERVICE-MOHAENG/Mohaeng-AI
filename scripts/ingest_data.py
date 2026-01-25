@@ -3,10 +3,11 @@ import sys
 
 from sqlalchemy import text
 
-# 경로 설정
-sys.path.append(os.getcwd())
+# 경로 설정 - 스크립트 위치 기준으로 프로젝트 루트 추가
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal, engine
+from app.models.base import Base
 from app.models.city import City
 from app.services.crawler import CityCrawler
 from app.services.embedding import EmbeddingService
@@ -56,10 +57,8 @@ def main():
             # 1. 영어 검색어 가져오기 (NAME_MAPPING 활용)
             search_term = get_search_term(korean_name)
 
-            # 검색용 이름 추출 (딕셔너리인 경우 wikipedia 키 사용)
+            # 크롤러가 문자열과 딕셔너리 모두 처리 가능
             crawl_target = search_term
-            if isinstance(search_term, dict):
-                crawl_target = search_term  # 크롤러가 dict 처리를 함
 
             print(f"[{idx}/{len(TARGET_CITIES)}] 🏙️  {korean_name} (검색: {crawl_target}) 처리 중...")
 

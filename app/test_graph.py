@@ -1,17 +1,11 @@
 import logging  # [추가 1] 모듈 임포트
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
 # ==========================================
-# [Step 0] 로깅 기본 설정 (최소 요구사항)
-# 레벨: INFO, 포맷: 시간 - 레벨 - 메시지
+# [Step 0] 로거 가져오기
 # ==========================================
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
-)
 logger = logging.getLogger("Mohaeng")
 
 
@@ -20,7 +14,7 @@ logger = logging.getLogger("Mohaeng")
 # ==========================================
 class AgentState(TypedDict):
     query: str
-    answer: str
+    answer: NotRequired[str]
 
 
 # ==========================================
@@ -49,6 +43,14 @@ def create_graph():
 # [실행부]
 # ==========================================
 if __name__ == "__main__":
+    # ==========================================
+    # 로깅 기본 설정 (실행 시에만 적용)
+    # ==========================================
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%H:%M:%S",
+    )
     # 그래프 생성
     app = create_graph()
 
