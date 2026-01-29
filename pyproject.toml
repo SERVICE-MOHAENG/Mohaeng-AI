@@ -5,23 +5,29 @@ description = "Monhaeng service AI server."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "fastapi[standard]>=0.128.0",
     "langchain-openai>=1.1.7",
     "langgraph>=1.0.6",
+    "openai>=2.15.0",
+    "pgvector>=0.4.2",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    "sqlalchemy>=2.0.46",
+    "wikipedia-api>=0.6.0",
 ]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B"]
-
+select = ["E", "F", "I", "N", "W", "B"]
 ignore = []
 
-fixable = ["ALL"]
-unfixable = []
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -32,9 +38,15 @@ line-ending = "auto"
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
+    "psycopg2-binary>=2.9.11",
     "pytest>=9.0.2",
     "ruff>=0.14.11",
 ]
+
+prod = [
+    "psycopg2>=2.9.11",
+]
+
 [tool.pytest.ini_options]
 pythonpath = "."
 testpaths = ["tests"]

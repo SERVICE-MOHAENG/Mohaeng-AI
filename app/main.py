@@ -1,65 +1,89 @@
-import logging  # [추가 1] 모듈 임포트
-from typing import TypedDict
+import logging
 
-from langgraph.graph import END, START, StateGraph
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
-# ==========================================
-# [Step 0] 로깅 기본 설정 (최소 요구사항)
-# 레벨: INFO, 포맷: 시간 - 레벨 - 메시지
-# ==========================================
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
-)
-logger = logging.getLogger("Mohaeng")
+from app.database import get_db
+from app.models.city import City
+from app.services.embedding import EmbeddingService
 
+app = FastAPI()
+logger = logging.getLogger(__name__)
 
-# ==========================================
-# [Step 1] State 정의
-# ==========================================
-class AgentState(TypedDict):
-    query: str
-    answer: str
+# [권장] EmbeddingService를 모듈 로드 시점에 초기화하면,
+# OPENAI_API_KEY가 설정되지 않았을 때 서버 시작과 동시에 실패하게 됩니다.
+# 테스트 용이성 및 유연성을 위해 FastAPI의 의존성 주입 패턴 (Depends) 사용을 권장합니다.
+# 예: def get_embedder(): return EmbeddingService()
+#      @app.post("/search", embedder: EmbeddingService = Depends(get_embedder))
+embedder = EmbeddingService()
 
 
-# ==========================================
-# [Step 2] 노드 정의 (Mock)
-# ==========================================
-def call_fake_llm_node(state: AgentState):
-    # 내부 디버깅용 로그 (선택 사항)
-    # logger.info(f"노드 실행 중... 질문: {state['query']}")
+class SearchRequest(BaseModel):
+    """검색 API에 대한 요청 본문(body) 모델.
 
-    fake_response = f"'{state['query']}'에 대한 추천 결과입니다. (API 키 없이 작동 중)"
-    return {"answer": fake_response}
+    Attributes:
+        query (str): 사용자가 검색할 자연어 텍스트. 최소 1자 이상이어야 합니다.
+        top_k (int): 반환받을 추천 도시의 최대 개수. 1에서 20 사이의 값.
+    """
 
-
-# ==========================================
-# [Step 3] 그래프 구성
-# ==========================================
-def create_graph():
-    workflow = StateGraph(AgentState)
-    workflow.add_node("guide", call_fake_llm_node)
-    workflow.add_edge(START, "guide")
-    workflow.add_edge("guide", END)
-    return workflow.compile()
+    query: str = Field(..., min_length=1, description="검색할 자연어 텍스트 (최소 1자 이상)")
+    top_k: int = Field(default=3, ge=1, le=20, description="추천받을 도시의 수")
 
 
-# ==========================================
-# [실행부]
-# ==========================================
-if __name__ == "__main__":
-    # 그래프 생성
-    app = create_graph()
+@app.get("/")
+def health_check() -> dict:
+    """서버의 현재 동작 상태를 확인합니다.
 
-    # 테스트 데이터
-    user_input = {"query": "부산 맛집"}
+    Returns:
+        dict: 서버가 정상적으로 실행 중임을 나타내는 상태 메시지.
+    """
+    return {"status": "ok", "message": "Mohaeng AI Server is running 🚀"}
 
-    # [추가 2] 실행 전 입력 로그 (1줄)
-    logger.info(f"📥 INPUT: {user_input['query']}")
 
-    # 실행
-    result = app.invoke(user_input)
+@app.post("/search")
+def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> dict:  # noqa: B008
+    """사용자 쿼리를 기반으로 의미상 가장 유사한 도시 목록을 반환합니다.
 
-    # [추가 3] 실행 후 출력 로그 (1줄)
-    logger.info(f"📤 OUTPUT: {result['answer']}")
+    이 엔드포인트는 다음 단계를 거칩니다:
+    1. 요청 본문에서 받은 쿼리 텍스트를 임베딩 벡터로 변환합니다.
+    2. 데이터베이스에 저장된 도시들의 임베딩과 코사인 유사도를 계산합니다.
+    3. 가장 유사도가 높은 상위 k개의 도시를 조회하여 반환합니다.
+
+    Args:
+        request (SearchRequest): 사용자의 쿼리 및 top_k 설정이 담긴 요청 모델.
+        db (Session): FastAPI의 의존성 주입을 통해 제공되는 데이터베이스 세션.
+
+    Raises:
+        HTTPException: 쿼리 텍스트를 임베딩으로 변환하는 데 실패할 경우,
+            상태 코드 500으로 오류를 발생시킵니다.
+
+    Returns:
+        dict: 원본 쿼리와 함께 추천된 도시 목록('results')을 포함하는 딕셔너리.
+    """
+    logger.info(f"🔍 [New Request] 질문: {request.query}")
+    query_vector = embedder.get_embedding(request.query)
+    if not query_vector:
+        raise HTTPException(status_code=500, detail="임베딩 생성 실패")
+
+    results = (
+        db.query(City)
+        .filter(City.embedding.isnot(None))  # NULL 임베딩 제외
+        .order_by(City.embedding.cosine_distance(query_vector))
+        .limit(request.top_k)
+        .all()
+    )
+    logger.info(f"🔍 검색 완료: {len(results)}건의 도시 반환")
+
+    recommendations = []
+    for city in results:
+        recommendations.append(
+            {
+                "city": city.name,
+                "country": city.country,
+                "description": (city.description or "")[:150] + "...",
+                "reason": "AI 추천 결과",
+            }
+        )
+
+    return {"query": request.query, "results": recommendations}
