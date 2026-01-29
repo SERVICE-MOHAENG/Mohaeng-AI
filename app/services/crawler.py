@@ -56,7 +56,11 @@ class CityCrawler:
         try:
             page = self.wiki_wiki.page(query)
             if page.exists():
-                return page.summary[:2000]
+                summary = (page.summary or "").strip()
+                if summary:
+                    return summary[:2000]
+                logger.warning(f"[Wiki API] 요약이 비어 있음: '{query}'")
+                return "상세 정보가 없습니다."
             logger.warning(f"[Wiki API] 페이지를 찾을 수 없음: '{query}'")
             return "상세 정보가 없습니다."
         except Exception as e:
