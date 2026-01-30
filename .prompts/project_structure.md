@@ -8,12 +8,12 @@
 - `.github/`: GitHub 설정 (Issue 템플릿, CI 워크플로우)
 
 ## Key Directories
-- `app/services/`: 비즈니스 로직 (`crawler.py`, `embedding.py`)
-- `app/core/`: 설정 (`config.py`)
-- `app/graph/`: LangGraph 워크플로우
-- `app/models/`: DB 모델 (`city.py`)
 - `app/api/`: FastAPI 엔드포인트
+- `app/core/`: 설정 및 공통 모듈 (`config.py`, `logger.py`)
+- `app/graph/`: LangGraph 워크플로우
+- `app/models/`: DB 모델 (`region_embedding.py`)
 - `app/schemas/`: Pydantic 스키마
+- `app/services/`: 비즈니스 로직 (`crawler.py`, `embedding.py`, `region_service.py`)
 - `app/tools/`: LangGraph 도구
 
 ## Tree Context
