@@ -42,8 +42,9 @@ class EmbeddingService:
             clean_text = text.replace("\n", " ")
 
             response = self.client.embeddings.create(input=clean_text, model="text-embedding-3-small")
+            embedding = response.data[0].embedding
 
-            return response.data[0].embedding
+            return embedding
 
         except Exception as e:
             print(f"⚠️ [Embedding Error] 변환 실패: {e}")
