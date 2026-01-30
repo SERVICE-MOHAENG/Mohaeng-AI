@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.city import City
+from app.services.city_service import search_cities_by_vector
 from app.services.embedding import EmbeddingService
 
 app = FastAPI()
@@ -66,13 +66,7 @@ def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> dict
     if not query_vector:
         raise HTTPException(status_code=500, detail="임베딩 생성 실패")
 
-    results = (
-        db.query(City)
-        .filter(City.embedding.isnot(None))  # NULL 임베딩 제외
-        .order_by(City.embedding.cosine_distance(query_vector))
-        .limit(request.top_k)
-        .all()
-    )
+    results = search_cities_by_vector(db, query_vector, request.top_k)
     logger.info(f"🔍 검색 완료: {len(results)}건의 도시 반환")
 
     recommendations = []
