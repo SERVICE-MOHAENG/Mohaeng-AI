@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.schemas.search import CityRecommendation, SearchResponse
 from app.services.city_service import search_cities_by_vector
 from app.services.embedding import EmbeddingService
 
@@ -41,8 +42,8 @@ def health_check() -> dict:
     return {"status": "ok", "message": "Mohaeng AI Server is running 🚀"}
 
 
-@app.post("/search")
-def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> dict:  # noqa: B008
+@app.post("/search", response_model=SearchResponse)
+def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> SearchResponse:  # noqa: B008
     """사용자 쿼리를 기반으로 의미상 가장 유사한 도시 목록을 반환합니다.
 
     이 엔드포인트는 다음 단계를 거칩니다:
@@ -59,7 +60,7 @@ def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> dict
             상태 코드 500으로 오류를 발생시킵니다.
 
     Returns:
-        dict: 원본 쿼리와 함께 추천된 도시 목록('results')을 포함하는 딕셔너리.
+        SearchResponse: 원본 쿼리와 함께 추천된 도시 목록을 포함하는 응답 모델.
     """
     logger.info(f"🔍 [New Request] 질문: {request.query}")
     query_vector = embedder.get_embedding(request.query)
@@ -69,15 +70,14 @@ def search_cities(request: SearchRequest, db: Session = Depends(get_db)) -> dict
     results = search_cities_by_vector(db, query_vector, request.top_k)
     logger.info(f"🔍 검색 완료: {len(results)}건의 도시 반환")
 
-    recommendations = []
-    for city in results:
-        recommendations.append(
-            {
-                "city": city.name,
-                "country": city.country,
-                "description": (city.description or "")[:150] + "...",
-                "reason": "AI 추천 결과",
-            }
+    recommendations = [
+        CityRecommendation(
+            city=city.name,
+            country=city.country,
+            description=(city.description or "")[:150] + "...",
+            reason="AI 추천 결과",
         )
+        for city in results
+    ]
 
-    return {"query": request.query, "results": recommendations}
+    return SearchResponse(query=request.query, results=recommendations)
