@@ -1,10 +1,17 @@
-from app.main import create_graph
+from app.test_graph import create_graph
 
 
 def test_graph_invocation():
-    """
-    [스모크 테스트]
-    그래프가 정상적으로 생성되고, invoke 호출 시 에러 없이 결과(dict)를 반환하는지 확인
+    """LangGraph 객체의 생성 및 호출을 검증하는 스모크 테스트.
+
+    이 테스트는 `create_graph` 함수가 유효한 LangGraph 실행 객체를 생성하는지,
+    그리고 생성된 객체의 `invoke` 메서드가 에러 없이 정상적으로 호출되어
+    예상된 형식의 결과를 반환하는지 확인합니다.
+
+    주요 검증 항목:
+    - `invoke` 메서드의 반환값이 딕셔너리(dict) 타입이어야 합니다.
+    - 반환된 딕셔너리에 'answer' 키가 포함되어야 합니다.
+    - 'answer' 키에 해당하는 값이 비어 있지 않아야 합니다.
     """
     # 1. 그래프(앱) 생성
     app = create_graph()
