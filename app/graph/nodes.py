@@ -1,15 +1,19 @@
 """LangGraph 워크플로우 노드 함수."""
 
+import json
+
+from langchain_openai import ChatOpenAI
 from sqlalchemy.orm import Session
 
 from app.core.logger import get_logger
-from app.graph.state import GraphState, RegionCandidate
+from app.graph.state import GraphState, RankedRegion, RegionCandidate
 from app.models.region_embedding import RegionEmbedding
 from app.services.embedding import EmbeddingService
 
 logger = get_logger(__name__)
 
 embedder = EmbeddingService()
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 
 def transform_input(state: GraphState) -> GraphState:
@@ -94,3 +98,79 @@ def search_regions(state: GraphState, db: Session) -> GraphState:
     logger.info("Found %d region candidates", len(candidates))
 
     return {**state, "candidates": candidates}
+
+
+def rerank_regions(state: GraphState) -> GraphState:
+    """LLM을 사용하여 제약 조건을 검증하고 순위를 재조정합니다."""
+    candidates = state.get("candidates", [])
+    preference = state.get("user_preference", {})
+
+    if not candidates:
+        return {**state, "ranked_regions": []}
+
+    travel_range = preference.get("travel_range", "")
+    budget_level = preference.get("budget_level", "")
+
+    candidate_names = [c["region_name"] for c in candidates]
+
+    prompt = f"""다음 여행지 후보들을 사용자 조건에 맞게 평가해주세요.
+
+여행지 후보: {", ".join(candidate_names)}
+
+사용자 조건:
+- 여행 거리: {travel_range}
+- 예산 수준: {budget_level}
+
+각 여행지에 대해 JSON 배열로 응답해주세요:
+[{{"region_name": "도시명", "constraints_met": true/false, "score": 0.0-1.0, "reason": "평가 이유"}}]
+
+조건에 맞는 여행지는 높은 점수를, 맞지 않는 여행지는 낮은 점수를 주세요.
+JSON 배열만 응답하세요."""
+
+    try:
+        response = llm.invoke(prompt)
+        content = response.content.strip()
+
+        if content.startswith("```"):
+            content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
+
+        evaluations = json.loads(content)
+
+        region_map = {c["region_name"]: c for c in candidates}
+        ranked_regions: list[RankedRegion] = []
+
+        for evaluation in evaluations:
+            name = evaluation.get("region_name", "")
+            if name in region_map:
+                original = region_map[name]
+                ranked_regions.append(
+                    {
+                        "region_id": original["region_id"],
+                        "region_name": name,
+                        "score": evaluation.get("score", 0.5),
+                        "reason": evaluation.get("reason", ""),
+                        "constraints_met": evaluation.get("constraints_met", True),
+                    }
+                )
+
+        ranked_regions.sort(key=lambda x: (-x["constraints_met"], -x["score"]))
+
+        logger.info("Reranked %d regions", len(ranked_regions))
+
+        return {**state, "ranked_regions": ranked_regions}
+
+    except Exception as e:
+        logger.error("Reranking failed: %s", e)
+        fallback: list[RankedRegion] = [
+            {
+                "region_id": c["region_id"],
+                "region_name": c["region_name"],
+                "score": c["score"],
+                "reason": "AI 추천",
+                "constraints_met": True,
+            }
+            for c in candidates
+        ]
+        return {**state, "ranked_regions": fallback}
