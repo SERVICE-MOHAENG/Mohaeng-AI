@@ -92,7 +92,7 @@ def search_regions(state: GraphState, config: RunnableConfig) -> dict[str, Any]:
         {
             "region_id": r.region_id,
             "region_name": r.region_name,
-            "score": 1.0 - (i * 0.05),
+            "score": max(0.0, 1.0 - (i * 0.05)),
         }
         for i, r in enumerate(results)
     ]
