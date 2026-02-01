@@ -123,6 +123,14 @@ def rerank_regions(state: GraphState) -> GraphState:
 - 여행 거리: {travel_range}
 - 예산 수준: {budget_level}
 
+예산 수준별 가이드라인:
+- LOW: 동남아(태국, 베트남), 동유럽(체코, 헝가리) 등 물가 저렴한 지역 우선.
+  서유럽, 북미, 일본 등 물가 높은 지역은 constraints_met=false.
+- MEDIUM: 남유럽, 대만, 말레이시아 등 중간 물가 지역 적합.
+  스위스, 북유럽 등 매우 비싼 지역은 constraints_met=false.
+- HIGH: 대부분 지역 추천 가능. 물가 제약 적음.
+- VERY_HIGH: 모든 지역 추천 가능.
+
 각 여행지에 대해 JSON 배열로 응답해주세요:
 [{{"region_name": "도시명", "constraints_met": true/false, "score": 0.0-1.0, "reason": "평가 이유"}}]
 
