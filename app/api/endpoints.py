@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.logger import get_logger
 from app.database import get_db
-from app.graph.workflow import compile_workflow
+from app.graph.workflow import compiled_graph
 from app.schemas.search import (
     RecommendationResult,
     RecommendResponse,
@@ -51,8 +51,6 @@ def recommend_regions(request: UserPreferenceRequest, db: Session = Depends(get_
     """사용자 선호도를 기반으로 LangGraph 워크플로우를 실행하여 지역을 추천합니다."""
     logger.info("Recommend request received: %s", request.model_dump())
 
-    graph = compile_workflow(db)
-
     initial_state = {
         "user_preference": {
             "travel_range": request.travel_range,
@@ -65,7 +63,7 @@ def recommend_regions(request: UserPreferenceRequest, db: Session = Depends(get_
     }
 
     try:
-        result = graph.invoke(initial_state)
+        result = compiled_graph.invoke(initial_state, config={"configurable": {"db": db}})
 
         if error := result.get("error"):
             raise HTTPException(status_code=500, detail=error)

@@ -1,9 +1,10 @@
 """LangGraph 워크플로우 노드 함수."""
 
 import json
+from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
-from sqlalchemy.orm import Session
 
 from app.core.logger import get_logger
 from app.graph.state import GraphState, RankedRegion, RegionCandidate
@@ -68,8 +69,9 @@ def transform_input(state: GraphState) -> GraphState:
     return {**state, "transformed_query": transformed_query}
 
 
-def search_regions(state: GraphState, db: Session) -> GraphState:
+def search_regions(state: GraphState, config: RunnableConfig) -> dict[str, Any]:
     """벡터 유사도 기반으로 지역을 검색합니다."""
+    db = config["configurable"]["db"]
     query = state.get("transformed_query", "")
     top_k = state.get("top_k", 10)
 
