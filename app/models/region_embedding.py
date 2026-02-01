@@ -1,7 +1,7 @@
 """지역 임베딩 모델."""
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Float, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.models.base import Base
@@ -21,3 +21,4 @@ class RegionEmbedding(Base):
     region_name = Column(String, unique=True, index=True)
     content = Column(Text)
     embedding = Column(Vector(1536))
+    price_index = Column(Float, nullable=True)
