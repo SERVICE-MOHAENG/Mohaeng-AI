@@ -131,10 +131,16 @@ def rerank_regions(state: GraphState) -> GraphState:
 - HIGH: 대부분 지역 추천 가능. 물가 제약 적음.
 - VERY_HIGH: 모든 지역 추천 가능.
 
+평가 기준:
+- constraints_met: 예산 가이드라인에 부합하면 true, 아니면 false
+- score: 예산 적합도가 높을수록 높은 점수 (0.0~1.0)
+  - 예산에 딱 맞는 지역: 0.8~1.0
+  - 예산에 적당한 지역: 0.5~0.7
+  - 예산에 맞지 않는 지역: 0.3 이하
+
 각 여행지에 대해 JSON 배열로 응답해주세요:
 [{{"region_name": "도시명", "constraints_met": true/false, "score": 0.0-1.0, "reason": "평가 이유"}}]
 
-조건에 맞는 여행지는 높은 점수를, 맞지 않는 여행지는 낮은 점수를 주세요.
 JSON 배열만 응답하세요."""
 
     try:
