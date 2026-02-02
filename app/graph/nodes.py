@@ -6,6 +6,7 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 
+from app.core.config import settings
 from app.core.logger import get_logger
 from app.graph.state import GraphState, RankedRegion, RegionCandidate
 from app.models.region_embedding import RegionEmbedding
@@ -14,7 +15,7 @@ from app.services.embedding import EmbeddingService
 logger = get_logger(__name__)
 
 embedder = EmbeddingService()
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=settings.OPENAI_API_KEY)
 
 
 def transform_input(state: GraphState) -> GraphState:
