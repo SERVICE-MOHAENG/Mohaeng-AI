@@ -1,4 +1,4 @@
-"""LangGraph 워크플로우 노드 함수."""
+"""`LangGraph` 워크플로우 노드 함수."""
 
 import json
 from functools import lru_cache
@@ -10,21 +10,21 @@ from langchain_openai import ChatOpenAI
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.graph.state import GraphState, RankedRegion, RegionCandidate
+from app.integrations.embedding import EmbeddingService
 from app.models.region_embedding import RegionEmbedding
-from app.services.embedding import EmbeddingService
 
 logger = get_logger(__name__)
 
 
 @lru_cache
 def get_embedder() -> EmbeddingService:
-    """EmbeddingService 인스턴스를 반환한다."""
+    """`EmbeddingService` 인스턴스를 반환한다."""
     return EmbeddingService()
 
 
 @lru_cache
 def get_llm() -> ChatOpenAI:
-    """ChatOpenAI 인스턴스를 반환한다."""
+    """`ChatOpenAI` 인스턴스를 반환한다."""
     return ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=get_settings().OPENAI_API_KEY)
 
 
@@ -114,7 +114,7 @@ def search_regions(state: GraphState, config: RunnableConfig) -> dict[str, Any]:
 
 
 def rerank_regions(state: GraphState) -> GraphState:
-    """LLM을 사용하여 제약 조건을 검증하고 순위를 재조정합니다."""
+    """`LLM`을 사용하여 제약 조건을 검증하고 순위를 재조정합니다."""
     candidates = state.get("candidates", [])
     preference = state.get("user_preference", {})
 

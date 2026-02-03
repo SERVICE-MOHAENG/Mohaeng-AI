@@ -31,4 +31,4 @@ COPY --from=builder /opt/venv /opt/venv
 COPY app ./app
 COPY pyproject.toml ./pyproject.toml
 
-CMD ["python", "-m", "app.main"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

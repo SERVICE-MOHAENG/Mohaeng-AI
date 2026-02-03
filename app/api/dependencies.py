@@ -10,7 +10,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_jwt_service() -> JwtService:
-    """JWT 서비스 인스턴스를 제공합니다."""
+    """`JWT` 서비스 인스턴스를 제공합니다."""
     return JwtService()
 
 
@@ -18,7 +18,7 @@ def require_user_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     jwt_service: JwtService = Depends(get_jwt_service),
 ) -> UserTokenPayload:
-    """유효한 사용자용 Bearer 토큰을 요구합니다."""
+    """유효한 사용자용 `Bearer` 토큰을 요구합니다."""
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

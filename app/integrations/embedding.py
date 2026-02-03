@@ -1,4 +1,4 @@
-"""OpenAI 임베딩 서비스."""
+"""`OpenAI` 임베딩 서비스."""
 
 from openai import OpenAI
 
@@ -9,10 +9,10 @@ logger = get_logger(__name__)
 
 
 class EmbeddingService:
-    """OpenAI API를 사용하여 텍스트 임베딩 벡터를 생성하는 서비스."""
+    """`OpenAI` API를 사용하여 텍스트 임베딩 벡터를 생성하는 서비스."""
 
     def __init__(self):
-        """EmbeddingService를 초기화합니다."""
+        """`EmbeddingService`를 초기화합니다."""
         api_key = get_settings().OPENAI_API_KEY
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY가 설정되지 않았습니다.")

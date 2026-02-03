@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.logger import get_logger
 from app.database import get_db
 from app.graph.workflow import compiled_graph
+from app.integrations.embedding import EmbeddingService
 from app.schemas.search import (
     RecommendationResult,
     RecommendResponse,
@@ -14,7 +15,6 @@ from app.schemas.search import (
     SearchResponse,
     UserPreferenceRequest,
 )
-from app.services.embedding import EmbeddingService
 from app.services.region_service import search_regions_by_vector
 
 router = APIRouter(tags=["search"])
@@ -48,7 +48,7 @@ def search_regions(request: SearchRequest, db: Session = Depends(get_db)) -> Sea
 
 @router.post("/recommend", response_model=RecommendResponse)
 def recommend_regions(request: UserPreferenceRequest, db: Session = Depends(get_db)) -> RecommendResponse:  # noqa: B008
-    """사용자 선호도를 기반으로 LangGraph 워크플로우를 실행하여 지역을 추천합니다."""
+    """사용자 선호도를 기반으로 `LangGraph` 워크플로우를 실행하여 지역을 추천합니다."""
     logger.info("Recommend request received: %s", request.model_dump())
 
     initial_state = {

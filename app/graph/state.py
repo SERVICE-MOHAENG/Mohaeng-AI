@@ -1,17 +1,25 @@
-"""LangGraph 워크플로우 상태 정의."""
+"""`LangGraph` 워크플로우 상태 정의."""
 
 from typing import TypedDict
 from uuid import UUID
 
 
 class UserPreference(TypedDict, total=False):
-    """사용자 선호도 입력."""
+    """사용자 선호도 입력.
 
-    travel_range: str  # DOMESTIC, NEAR_ASIA, SOUTHEAST_ASIA, EUROPE, LONG_HAUL
-    budget_level: str  # LOW, MEDIUM, HIGH, VERY_HIGH
-    main_interests: list[str]  # HISTORY, NATURE, FOOD, SHOPPING, etc.
-    environment: str  # URBAN, NATURE, COASTAL, MOUNTAIN
-    weather: str  # WARM, COOL, TROPICAL, etc.
+    Fields:
+        `travel_range`: `DOMESTIC`, `NEAR_ASIA`, `SOUTHEAST_ASIA`, `EUROPE`, `LONG_HAUL`
+        `budget_level`: `LOW`, `MEDIUM`, `HIGH`, `VERY_HIGH`
+        `main_interests`: `HISTORY`, `NATURE`, `FOOD`, `SHOPPING` 등
+        `environment`: `URBAN`, `NATURE`, `COASTAL`, `MOUNTAIN`
+        `weather`: `WARM`, `COOL`, `TROPICAL` 등
+    """
+
+    travel_range: str
+    budget_level: str
+    main_interests: list[str]
+    environment: str
+    weather: str
 
 
 class RegionCandidate(TypedDict):
@@ -33,23 +41,22 @@ class RankedRegion(TypedDict):
 
 
 class GraphState(TypedDict, total=False):
-    """LangGraph 워크플로우 상태."""
+    """`LangGraph` 워크플로우 상태.
 
-    # 입력
+    Keys:
+        `user_preference`: 사용자 선호도 입력
+        `top_k`: 검색/추천 상위 K
+        `transformed_query`: 전처리된 쿼리 문자열
+        `candidates`: 1차 검색 결과
+        `ranked_regions`: 재정렬 결과
+        `final_recommendations`: 최종 추천 결과
+        `error`: 처리 중 발생한 에러 메시지
+    """
+
     user_preference: UserPreference
     top_k: int
-
-    # 변환된 쿼리
     transformed_query: str
-
-    # 1차 검색 결과
     candidates: list[RegionCandidate]
-
-    # Reranking 결과
     ranked_regions: list[RankedRegion]
-
-    # 최종 응답
     final_recommendations: list[RankedRegion]
-
-    # 에러 처리
     error: str | None

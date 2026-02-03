@@ -1,10 +1,10 @@
-"""JWT 토큰 페이로드 스키마 정의."""
+"""`JWT` 토큰 페이로드 스키마 정의."""
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class AdminTokenPayload(BaseModel):
-    """관리자용 JWT 페이로드."""
+    """관리자용 `JWT` 페이로드."""
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -17,7 +17,7 @@ class AdminTokenPayload(BaseModel):
 
 
 class UserTokenPayload(BaseModel):
-    """일반 사용자용 JWT 페이로드."""
+    """일반 사용자용 `JWT` 페이로드."""
 
     model_config = ConfigDict(populate_by_name=True)
 
