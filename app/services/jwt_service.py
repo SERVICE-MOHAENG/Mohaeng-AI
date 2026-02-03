@@ -1,4 +1,4 @@
-"""JWT 발급 및 검증을 담당하는 서비스 모듈."""
+"""`JWT` 발급 및 검증을 담당하는 서비스 모듈."""
 
 import time
 from datetime import datetime, timedelta, timezone
@@ -12,7 +12,7 @@ from app.schemas.jwt import AdminTokenPayload, UserTokenPayload
 
 
 class JwtService:
-    """서비스 전역에서 재사용하는 JWT 생성/검증 유틸리티."""
+    """서비스 전역에서 재사용하는 `JWT` 생성/검증 유틸리티."""
 
     def __init__(self):
         """환경 설정을 불러와 서명 시크릿과 만료 시간을 초기화한다."""
@@ -25,7 +25,7 @@ class JwtService:
             raise ValueError("JWT access secret is not set.")
 
     def _create_token(self, payload: dict) -> str:
-        """iat/exp를 추가한 뒤 서명된 JWT 문자열을 생성한다."""
+        """`iat`/`exp`를 추가한 뒤 서명된 `JWT` 문자열을 생성한다."""
         now = datetime.now(timezone.utc)
         expire = now + self.expires_delta
 
@@ -90,9 +90,11 @@ class JwtService:
         return jwt.decode(token, self.secret, algorithms=[self.algorithm], options=options)
 
     def get_token_expiration_time(self, token: str) -> int:
-        """토큰이 만료되기까지 남은 초를 반환한다. 만료 시 0, 실패 시 -1."""
+        """토큰이 만료되기까지 남은 초를 반환한다. 만료 시 0, 실패 시 -1.
+
+        서명 검증 없이 `exp` 클레임만 확인한다.
+        """
         try:
-            # 서명 검증 없이 디코딩하여 exp만 확인
             payload = jwt.decode(token, options={"verify_signature": False})
             exp = payload.get("exp")
             if not exp:

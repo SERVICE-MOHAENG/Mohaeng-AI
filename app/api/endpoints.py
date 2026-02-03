@@ -48,7 +48,7 @@ def search_regions(request: SearchRequest, db: Session = Depends(get_db)) -> Sea
 
 @router.post("/recommend", response_model=RecommendResponse)
 def recommend_regions(request: UserPreferenceRequest, db: Session = Depends(get_db)) -> RecommendResponse:  # noqa: B008
-    """사용자 선호도를 기반으로 LangGraph 워크플로우를 실행하여 지역을 추천합니다."""
+    """사용자 선호도를 기반으로 `LangGraph` 워크플로우를 실행하여 지역을 추천합니다."""
     logger.info("Recommend request received: %s", request.model_dump())
 
     initial_state = {

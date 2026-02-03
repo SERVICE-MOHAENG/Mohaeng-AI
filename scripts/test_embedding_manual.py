@@ -1,17 +1,17 @@
+"""임베딩 변환을 수동으로 확인하는 테스트 스크립트."""
+
 import os
 
 from dotenv import load_dotenv
 
 from app.services.embedding import EmbeddingService
 
-# .env 파일 로드
 load_dotenv()
 
 
 def main():
     print("🔮 임베딩 변환 테스트 시작...")
 
-    # API 키 확인
     if not os.getenv("OPENAI_API_KEY"):
         print("❌ 실패: .env 파일에 OPENAI_API_KEY가 없습니다!")
         return

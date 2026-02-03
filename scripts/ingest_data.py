@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 
 def init_db():
-    """데이터베이스를 초기화하고 pgvector 확장을 활성화합니다."""
+    """데이터베이스를 초기화하고 `pgvector` 확장을 활성화합니다."""
     try:
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))

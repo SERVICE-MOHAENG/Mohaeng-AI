@@ -1,4 +1,4 @@
-"""LangGraph 워크플로우 구성."""
+"""`LangGraph` 워크플로우 구성."""
 
 from langgraph.graph import END, StateGraph
 
@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 def _create_workflow() -> StateGraph:
-    """LangGraph 워크플로우를 생성합니다."""
+    """`LangGraph` 워크플로우를 생성합니다."""
     workflow = StateGraph(GraphState)
 
     workflow.add_node("transform_input", transform_input)
@@ -32,5 +32,4 @@ def _create_workflow() -> StateGraph:
     return workflow
 
 
-# 애플리케이션 시작 시 한 번만 컴파일
 compiled_graph = _create_workflow().compile()

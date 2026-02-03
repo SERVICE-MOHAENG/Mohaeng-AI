@@ -1,7 +1,6 @@
 # ruff: noqa: E501
-# scripts/city_data.py
+"""도시 이름 매핑과 크롤링 대상 도시 목록."""
 
-# 1. 한국어 이름 -> 영어 위키피디아 검색어 매핑 (총 75개)
 NAME_MAPPING = {
     "서울": "Seoul",
     "부산": "Busan",
@@ -112,7 +111,6 @@ NAME_MAPPING = {
     "수바": "Suva",
 }
 
-# 2. 크롤링 타겟 도시 전체 리스트 (75개)
 TARGET_CITIES = [
     {
         "name": "서울",

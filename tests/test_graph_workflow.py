@@ -1,4 +1,4 @@
-"""LangGraph 워크플로우 테스트."""
+"""`LangGraph` 워크플로우 테스트."""
 
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -8,7 +8,7 @@ from app.graph.state import GraphState
 
 
 class TestTransformInput:
-    """transform_input 노드 테스트."""
+    """`transform_input` 노드 테스트."""
 
     def test_transform_with_interests(self):
         """관심사가 포함된 쿼리 변환 테스트."""
@@ -88,10 +88,10 @@ class TestTransformInput:
 
 
 class TestRerankRegions:
-    """rerank_regions 노드 테스트."""
+    """`rerank_regions` 노드 테스트."""
 
     def teardown_method(self):
-        """각 테스트 후 lru_cache 정리."""
+        """각 테스트 후 `lru_cache` 정리."""
         get_llm.cache_clear()
 
     @patch("app.graph.nodes.get_llm")
