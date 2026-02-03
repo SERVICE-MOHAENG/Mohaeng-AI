@@ -103,3 +103,8 @@ Desktop.ini
 *.pfx
 .env
 .venv/
+
+############################
+# AI artifacts
+############################
+.prompts/
