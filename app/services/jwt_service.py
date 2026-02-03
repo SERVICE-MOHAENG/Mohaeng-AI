@@ -5,8 +5,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import jwt
+from pydantic import ValidationError
 
 from app.core.config import settings
+from app.schemas.jwt import AdminTokenPayload, UserTokenPayload
 
 
 class JwtService:
@@ -57,7 +59,7 @@ class JwtService:
         payload.update({"iat": int(now.timestamp()), "exp": int(expire.timestamp())})
         return jwt.encode(payload, self.secret, algorithm=self.algorithm)
 
-    def verify_admin_token(self, token: str) -> dict:
+    def verify_admin_token(self, token: str) -> AdminTokenPayload:
         """관리자 토큰을 검증하고 페이로드를 반환한다.
 
         Raises:
@@ -65,16 +67,11 @@ class JwtService:
         """
         try:
             payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
-
-            # 필수 필드 검증
-            if not all(k in payload for k in ("adminId", "permissions", "isSuperAdmin")):
-                raise ValueError("Invalid admin token payload.")
-
-            return payload
-        except jwt.PyJWTError:
+            return AdminTokenPayload.model_validate(payload)
+        except (jwt.PyJWTError, ValidationError):
             raise ValueError("Invalid token") from None
 
-    def verify_user_token(self, token: str) -> dict:
+    def verify_user_token(self, token: str) -> UserTokenPayload:
         """사용자 토큰을 검증하고 페이로드를 반환한다.
 
         Raises:
@@ -82,13 +79,8 @@ class JwtService:
         """
         try:
             payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
-
-            # 필수 필드 검증
-            if not payload.get("userId") or not payload.get("sub"):
-                raise ValueError("Invalid user token payload.")
-
-            return payload
-        except jwt.PyJWTError:
+            return UserTokenPayload.model_validate(payload)
+        except (jwt.PyJWTError, ValidationError):
             raise ValueError("Invalid token") from None
 
     def verify_token(self, token: str, ignore_expiration: bool = False) -> dict:

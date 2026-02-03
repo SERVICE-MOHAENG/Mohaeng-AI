@@ -3,6 +3,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.schemas.jwt import UserTokenPayload
 from app.services.jwt_service import JwtService
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -16,7 +17,7 @@ def get_jwt_service() -> JwtService:
 def require_user_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     jwt_service: JwtService = Depends(get_jwt_service),
-) -> dict:
+) -> UserTokenPayload:
     """유효한 사용자용 Bearer 토큰을 요구합니다."""
     if credentials is None:
         raise HTTPException(
