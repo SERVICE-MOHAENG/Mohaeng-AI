@@ -1,9 +1,8 @@
 """OpenAI 임베딩 서비스."""
 
-import os
-
 from openai import OpenAI
 
+from app.core.config import get_settings
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -14,7 +13,7 @@ class EmbeddingService:
 
     def __init__(self):
         """EmbeddingService를 초기화합니다."""
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = get_settings().OPENAI_API_KEY
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY가 설정되지 않았습니다.")
 

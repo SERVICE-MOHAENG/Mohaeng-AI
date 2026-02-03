@@ -32,3 +32,8 @@ jobs:
 
       - name: 테스트 실행 (Pytest)
         run: uv run pytest
+        env:
+          OPENAI_API_KEY: test-key-for-ci
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          JWT_ACCESS_SECRET: test-secret
+          JWT_ACCESS_EXPIRY_MINUTES: "30"
