@@ -90,15 +90,17 @@ class TestTransformInput:
 class TestRerankRegions:
     """rerank_regions 노드 테스트."""
 
-    @patch("app.graph.nodes.llm")
-    def test_rerank_with_low_budget(self, mock_llm: MagicMock):
+    @patch("app.graph.nodes.get_llm")
+    def test_rerank_with_low_budget(self, mock_get_llm: MagicMock):
         """LOW 예산 시 물가 저렴한 지역 우선 테스트."""
+        mock_llm = MagicMock()
         mock_response = MagicMock()
         mock_response.content = """[
             {"region_name": "방콕", "constraints_met": true, "score": 0.9, "reason": "물가 저렴"},
             {"region_name": "파리", "constraints_met": false, "score": 0.3, "reason": "물가 높음"}
         ]"""
         mock_llm.invoke.return_value = mock_response
+        mock_get_llm.return_value = mock_llm
 
         state: GraphState = {
             "user_preference": {"budget_level": "LOW"},
@@ -115,15 +117,17 @@ class TestRerankRegions:
         assert result["ranked_regions"][0]["region_name"] == "방콕"
         assert result["ranked_regions"][0]["constraints_met"] is True
 
-    @patch("app.graph.nodes.llm")
-    def test_rerank_with_high_budget(self, mock_llm: MagicMock):
+    @patch("app.graph.nodes.get_llm")
+    def test_rerank_with_high_budget(self, mock_get_llm: MagicMock):
         """HIGH 예산 시 대부분 지역 추천 가능 테스트."""
+        mock_llm = MagicMock()
         mock_response = MagicMock()
         mock_response.content = """[
             {"region_name": "파리", "constraints_met": true, "score": 0.9, "reason": "적합"},
             {"region_name": "방콕", "constraints_met": true, "score": 0.8, "reason": "적합"}
         ]"""
         mock_llm.invoke.return_value = mock_response
+        mock_get_llm.return_value = mock_llm
 
         state: GraphState = {
             "user_preference": {"budget_level": "HIGH"},
@@ -138,9 +142,12 @@ class TestRerankRegions:
         assert "ranked_regions" in result
         assert all(r["constraints_met"] for r in result["ranked_regions"])
 
-    @patch("app.graph.nodes.llm")
-    def test_rerank_empty_candidates(self, mock_llm: MagicMock):
+    @patch("app.graph.nodes.get_llm")
+    def test_rerank_empty_candidates(self, mock_get_llm: MagicMock):
         """빈 후보 목록 테스트."""
+        mock_llm = MagicMock()
+        mock_get_llm.return_value = mock_llm
+
         state: GraphState = {
             "user_preference": {"budget_level": "LOW"},
             "candidates": [],
