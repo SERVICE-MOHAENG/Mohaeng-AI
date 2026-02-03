@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
-from app.graph.nodes import rerank_regions, transform_input
+from app.graph.nodes import get_llm, rerank_regions, transform_input
 from app.graph.state import GraphState
 
 
@@ -89,6 +89,10 @@ class TestTransformInput:
 
 class TestRerankRegions:
     """rerank_regions 노드 테스트."""
+
+    def teardown_method(self):
+        """각 테스트 후 lru_cache 정리."""
+        get_llm.cache_clear()
 
     @patch("app.graph.nodes.get_llm")
     def test_rerank_with_low_budget(self, mock_get_llm: MagicMock):
