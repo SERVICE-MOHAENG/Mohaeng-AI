@@ -89,7 +89,7 @@ class JwtService:
         return jwt.decode(token, self.secret, algorithms=[self.algorithm], options=options)
 
     def get_token_expiration_time(self, token: str) -> int:
-        """토큰이 만료되기까지 남은 초를 반환한다. 실패 시 -1."""
+        """토큰이 만료되기까지 남은 초를 반환한다. 만료 시 0, 실패 시 -1."""
         try:
             # 서명 검증 없이 디코딩하여 exp만 확인
             payload = jwt.decode(token, options={"verify_signature": False})
@@ -98,7 +98,7 @@ class JwtService:
                 return -1
 
             now = int(time.time())
-            return exp - now
+            return max(0, exp - now)
         except Exception:
             return -1
 
