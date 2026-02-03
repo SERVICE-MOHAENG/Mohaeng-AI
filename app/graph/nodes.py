@@ -10,8 +10,8 @@ from langchain_openai import ChatOpenAI
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.graph.state import GraphState, RankedRegion, RegionCandidate
+from app.integrations.embedding import EmbeddingService
 from app.models.region_embedding import RegionEmbedding
-from app.services.embedding import EmbeddingService
 
 logger = get_logger(__name__)
 

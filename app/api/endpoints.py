@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.logger import get_logger
 from app.database import get_db
 from app.graph.workflow import compiled_graph
+from app.integrations.embedding import EmbeddingService
 from app.schemas.search import (
     RecommendationResult,
     RecommendResponse,
@@ -14,7 +15,6 @@ from app.schemas.search import (
     SearchResponse,
     UserPreferenceRequest,
 )
-from app.services.embedding import EmbeddingService
 from app.services.region_service import search_regions_by_vector
 
 router = APIRouter(tags=["search"])

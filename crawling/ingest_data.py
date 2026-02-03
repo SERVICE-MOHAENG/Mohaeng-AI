@@ -9,9 +9,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.logger import get_logger
 from app.database import SessionLocal, engine
+from app.integrations.embedding import EmbeddingService
 from app.models.base import Base
 from app.models.region_embedding import RegionEmbedding
-from app.services.embedding import EmbeddingService
 from crawling.city_data import NAME_MAPPING, TARGET_CITIES
 from crawling.crawler import CityCrawler
 
