@@ -11,9 +11,9 @@ from app.core.logger import get_logger
 from app.database import SessionLocal, engine
 from app.models.base import Base
 from app.models.region_embedding import RegionEmbedding
-from app.services.crawler import CityCrawler
 from app.services.embedding import EmbeddingService
-from scripts.city_data import NAME_MAPPING, TARGET_CITIES
+from crawling.city_data import NAME_MAPPING, TARGET_CITIES
+from crawling.crawler import CityCrawler
 
 logger = get_logger(__name__)
 
