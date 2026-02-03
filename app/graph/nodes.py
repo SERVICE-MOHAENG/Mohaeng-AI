@@ -1,12 +1,13 @@
 """LangGraph 워크플로우 노드 함수."""
 
 import json
+from functools import lru_cache
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.graph.state import GraphState, RankedRegion, RegionCandidate
 from app.models.region_embedding import RegionEmbedding
@@ -14,8 +15,17 @@ from app.services.embedding import EmbeddingService
 
 logger = get_logger(__name__)
 
-embedder = EmbeddingService()
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=settings.OPENAI_API_KEY)
+
+@lru_cache
+def get_embedder() -> EmbeddingService:
+    """EmbeddingService 인스턴스를 반환한다."""
+    return EmbeddingService()
+
+
+@lru_cache
+def get_llm() -> ChatOpenAI:
+    """ChatOpenAI 인스턴스를 반환한다."""
+    return ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=get_settings().OPENAI_API_KEY)
 
 
 def transform_input(state: GraphState) -> GraphState:
@@ -76,7 +86,7 @@ def search_regions(state: GraphState, config: RunnableConfig) -> dict[str, Any]:
     query = state.get("transformed_query", "")
     top_k = state.get("top_k", 10)
 
-    query_vector = embedder.get_embedding(query)
+    query_vector = get_embedder().get_embedding(query)
     if not query_vector:
         logger.error("Failed to generate embedding for query")
         return {**state, "error": "임베딩 생성 실패", "candidates": []}
@@ -145,7 +155,7 @@ def rerank_regions(state: GraphState) -> GraphState:
 JSON 배열만 응답하세요."""
 
     try:
-        response = llm.invoke(prompt)
+        response = get_llm().invoke(prompt)
         content = response.content.strip()
 
         if content.startswith("```"):
@@ -222,7 +232,7 @@ def generate_recommendations(state: GraphState) -> GraphState:
 JSON 배열만 응답하세요."""
 
     try:
-        response = llm.invoke(prompt)
+        response = get_llm().invoke(prompt)
         content = response.content.strip()
 
         if content.startswith("```"):

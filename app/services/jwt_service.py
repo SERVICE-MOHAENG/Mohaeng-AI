@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 import jwt
 from pydantic import ValidationError
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.schemas.jwt import AdminTokenPayload, UserTokenPayload
 
 
@@ -16,6 +16,7 @@ class JwtService:
 
     def __init__(self):
         """환경 설정을 불러와 서명 시크릿과 만료 시간을 초기화한다."""
+        settings = get_settings()
         self.secret = settings.JWT_ACCESS_SECRET
         self.algorithm = "HS256"
         self.expires_delta = timedelta(minutes=settings.JWT_ACCESS_EXPIRY_MINUTES)

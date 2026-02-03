@@ -1,14 +1,20 @@
+from functools import lru_cache
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.config import settings
-
-# Docker로 띄운 DB 접속 정보 (.env 파일에서 설정 필수)
-DATABASE_URL = settings.DATABASE_URL
+from app.core.config import get_settings
 
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+@lru_cache
+def get_engine():
+    """SQLAlchemy 엔진을 반환한다. 최초 호출 시에만 생성되고 이후 캐싱된다."""
+    return create_engine(get_settings().DATABASE_URL)
+
+
+def get_session_local() -> sessionmaker[Session]:
+    """SessionLocal 팩토리를 반환한다."""
+    return sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
 
 
 def get_db():
@@ -21,7 +27,8 @@ def get_db():
     Yields:
         Session: 생성된 SQLAlchemy 데이터베이스 세션 객체.
     """
-    db = SessionLocal()
+    session_local = get_session_local()
+    db = session_local()
     try:
         yield db
     finally:
