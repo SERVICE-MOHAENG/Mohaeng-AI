@@ -3,7 +3,7 @@
 from datetime import date
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.enums import (
     ActivityPreference,
@@ -18,13 +18,29 @@ from app.schemas.enums import (
 )
 
 
+class RegionDateRange(BaseModel):
+    """지역별 여행 기간 모델."""
+
+    region: Region = Field(..., description="여행 지역")
+    start_date: date = Field(..., description="지역별 여행 시작일 (YYYY-MM-DD)")
+    end_date: date = Field(..., description="지역별 여행 종료일 (YYYY-MM-DD)")
+
+    @field_validator("end_date")
+    @classmethod
+    def validate_region_date_range(cls, value: date, info):
+        start_date = info.data.get("start_date")
+        if start_date and value < start_date:
+            raise ValueError("지역별 여행 종료일은 시작일과 같거나 이후여야 합니다.")
+        return value
+
+
 class CourseRequest(BaseModel):
     """여행 코스 생성 요청 모델.
 
     Fields:
-        `region`: 여행 지역
-        `start_date`: 여행 시작일
-        `end_date`: 여행 종료일
+        `regions`: 지역별 여행 기간
+        `start_date`: 전체 여행 시작일
+        `end_date`: 전체 여행 종료일
         `people_count`: 총 인원 수
         `companion_type`: 동행자 유형
         `travel_themes`: 여행 테마 목록
@@ -37,9 +53,9 @@ class CourseRequest(BaseModel):
         `notes`: 추가 요청 사항
     """
 
-    region: Region = Field(..., description="여행 지역")
     start_date: date = Field(..., description="여행 시작일 (YYYY-MM-DD)")
     end_date: date = Field(..., description="여행 종료일 (YYYY-MM-DD)")
+    regions: List[RegionDateRange] = Field(..., min_length=1, description="지역별 여행 기간")
     people_count: int = Field(..., ge=1, le=20, description="총 인원 수")
     companion_type: CompanionType = Field(..., description="동행자 유형")
     travel_themes: list[TravelTheme] = Field(..., min_length=1, description="여행 테마 목록")
@@ -65,6 +81,13 @@ class CourseRequest(BaseModel):
         if value < 1:
             raise ValueError("인원 수는 1명 이상이어야 합니다.")
         return value
+
+    @model_validator(mode="after")
+    def validate_regions_within_range(self):
+        for region_range in self.regions:
+            if region_range.start_date < self.start_date or region_range.end_date > self.end_date:
+                raise ValueError("지역별 여행 기간은 전체 여행 기간 안에 있어야 합니다.")
+        return self
 
 
 class CoursePlace(BaseModel):
