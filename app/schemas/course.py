@@ -80,7 +80,7 @@ class CoursePlace(BaseModel):
 class DailyItinerary(BaseModel):
     """중간 단위: 일차별 일정 모델."""
 
-    day_number: int = Field(..., description="여행 N일차 (1, 2, 3...)")
+    day_number: int = Field(..., ge=1, description="여행 N일차 (1, 2, 3...)")
     daily_date: date = Field(..., description="여행 날짜 (YYYY-MM-DD 형식)")
     places: List[CoursePlace] = Field(..., description="순서대로 정렬된 방문 장소 리스트")
 
