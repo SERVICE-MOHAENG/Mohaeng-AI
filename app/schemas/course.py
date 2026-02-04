@@ -73,7 +73,7 @@ class CoursePlace(BaseModel):
     place_name: str = Field(..., description="장소의 공식 명칭 (Google Places API 기준)")
     place_id: Optional[str] = Field(None, description="Google Places ID (프론트엔드에서 상세 정보 조회용)")
     category: str = Field(..., description="장소 카테고리 (예: 식당, 관광지, 카페, 숙소)")
-    visit_sequence: int = Field(..., description="해당 일차 내에서의 방문 순서 (1부터 시작)")
+    visit_sequence: int = Field(..., ge=1, description="해당 일차 내에서의 방문 순서 (1부터 시작)")
     estimated_duration_minutes: str = Field(..., description="방문 시점 (예: 아침, 점심 or 10:00 AM, 12:30 PM 등)")
 
 
