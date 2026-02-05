@@ -124,7 +124,8 @@ class MockGooglePlacesService:
         if not places:
             places = self._generate_default_places(query)
 
-        return self._filter_by_quality(places)
+        filtered = self._filter_by_quality(places)
+        return self._select_top_one(filtered)
 
     def _generate_default_places(self, query: str) -> list[Place]:
         """기본 샘플 장소 데이터를 생성한다."""
@@ -152,3 +153,14 @@ class MockGooglePlacesService:
             for place in places
             if place.rating >= self.MIN_RATING and place.user_ratings_total >= self.MIN_REVIEWS
         ]
+
+    def _select_top_one(self, places: list[Place]) -> list[Place]:
+        """평점 최고, 동점 시 리뷰 수 최다인 장소 1개를 선택한다."""
+        if not places:
+            return []
+        sorted_places = sorted(
+            places,
+            key=lambda p: (p.rating, p.user_ratings_total),
+            reverse=True,
+        )
+        return [sorted_places[0]]
