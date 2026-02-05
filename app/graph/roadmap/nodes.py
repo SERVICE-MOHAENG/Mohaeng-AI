@@ -311,13 +311,13 @@ async def fetch_places_from_slots(
     Returns:
         fetched_places가 추가된 새로운 상태
     """
-    skeleton_plan = state.get("skeleton_plan")
-    if not skeleton_plan:
-        return {**state, "error": "fetch_places_from_slots에는 skeleton_plan이 필요합니다."}
-
     # 이전 단계에서 에러가 있으면 중단
     if state.get("error"):
         return state
+
+    skeleton_plan = state.get("skeleton_plan")
+    if not skeleton_plan:
+        return {**state, "error": "fetch_places_from_slots에는 skeleton_plan이 필요합니다."}
 
     if places_service is None:
         places_service = _get_default_places_service()
