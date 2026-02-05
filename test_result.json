@@ -1,0 +1,155 @@
+{
+  "course_request": {
+    "start_date": "2026-07-01",
+    "end_date": "2026-07-01",
+    "regions": [
+      {
+        "region": "TOKYO",
+        "start_date": "2026-07-01",
+        "end_date": "2026-07-01"
+      }
+    ],
+    "people_count": 1,
+    "companion_type": "SOLO",
+    "travel_themes": [
+      "NATURE",
+      "HEALING"
+    ],
+    "pace_preference": "RELAXED",
+    "planning_preference": "PLANNED",
+    "destination_preference": "TOURIST_SPOTS",
+    "activity_preference": "REST_FOCUSED",
+    "priority_preference": "EMOTIONAL",
+    "budget_range": "MID",
+    "notes": "신주쿠 공원(Shinjuku Park)에 가고 싶어요"
+  },
+  "trip_days": 1,
+  "slot_min": 4,
+  "slot_max": 5,
+  "skeleton_plan": [
+    {
+      "day_number": 1,
+      "region": "TOKYO",
+      "slots": [
+        {
+          "section": "MORNING",
+          "area": "SHINJUKU",
+          "keyword": "PARK"
+        },
+        {
+          "section": "LUNCH",
+          "area": "SHINJUKU",
+          "keyword": "CAFÉ"
+        },
+        {
+          "section": "AFTERNOON",
+          "area": "SHINJUKU",
+          "keyword": "GARDEN"
+        },
+        {
+          "section": "DINNER",
+          "area": "SHINJUKU",
+          "keyword": "RESTAURANT"
+        },
+        {
+          "section": "EVENING",
+          "area": "SHINJUKU",
+          "keyword": "NIGHT_VIEW"
+        }
+      ]
+    }
+  ],
+  "skeleton_warnings": [],
+  "fetched_places": {
+    "day1_slot0": [
+      {
+        "place_id": "ChIJFfySZNeMGGARab2Cwm8AUbs",
+        "name": "Shinjuku Gyoen National Garden",
+        "address": "11 Naitomachi, Shinjuku City, Tokyo",
+        "geometry": {
+          "latitude": 35.6852,
+          "longitude": 139.71
+        },
+        "rating": 4.6,
+        "user_ratings_total": 56789,
+        "types": [
+          "park",
+          "tourist_attraction"
+        ],
+        "photo_reference": "mock_photo_Cwm8AUbs"
+      }
+    ],
+    "day1_slot1": [
+      {
+        "place_id": "ChIJFfySZNeMGGARab2Cwm8AUbs",
+        "name": "Shinjuku Gyoen National Garden",
+        "address": "11 Naitomachi, Shinjuku City, Tokyo",
+        "geometry": {
+          "latitude": 35.6852,
+          "longitude": 139.71
+        },
+        "rating": 4.6,
+        "user_ratings_total": 56789,
+        "types": [
+          "park",
+          "tourist_attraction"
+        ],
+        "photo_reference": "mock_photo_Cwm8AUbs"
+      }
+    ],
+    "day1_slot2": [
+      {
+        "place_id": "ChIJFfySZNeMGGARab2Cwm8AUbs",
+        "name": "Shinjuku Gyoen National Garden",
+        "address": "11 Naitomachi, Shinjuku City, Tokyo",
+        "geometry": {
+          "latitude": 35.6852,
+          "longitude": 139.71
+        },
+        "rating": 4.6,
+        "user_ratings_total": 56789,
+        "types": [
+          "park",
+          "tourist_attraction"
+        ],
+        "photo_reference": "mock_photo_Cwm8AUbs"
+      }
+    ],
+    "day1_slot3": [
+      {
+        "place_id": "ChIJFfySZNeMGGARab2Cwm8AUbs",
+        "name": "Shinjuku Gyoen National Garden",
+        "address": "11 Naitomachi, Shinjuku City, Tokyo",
+        "geometry": {
+          "latitude": 35.6852,
+          "longitude": 139.71
+        },
+        "rating": 4.6,
+        "user_ratings_total": 56789,
+        "types": [
+          "park",
+          "tourist_attraction"
+        ],
+        "photo_reference": "mock_photo_Cwm8AUbs"
+      }
+    ],
+    "day1_slot4": [
+      {
+        "place_id": "ChIJFfySZNeMGGARab2Cwm8AUbs",
+        "name": "Shinjuku Gyoen National Garden",
+        "address": "11 Naitomachi, Shinjuku City, Tokyo",
+        "geometry": {
+          "latitude": 35.6852,
+          "longitude": 139.71
+        },
+        "rating": 4.6,
+        "user_ratings_total": 56789,
+        "types": [
+          "park",
+          "tourist_attraction"
+        ],
+        "photo_reference": "mock_photo_Cwm8AUbs"
+      }
+    ]
+  }
+}
