@@ -334,6 +334,8 @@ async def fetch_places_from_slots(
             query = _build_search_query(slot)
             if query:
                 tasks.append((slot_key, query))
+            else:
+                fetched_places[slot_key] = []
 
     # 비동기 병렬 검색 실행
     async def search_for_slot(slot_key: str, query: str) -> tuple[str, list]:
