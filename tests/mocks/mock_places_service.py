@@ -5,9 +5,10 @@ Stage 1 개발 및 테스트용으로 사용된다.
 """
 
 from app.schemas.place import Place, PlaceGeometry
+from app.services.places_service import PlacesServiceProtocol
 
 
-class MockGooglePlacesService:
+class MockGooglePlacesService(PlacesServiceProtocol):
     """Mock Google Places 서비스.
 
     실제 API 호출 없이 미리 정의된 샘플 데이터를 반환한다.

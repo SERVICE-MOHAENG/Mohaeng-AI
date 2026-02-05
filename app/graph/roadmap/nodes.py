@@ -16,7 +16,7 @@ from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
 from app.schemas.course import CourseRequest, PacePreference, RegionDateRange
 from app.schemas.skeleton import SkeletonPlan
-from tests.mocks.mock_places_service import MockGooglePlacesService
+from app.services.places_service import PlacesServiceProtocol
 
 logger = get_logger(__name__)
 
@@ -288,8 +288,29 @@ def _build_search_query(slot: dict) -> str:
     return f"{area} {keyword}".strip()
 
 
-async def fetch_places_from_slots(state: RoadmapState) -> RoadmapState:
-    """skeleton_plan의 각 슬롯에 대해 장소를 검색하여 fetched_places에 저장한다."""
+def _get_default_places_service() -> PlacesServiceProtocol:
+    """기본 Places 서비스 인스턴스를 반환한다.
+
+    TODO: API Key 발급 후 GooglePlacesService로 교체 예정.
+    """
+    from tests.mocks.mock_places_service import MockGooglePlacesService
+
+    return MockGooglePlacesService()
+
+
+async def fetch_places_from_slots(
+    state: RoadmapState,
+    places_service: PlacesServiceProtocol | None = None,
+) -> RoadmapState:
+    """skeleton_plan의 각 슬롯에 대해 장소를 검색하여 fetched_places에 저장한다.
+
+    Args:
+        state: 현재 로드맵 상태
+        places_service: Places 서비스 인스턴스 (의존성 주입). None이면 기본 서비스 사용.
+
+    Returns:
+        fetched_places가 추가된 새로운 상태
+    """
     skeleton_plan = state.get("skeleton_plan")
     if not skeleton_plan:
         return {**state, "error": "fetch_places_from_slots에는 skeleton_plan이 필요합니다."}
@@ -298,7 +319,9 @@ async def fetch_places_from_slots(state: RoadmapState) -> RoadmapState:
     if state.get("error"):
         return state
 
-    places_service = MockGooglePlacesService()
+    if places_service is None:
+        places_service = _get_default_places_service()
+
     fetched_places: dict[str, list] = {}
 
     # 모든 슬롯에 대한 검색 태스크 생성
