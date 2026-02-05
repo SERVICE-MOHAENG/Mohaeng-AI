@@ -1,0 +1,23 @@
+"""Google Places API 응답을 표준화하여 저장할 Place 모델."""
+
+from pydantic import BaseModel, Field
+
+
+class PlaceGeometry(BaseModel):
+    """장소 위치 좌표."""
+
+    latitude: float = Field(..., description="위도")
+    longitude: float = Field(..., description="경도")
+
+
+class Place(BaseModel):
+    """Google Places API에서 반환된 장소 정보."""
+
+    place_id: str = Field(..., description="Google Places API 고유 ID")
+    name: str = Field(..., description="장소 이름")
+    address: str | None = Field(default=None, description="장소 주소")
+    geometry: PlaceGeometry = Field(..., description="장소 좌표 정보")
+    rating: float = Field(default=0.0, description="평점 (0.0 ~ 5.0)")
+    user_ratings_total: int = Field(default=0, description="총 리뷰 수")
+    types: list[str] = Field(default_factory=list, description="장소 유형 목록")
+    photo_reference: str | None = Field(default=None, description="대표 사진 참조 ID")

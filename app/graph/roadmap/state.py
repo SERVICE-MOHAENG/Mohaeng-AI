@@ -30,4 +30,5 @@ class RoadmapState(TypedDict, total=False):
     slot_max: int
     skeleton_plan: list[RoadmapDayPlan]
     skeleton_warnings: list[str]
+    fetched_places: dict[str, list]  # 슬롯 키 -> Place 목록 매핑
     error: str | None

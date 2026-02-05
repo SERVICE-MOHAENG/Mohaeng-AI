@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import date, timedelta
 from functools import lru_cache
 from typing import Iterable
@@ -15,6 +16,7 @@ from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
 from app.schemas.course import CourseRequest, PacePreference, RegionDateRange
 from app.schemas.skeleton import SkeletonPlan
+from app.services.places_service import PlacesServiceProtocol
 
 logger = get_logger(__name__)
 
@@ -271,4 +273,87 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
         "slot_min": slot_min,
         "slot_max": slot_max,
         "skeleton_warnings": warnings,
+    }
+
+
+def _build_slot_key(day_number: int, slot_index: int) -> str:
+    """슬롯의 고유 키를 생성한다."""
+    return f"day{day_number}_slot{slot_index}"
+
+
+def _build_search_query(slot: dict) -> str:
+    """슬롯에서 검색 쿼리를 생성한다."""
+    area = slot.get("area", "").strip()
+    keyword = slot.get("keyword", "").strip()
+    return f"{area} {keyword}".strip()
+
+
+def _get_default_places_service() -> PlacesServiceProtocol:
+    """기본 Places 서비스 인스턴스를 반환한다.
+
+    TODO: API Key 발급 후 GooglePlacesService로 교체 예정.
+    """
+    from tests.mocks.mock_places_service import MockGooglePlacesService
+
+    return MockGooglePlacesService()
+
+
+async def fetch_places_from_slots(
+    state: RoadmapState,
+    places_service: PlacesServiceProtocol | None = None,
+) -> RoadmapState:
+    """skeleton_plan의 각 슬롯에 대해 장소를 검색하여 fetched_places에 저장한다.
+
+    Args:
+        state: 현재 로드맵 상태
+        places_service: Places 서비스 인스턴스 (의존성 주입). None이면 기본 서비스 사용.
+
+    Returns:
+        fetched_places가 추가된 새로운 상태
+    """
+    # 이전 단계에서 에러가 있으면 중단
+    if state.get("error"):
+        return state
+
+    skeleton_plan = state.get("skeleton_plan")
+    if not skeleton_plan:
+        return {**state, "error": "fetch_places_from_slots에는 skeleton_plan이 필요합니다."}
+
+    if places_service is None:
+        places_service = _get_default_places_service()
+
+    fetched_places: dict[str, list] = {}
+
+    # 모든 슬롯에 대한 검색 태스크 생성
+    tasks: list[tuple[str, str]] = []  # (slot_key, query)
+    for day in skeleton_plan:
+        day_number = day.get("day_number", 0)
+        slots = day.get("slots", [])
+        for slot_index, slot in enumerate(slots):
+            slot_key = _build_slot_key(day_number, slot_index)
+            query = _build_search_query(slot)
+            if query:
+                tasks.append((slot_key, query))
+            else:
+                fetched_places[slot_key] = []
+
+    # 비동기 병렬 검색 실행
+    async def search_for_slot(slot_key: str, query: str) -> tuple[str, list]:
+        try:
+            places = await places_service.search(query)
+            return slot_key, [place.model_dump() for place in places]
+        except Exception as exc:
+            logger.warning("슬롯 %s 검색 실패: %s", slot_key, exc)
+            return slot_key, []
+
+    results = await asyncio.gather(*[search_for_slot(key, query) for key, query in tasks])
+
+    for slot_key, places in results:
+        fetched_places[slot_key] = places
+
+    logger.info("총 %d개 슬롯에서 장소 검색 완료", len(fetched_places))
+
+    return {
+        **state,
+        "fetched_places": fetched_places,
     }
