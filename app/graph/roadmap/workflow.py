@@ -2,7 +2,7 @@
 
 from langgraph.graph import END, StateGraph
 
-from app.graph.roadmap.nodes import generate_skeleton
+from app.graph.roadmap.nodes import fetch_places_from_slots, generate_skeleton
 from app.graph.roadmap.state import RoadmapState
 
 
@@ -10,8 +10,11 @@ def _create_roadmap_workflow() -> StateGraph:
     workflow = StateGraph(RoadmapState)
 
     workflow.add_node("generate_skeleton", generate_skeleton)
+    workflow.add_node("fetch_places_from_slots", fetch_places_from_slots)
+
     workflow.set_entry_point("generate_skeleton")
-    workflow.add_edge("generate_skeleton", END)
+    workflow.add_edge("generate_skeleton", "fetch_places_from_slots")
+    workflow.add_edge("fetch_places_from_slots", END)
 
     return workflow
 
