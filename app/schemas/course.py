@@ -131,5 +131,6 @@ class CourseResponseLLMOutput(BaseModel):
     """LLM이 생성할 필드만 포함하는 파싱 전용 모델."""
 
     title: str = Field(..., description="여행 로드맵의 제목")
+    tags: list[str] = Field(..., description="여행 전체를 요약하는 3~5개의 키워드 태그")
     llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
     next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")

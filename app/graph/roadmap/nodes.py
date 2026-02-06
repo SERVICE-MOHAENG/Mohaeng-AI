@@ -443,10 +443,6 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
     if state.get("error"):
         return state
 
-    required_keys = ["skeleton_plan", "fetched_places", "course_request"]
-    if not all(key in state for key in required_keys):
-        return {**state, "error": "최종 합성을 위한 데이터가 부족합니다."}
-
     try:
         # 1. LLM에 전달할 컨텍스트 데이터 준비
         itinerary_context, daily_places = _prepare_final_context(state)
@@ -470,9 +466,10 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "## 생성 작업 가이드\n"
             "1. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요. "
             "(반드시 한국어로 작성해주세요)\n"
-            "2. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
+            "2. 전체 일정을 대표할 수 있는 핵심 키워드 태그 3~5개를 `tags` 필드에 한국어로 생성해주세요.\n"
+            "3. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
             "설득력 있게 설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
-            "3. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "
+            "4. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "
             "(예: '숙소 예약하기', '항공권 알아보기' 등)\n\n"
             "## 출력 포맷\n"
             "{format_instructions}"
@@ -495,23 +492,6 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         trip_days = state["trip_days"]
         llm_output = parser.parse(content).model_dump()
 
-        # 여행 테마를 한글 태그로 변환
-        theme_map_ko = {
-            "UNIQUE_TRIP": "이색여행",
-            "HONEYMOON": "신혼여행",
-            "FAMILY_TRIP": "가족여행",
-            "HEALING": "힐링",
-            "SIGHTSEEING": "관광",
-            "FOOD_TOUR": "먹방",
-            "NATURE": "자연",
-            "SHOPPING": "쇼핑",
-            "CULTURE_ART": "문화·예술",
-            "ACTIVITY": "액티비티",
-            "CITY_TRIP": "도시여행",
-            "PHOTO_SPOTS": "사진·인생샷",
-        }
-        korean_tags = [theme_map_ko.get(theme, theme) for theme in course_request_data.get("travel_themes", [])]
-
         final_roadmap = {
             # 여행 메타데이터 추가
             "start_date": course_request_data["start_date"],
@@ -519,7 +499,6 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "trip_days": trip_days,
             "nights": trip_days - 1 if trip_days > 0 else 0,
             "people_count": course_request_data["people_count"],
-            "tags": korean_tags,
             # LLM 생성 컨텐츠와 조합
             **llm_output,
             "itinerary": daily_places,
