@@ -14,7 +14,12 @@ from langchain_openai import ChatOpenAI
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
-from app.schemas.course import CourseRequest, CourseResponse, PacePreference, RegionDateRange
+from app.schemas.course import (
+    CourseRequest,
+    CourseResponseLLMOutput,
+    PacePreference,
+    RegionDateRange,
+)
 from app.schemas.skeleton import SkeletonPlan
 from app.services.places_service import PlacesServiceProtocol
 
@@ -413,8 +418,8 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         itinerary_context, daily_places = _prepare_final_context(state)
         course_request = state["course_request"]
 
-        # 2. LLM 출력 파서 설정
-        parser = PydanticOutputParser(pydantic_object=CourseResponse)
+        # 2. LLM 출력 파서 설정 (itinerary 제외)
+        parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
 
         # 3. 프롬프트 구성
         system_prompt = (
@@ -428,13 +433,11 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "{course_request}\n\n"
             "## 확정된 일자별 장소 목록\n"
             "{itinerary_context}\n\n"
-            "## 최종 로드맵 생성 가이드\n"
-            "1. 위의 '확정된 일자별 장소 목록'을 `itinerary` 필드의 JSON 구조에 맞게 그대로 변환하여 채워주세요. "
-            "(`places` 목록은 제공된 데이터를 사용해야 합니다.)\n"
-            "2. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요.\n"
-            "3. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
+            "## 생성 작업 가이드\n"
+            "1. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요.\n"
+            "2. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
             "설득력 있게 설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
-            "4. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "
+            "3. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "
             "(예: '숙소 예약하기', '항공권 알아보기' 등)\n\n"
             "## 출력 포맷\n"
             "{format_instructions}"
@@ -452,12 +455,14 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         response = await llm.ainvoke(messages)
         content = _strip_code_fence(response.content)
 
-        # 5. 응답 파싱 및 상태 저장
-        # 파서가 DailyItinerary의 places를 직접 생성하지 않으므로, LLM 응답에 수동으로 주입
-        parsed_data = parser.parse(content).model_dump()
-        parsed_data["itinerary"] = daily_places
+        # 5. 응답 파싱 및 데이터 조합
+        llm_output = parser.parse(content).model_dump()
+        final_roadmap = {
+            **llm_output,
+            "itinerary": daily_places,
+        }
 
-        return {**state, "final_roadmap": parsed_data}
+        return {**state, "final_roadmap": final_roadmap}
 
     except Exception as e:
         logger.error(f"최종 로드맵 생성 실패: {e}", exc_info=True)

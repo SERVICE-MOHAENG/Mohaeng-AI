@@ -115,3 +115,11 @@ class CourseResponse(BaseModel):
     itinerary: List[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
     llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
     next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")
+
+
+class CourseResponseLLMOutput(BaseModel):
+    """LLM이 생성할 필드만 포함하는 파싱 전용 모델."""
+
+    title: str = Field(..., description="여행 로드맵의 제목")
+    llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
+    next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")
