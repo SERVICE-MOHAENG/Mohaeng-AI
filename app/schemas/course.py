@@ -97,7 +97,6 @@ class CoursePlace(BaseModel):
     place_id: Optional[str] = Field(None, description="Google Places ID (프론트엔드에서 상세 정보 조회용)")
     photo_reference: Optional[str] = Field(None, description="장소 이미지 참조 키")
     description: str = Field(..., description="장소에 대한 한 줄 설명")
-    tags: list[str] = Field(..., description="장소의 특징을 나타내는 태그 목록")
     visit_sequence: int = Field(..., ge=1, description="해당 일차 내에서의 방문 순서 (1부터 시작)")
     visit_time: str = Field(..., description="방문 시점 (예: 아침, 점심 or 10:00 AM, 12:30 PM 등)")
 
@@ -119,6 +118,7 @@ class CourseResponse(BaseModel):
     trip_days: int = Field(..., description="총 여행 일수")
     nights: int = Field(..., description="총 숙박 수")
     people_count: int = Field(..., description="총 인원 수")
+    tags: list[str] = Field(..., description="여행 전체의 특징을 나타내는 태그 목록")
 
     # AI 생성 컨텐츠
     title: str = Field(..., description="여행 로드맵의 제목")

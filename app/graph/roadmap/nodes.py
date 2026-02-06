@@ -388,19 +388,6 @@ def _prepare_final_context(
 
     planning_preference = course_request.planning_preference
 
-    # Google Places API의 주요 type과 한글 매핑
-    tag_map_ko = {
-        "tourist_attraction": "관광 명소",
-        "park": "공원",
-        "art_gallery": "미술관",
-        "museum": "박물관",
-        "place_of_worship": "종교 성지",
-        "shopping_mall": "쇼핑몰",
-        "point_of_interest": "관심 장소",
-        "establishment": "시설",
-        "monument": "기념물",
-    }
-
     context_lines = []
     daily_places_for_schema = []
     time_map = {
@@ -432,16 +419,12 @@ def _prepare_final_context(
                 else:
                     visit_time = slot["section"]
 
-                place_types = place.get("types", [])
-                korean_tags = [tag_map_ko.get(t, t) for t in place_types]
-
                 day_places.append(
                     {
                         "place_name": place["name"],
                         "place_id": place.get("place_id"),
                         "photo_reference": place.get("photo_reference"),
                         "description": f"{place['name']}에 대한 한 줄 설명입니다.",
-                        "tags": korean_tags,
                         "visit_sequence": visit_sequence_counter,
                         "visit_time": visit_time,
                     }
@@ -512,6 +495,23 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         trip_days = state["trip_days"]
         llm_output = parser.parse(content).model_dump()
 
+        # 여행 테마를 한글 태그로 변환
+        theme_map_ko = {
+            "UNIQUE_TRIP": "이색여행",
+            "HONEYMOON": "신혼여행",
+            "FAMILY_TRIP": "가족여행",
+            "HEALING": "힐링",
+            "SIGHTSEEING": "관광",
+            "FOOD_TOUR": "먹방",
+            "NATURE": "자연",
+            "SHOPPING": "쇼핑",
+            "CULTURE_ART": "문화·예술",
+            "ACTIVITY": "액티비티",
+            "CITY_TRIP": "도시여행",
+            "PHOTO_SPOTS": "사진·인생샷",
+        }
+        korean_tags = [theme_map_ko.get(theme, theme) for theme in course_request_data.get("travel_themes", [])]
+
         final_roadmap = {
             # 여행 메타데이터 추가
             "start_date": course_request_data["start_date"],
@@ -519,6 +519,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "trip_days": trip_days,
             "nights": trip_days - 1 if trip_days > 0 else 0,
             "people_count": course_request_data["people_count"],
+            "tags": korean_tags,
             # LLM 생성 컨텐츠와 조합
             **llm_output,
             "itinerary": daily_places,
