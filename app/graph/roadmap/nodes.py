@@ -408,6 +408,8 @@ def _prepare_final_context(
                     {
                         "place_name": place["name"],
                         "place_id": place.get("place_id"),
+                        "photo_reference": place.get("photo_reference"),
+                        "description": f"{place['name']}에 대한 한 줄 설명입니다.",
                         "category": slot["keyword"],
                         "visit_sequence": i + 1,
                         "visit_time": visit_time,
