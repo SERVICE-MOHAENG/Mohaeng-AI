@@ -494,8 +494,8 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
 
         final_roadmap = {
             # 여행 메타데이터 추가
-            "start_date": course_request_data["start_date"],
-            "end_date": course_request_data["end_date"],
+            "start_date": course_request_data["start_date"].isoformat(),
+            "end_date": course_request_data["end_date"].isoformat(),
             "trip_days": trip_days,
             "nights": trip_days - 1 if trip_days > 0 else 0,
             "people_count": course_request_data["people_count"],
