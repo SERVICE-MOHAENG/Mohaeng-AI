@@ -14,7 +14,13 @@ from langchain_openai import ChatOpenAI
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
-from app.schemas.course import CourseRequest, PacePreference, RegionDateRange
+from app.schemas.course import (
+    CourseRequest,
+    CourseResponseLLMOutput,
+    PacePreference,
+    PlanningPreference,
+    RegionDateRange,
+)
 from app.schemas.skeleton import SkeletonPlan
 from app.services.places_service import PlacesServiceProtocol
 
@@ -357,3 +363,149 @@ async def fetch_places_from_slots(
         **state,
         "fetched_places": fetched_places,
     }
+
+
+def _prepare_final_context(
+    state: RoadmapState,
+) -> tuple[str, list[dict]]:
+    """LLM에 전달할 최종 컨텍스트 문자열과 일자별 장소 목록을 생성한다."""
+    # 1. 입력 데이터 유효성 검증
+    skeleton_plan = state.get("skeleton_plan")
+    fetched_places = state.get("fetched_places")
+    raw_request = state.get("course_request")
+
+    if not skeleton_plan:
+        raise ValueError("Context 생성을 위한 `skeleton_plan` 데이터가 없습니다.")
+    if not fetched_places:
+        raise ValueError("Context 생성을 위한 `fetched_places` 데이터가 없습니다.")
+    if not raw_request:
+        raise ValueError("Context 생성을 위한 `course_request` 데이터가 없습니다.")
+
+    try:
+        course_request = CourseRequest.model_validate(raw_request)
+    except Exception as e:
+        raise ValueError(f"CourseRequest 모델 유효성 검증에 실패했습니다: {e}") from e
+
+    planning_preference = course_request.planning_preference
+
+    context_lines = []
+    daily_places_for_schema = []
+    time_map = {
+        "MORNING": "09:00",
+        "LUNCH": "12:00",
+        "AFTERNOON": "14:00",
+        "DINNER": "18:00",
+        "EVENING": "20:00",
+        "NIGHT": "22:00",
+    }
+
+    for day_plan in skeleton_plan:
+        day_number = day_plan["day_number"]
+        current_date = course_request.start_date + timedelta(days=day_number - 1)
+        context_lines.append(f"\nDay {day_number} ({current_date.strftime('%Y-%m-%d')}):")
+
+        day_places = []
+        visit_sequence_counter = 1  # 일자별 방문 순서 카운터 초기화
+        for i, slot in enumerate(day_plan["slots"]):
+            slot_key = _build_slot_key(day_number, i)
+            places = fetched_places.get(slot_key, [])
+            if places:
+                # Mock 서비스에서 1개만 반환하므로 첫 번째 항목 사용
+                place = places[0]
+                context_lines.append(f"- {slot['section']}: {place['name']} (키워드: {slot['keyword']})")
+
+                if planning_preference == PlanningPreference.PLANNED:
+                    visit_time = time_map.get(slot["section"], slot["section"])
+                else:
+                    visit_time = slot["section"]
+
+                day_places.append(
+                    {
+                        "place_name": place["name"],
+                        "place_id": place.get("place_id"),
+                        "photo_reference": place.get("photo_reference"),
+                        "description": f"{place['name']}에 대한 한 줄 설명입니다.",
+                        "visit_sequence": visit_sequence_counter,
+                        "visit_time": visit_time,
+                    }
+                )
+                visit_sequence_counter += 1  # 장소가 추가될 때만 카운터 증가
+
+        daily_places_for_schema.append(
+            {"day_number": day_number, "daily_date": current_date.isoformat(), "places": day_places}
+        )
+
+    return "\n".join(context_lines), daily_places_for_schema
+
+
+async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
+    """모든 정보를 종합하여 최종 로드맵을 생성한다."""
+    if state.get("error"):
+        return state
+
+    try:
+        # 1. LLM에 전달할 컨텍스트 데이터 준비
+        itinerary_context, daily_places = _prepare_final_context(state)
+        course_request = state["course_request"]
+
+        # 2. LLM 출력 파서 설정 (itinerary 제외)
+        parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
+
+        # 3. 프롬프트 구성
+        system_prompt = (
+            "당신은 전문 여행 플래너입니다. 주어진 여행 정보와 확정된 장소 목록을 바탕으로, "
+            "사용자를 위한 최종 여행 로드맵을 완성하는 임무를 받았습니다.\n"
+            "창의적인 여행 제목과, 왜 이 코스가 사용자에게 좋은지에 대한 설득력 있는 설명을 반드시 포함해야 합니다.\n"
+            "출력은 반드시 제공된 JSON 스키마를 엄격하게 따라야 합니다."
+        )
+        human_prompt_template = (
+            "## 원본 사용자 요청\n"
+            "{course_request}\n\n"
+            "## 확정된 일자별 장소 목록\n"
+            "{itinerary_context}\n\n"
+            "## 생성 작업 가이드\n"
+            "1. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요. "
+            "(반드시 한국어로 작성해주세요)\n"
+            "2. 전체 일정을 대표할 수 있는 핵심 키워드 태그 3~5개를 `tags` 필드에 한국어로 생성해주세요.\n"
+            "3. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
+            "설득력 있게 설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
+            "4. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "
+            "(예: '숙소 예약하기', '항공권 알아보기' 등)\n\n"
+            "## 출력 포맷\n"
+            "{format_instructions}"
+        )
+
+        prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", human_prompt_template)])
+        messages = prompt.format_messages(
+            course_request=course_request,
+            itinerary_context=itinerary_context,
+            format_instructions=parser.get_format_instructions(),
+        )
+
+        # 4. LLM 호출
+        llm = get_llm()
+        response = await llm.ainvoke(messages)
+        content = _strip_code_fence(response.content)
+
+        # 5. 응답 파싱 및 데이터 조합
+        course_request = CourseRequest.model_validate(state["course_request"])
+        trip_days = state["trip_days"]
+        llm_output = parser.parse(content).model_dump()
+
+        final_roadmap = {
+            # 여행 메타데이터 추가
+            "start_date": course_request.start_date.isoformat(),
+            "end_date": course_request.end_date.isoformat(),
+            "trip_days": trip_days,
+            "nights": trip_days - 1 if trip_days > 0 else 0,
+            "people_count": course_request.people_count,
+            # LLM 생성 컨텐츠와 조합
+            **llm_output,
+            "itinerary": daily_places,
+        }
+
+        return {**state, "final_roadmap": final_roadmap}
+
+    except Exception as e:
+        logger.error(f"최종 로드맵 생성 실패: {e}", exc_info=True)
+        return {**state, "error": f"최종 로드맵 생성에 실패했습니다: {e}"}

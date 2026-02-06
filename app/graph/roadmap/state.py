@@ -31,4 +31,5 @@ class RoadmapState(TypedDict, total=False):
     skeleton_plan: list[RoadmapDayPlan]
     skeleton_warnings: list[str]
     fetched_places: dict[str, list]  # 슬롯 키 -> Place 목록 매핑
+    final_roadmap: dict | None  # 최종 생성된 로드맵 응답
     error: str | None

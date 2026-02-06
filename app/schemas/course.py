@@ -95,7 +95,8 @@ class CoursePlace(BaseModel):
 
     place_name: str = Field(..., description="장소의 공식 명칭 (Google Places API 기준)")
     place_id: Optional[str] = Field(None, description="Google Places ID (프론트엔드에서 상세 정보 조회용)")
-    category: str = Field(..., description="장소 카테고리 (예: 식당, 관광지, 카페, 숙소)")
+    photo_reference: Optional[str] = Field(None, description="장소 이미지 참조 키")
+    description: str = Field(..., description="장소에 대한 한 줄 설명")
     visit_sequence: int = Field(..., ge=1, description="해당 일차 내에서의 방문 순서 (1부터 시작)")
     visit_time: str = Field(..., description="방문 시점 (예: 아침, 점심 or 10:00 AM, 12:30 PM 등)")
 
@@ -111,7 +112,25 @@ class DailyItinerary(BaseModel):
 class CourseResponse(BaseModel):
     """최종 여행 로드맵 응답 모델."""
 
+    # 여행 메타데이터
+    start_date: date = Field(..., description="여행 시작일")
+    end_date: date = Field(..., description="여행 종료일")
+    trip_days: int = Field(..., description="총 여행 일수")
+    nights: int = Field(..., description="총 숙박 수")
+    people_count: int = Field(..., description="총 인원 수")
+    tags: list[str] = Field(..., description="여행 전체의 특징을 나타내는 태그 목록")
+
+    # AI 생성 컨텐츠
     title: str = Field(..., description="여행 로드맵의 제목")
     itinerary: List[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
+    llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
+    next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")
+
+
+class CourseResponseLLMOutput(BaseModel):
+    """LLM이 생성할 필드만 포함하는 파싱 전용 모델."""
+
+    title: str = Field(..., description="여행 로드맵의 제목")
+    tags: list[str] = Field(..., description="여행 전체를 요약하는 3~5개의 키워드 태그")
     llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
     next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")
