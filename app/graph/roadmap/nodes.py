@@ -374,6 +374,19 @@ def _prepare_final_context(
     course_request = CourseRequest.model_validate(state["course_request"])
     planning_preference = course_request.planning_preference
 
+    # Google Places API의 주요 type과 한글 매핑
+    tag_map_ko = {
+        "tourist_attraction": "관광 명소",
+        "park": "공원",
+        "art_gallery": "미술관",
+        "museum": "박물관",
+        "place_of_worship": "종교 성지",
+        "shopping_mall": "쇼핑몰",
+        "point_of_interest": "관심 장소",
+        "establishment": "시설",
+        "monument": "기념물",
+    }
+
     context_lines = []
     daily_places_for_schema = []
     time_map = {
@@ -404,13 +417,16 @@ def _prepare_final_context(
                 else:
                     visit_time = slot["section"]
 
+                place_types = place.get("types", [])
+                korean_tags = [tag_map_ko.get(t, t) for t in place_types]
+
                 day_places.append(
                     {
                         "place_name": place["name"],
                         "place_id": place.get("place_id"),
                         "photo_reference": place.get("photo_reference"),
                         "description": f"{place['name']}에 대한 한 줄 설명입니다.",
-                        "category": slot["keyword"],
+                        "tags": korean_tags,
                         "visit_sequence": i + 1,
                         "visit_time": visit_time,
                     }
