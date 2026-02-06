@@ -369,9 +369,23 @@ def _prepare_final_context(
     state: RoadmapState,
 ) -> tuple[str, list[dict]]:
     """LLM에 전달할 최종 컨텍스트 문자열과 일자별 장소 목록을 생성한다."""
-    skeleton_plan = state["skeleton_plan"]
-    fetched_places = state["fetched_places"]
-    course_request = CourseRequest.model_validate(state["course_request"])
+    # 1. 입력 데이터 유효성 검증
+    skeleton_plan = state.get("skeleton_plan")
+    fetched_places = state.get("fetched_places")
+    raw_request = state.get("course_request")
+
+    if not skeleton_plan:
+        raise ValueError("Context 생성을 위한 `skeleton_plan` 데이터가 없습니다.")
+    if not fetched_places:
+        raise ValueError("Context 생성을 위한 `fetched_places` 데이터가 없습니다.")
+    if not raw_request:
+        raise ValueError("Context 생성을 위한 `course_request` 데이터가 없습니다.")
+
+    try:
+        course_request = CourseRequest.model_validate(raw_request)
+    except Exception as e:
+        raise ValueError(f"CourseRequest 모델 유효성 검증에 실패했습니다: {e}") from e
+
     planning_preference = course_request.planning_preference
 
     # Google Places API의 주요 type과 한글 매핑
