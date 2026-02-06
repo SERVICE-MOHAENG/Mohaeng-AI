@@ -418,6 +418,7 @@ def _prepare_final_context(
         context_lines.append(f"\nDay {day_number} ({current_date.strftime('%Y-%m-%d')}):")
 
         day_places = []
+        visit_sequence_counter = 1  # 일자별 방문 순서 카운터 초기화
         for i, slot in enumerate(day_plan["slots"]):
             slot_key = _build_slot_key(day_number, i)
             places = fetched_places.get(slot_key, [])
@@ -441,10 +442,12 @@ def _prepare_final_context(
                         "photo_reference": place.get("photo_reference"),
                         "description": f"{place['name']}에 대한 한 줄 설명입니다.",
                         "tags": korean_tags,
-                        "visit_sequence": i + 1,
+                        "visit_sequence": visit_sequence_counter,
                         "visit_time": visit_time,
                     }
                 )
+                visit_sequence_counter += 1  # 장소가 추가될 때만 카운터 증가
+
         daily_places_for_schema.append(
             {"day_number": day_number, "daily_date": current_date.isoformat(), "places": day_places}
         )
