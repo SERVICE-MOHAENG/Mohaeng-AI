@@ -508,8 +508,18 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         content = _strip_code_fence(response.content)
 
         # 5. 응답 파싱 및 데이터 조합
+        course_request_data = state["course_request"]
+        trip_days = state["trip_days"]
         llm_output = parser.parse(content).model_dump()
+
         final_roadmap = {
+            # 여행 메타데이터 추가
+            "start_date": course_request_data["start_date"],
+            "end_date": course_request_data["end_date"],
+            "trip_days": trip_days,
+            "nights": trip_days - 1 if trip_days > 0 else 0,
+            "people_count": course_request_data["people_count"],
+            # LLM 생성 컨텐츠와 조합
             **llm_output,
             "itinerary": daily_places,
         }

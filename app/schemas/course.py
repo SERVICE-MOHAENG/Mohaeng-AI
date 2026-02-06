@@ -113,6 +113,14 @@ class DailyItinerary(BaseModel):
 class CourseResponse(BaseModel):
     """최종 여행 로드맵 응답 모델."""
 
+    # 여행 메타데이터
+    start_date: date = Field(..., description="여행 시작일")
+    end_date: date = Field(..., description="여행 종료일")
+    trip_days: int = Field(..., description="총 여행 일수")
+    nights: int = Field(..., description="총 숙박 수")
+    people_count: int = Field(..., description="총 인원 수")
+
+    # AI 생성 컨텐츠
     title: str = Field(..., description="여행 로드맵의 제목")
     itinerary: List[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
     llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
