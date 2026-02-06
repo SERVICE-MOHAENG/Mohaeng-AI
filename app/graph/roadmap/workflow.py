@@ -11,6 +11,7 @@ from app.graph.roadmap.state import RoadmapState
 
 
 def _create_roadmap_workflow() -> StateGraph:
+    """로드맵 생성 LangGraph 워크플로우를 생성하고 반환합니다."""
     workflow = StateGraph(RoadmapState)
 
     workflow.add_node("generate_skeleton", generate_skeleton)
