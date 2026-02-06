@@ -392,7 +392,9 @@ def _prepare_final_context(
                         "visit_time": slot["section"],
                     }
                 )
-        daily_places_for_schema.append({"day_number": day_number, "daily_date": current_date, "places": day_places})
+        daily_places_for_schema.append(
+            {"day_number": day_number, "daily_date": current_date.isoformat(), "places": day_places}
+        )
 
     return "\n".join(context_lines), daily_places_for_schema
 
