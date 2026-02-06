@@ -18,6 +18,7 @@ from app.schemas.course import (
     CourseRequest,
     CourseResponseLLMOutput,
     PacePreference,
+    PlanningPreference,
     RegionDateRange,
 )
 from app.schemas.skeleton import SkeletonPlan
@@ -371,9 +372,18 @@ def _prepare_final_context(
     skeleton_plan = state["skeleton_plan"]
     fetched_places = state["fetched_places"]
     course_request = CourseRequest.model_validate(state["course_request"])
+    planning_preference = course_request.planning_preference
 
     context_lines = []
     daily_places_for_schema = []
+    time_map = {
+        "MORNING": "09:00",
+        "LUNCH": "12:00",
+        "AFTERNOON": "14:00",
+        "DINNER": "18:00",
+        "EVENING": "20:00",
+        "NIGHT": "22:00",
+    }
 
     for day_plan in skeleton_plan:
         day_number = day_plan["day_number"]
@@ -388,13 +398,19 @@ def _prepare_final_context(
                 # Mock 서비스에서 1개만 반환하므로 첫 번째 항목 사용
                 place = places[0]
                 context_lines.append(f"- {slot['section']}: {place['name']} (키워드: {slot['keyword']})")
+
+                if planning_preference == PlanningPreference.PLANNED:
+                    visit_time = time_map.get(slot["section"], slot["section"])
+                else:
+                    visit_time = slot["section"]
+
                 day_places.append(
                     {
                         "place_name": place["name"],
                         "place_id": place.get("place_id"),
                         "category": slot["keyword"],
                         "visit_sequence": i + 1,
-                        "visit_time": slot["section"],
+                        "visit_time": visit_time,
                     }
                 )
         daily_places_for_schema.append(
@@ -434,7 +450,8 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "## 확정된 일자별 장소 목록\n"
             "{itinerary_context}\n\n"
             "## 생성 작업 가이드\n"
-            "1. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요.\n"
+            "1. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요. "
+            "(반드시 한국어로 작성해주세요)\n"
             "2. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
             "설득력 있게 설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
             "3. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "

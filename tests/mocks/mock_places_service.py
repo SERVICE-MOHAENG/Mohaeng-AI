@@ -23,7 +23,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
         "asakusa": [
             {
                 "place_id": "ChIJ8T1GpMGOGGARDYGSgpooDWw",
-                "name": "Senso-ji Temple",
+                "name": "센소지",
                 "address": "2-3-1 Asakusa, Taito City, Tokyo",
                 "latitude": 35.7148,
                 "longitude": 139.7967,
@@ -33,7 +33,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
             },
             {
                 "place_id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
-                "name": "Nakamise Shopping Street",
+                "name": "나카미세 상점가",
                 "address": "1-36-3 Asakusa, Taito City, Tokyo",
                 "latitude": 35.7122,
                 "longitude": 139.7947,
@@ -43,7 +43,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
             },
             {
                 "place_id": "ChIJ5RXqLcGOGGARR1zuI2L2SR8",
-                "name": "Asakusa Culture Tourist Information Center",
+                "name": "아사쿠사 문화 관광 정보 센터",
                 "address": "2-18-9 Kaminarimon, Taito City, Tokyo",
                 "latitude": 35.7109,
                 "longitude": 139.7966,
@@ -55,7 +55,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
         "shibuya": [
             {
                 "place_id": "ChIJFfySZNeMGGARab2Cwm7AUbs",
-                "name": "Shibuya Crossing",
+                "name": "시부야 스크램블 교차로",
                 "address": "Shibuya, Tokyo",
                 "latitude": 35.6595,
                 "longitude": 139.7004,
@@ -65,9 +65,9 @@ class MockGooglePlacesService(PlacesServiceProtocol):
             },
             {
                 "place_id": "ChIJFfySZNeMGGARab2Cwm7AU00",
-                "name": "Hachiko Statue",
+                "name": "하치코 동상",
                 "address": "Shibuya Station, Shibuya, Tokyo",
-                "latitude": 35.6590,
+                "latitude": 35.659,
                 "longitude": 139.7006,
                 "rating": 4.4,
                 "user_ratings_total": 34567,
@@ -77,7 +77,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
         "shinjuku": [
             {
                 "place_id": "ChIJFfySZNeMGGARab2Cwm8AUbs",
-                "name": "Shinjuku Gyoen National Garden",
+                "name": "신주쿠 교엔",
                 "address": "11 Naitomachi, Shinjuku City, Tokyo",
                 "latitude": 35.6852,
                 "longitude": 139.7100,
