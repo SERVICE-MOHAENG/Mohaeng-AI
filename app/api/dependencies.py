@@ -50,6 +50,12 @@ def require_service_secret(
             detail="서비스 시크릿 설정이 없습니다.",
         )
 
+    if not x_service_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="서비스 시크릿 헤더가 누락되었습니다.",
+        )
+
     if not hmac.compare_digest(x_service_secret, settings.SERVICE_SECRET):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
