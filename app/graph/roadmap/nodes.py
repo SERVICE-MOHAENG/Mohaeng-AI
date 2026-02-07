@@ -434,7 +434,7 @@ def _prepare_final_context(
                 geometry = place.get("geometry") or {}
                 place_url = place.get("url")
                 if not place_url and place.get("place_id"):
-                    place_url = f"https://maps.google.com/?q=place_id:{place.get('place_id')}"
+                    place_url = f"https://www.google.com/maps/search/?api=1&query={place['name']}&query_place_id={place.get('place_id')}"
 
                 place_payload = {
                     "place_name": place["name"],
