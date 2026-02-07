@@ -462,6 +462,42 @@ def _prepare_final_context(
 async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
     """LLM을 통해 방문 시각을 채운다."""
     parser = PydanticOutputParser(pydantic_object=VisitTimePlan)
+    settings = get_settings()
+    timeout_seconds = settings.LLM_TIMEOUT_SECONDS
+
+    section_time_map = {
+        "MORNING": "09:00",
+        "LUNCH": "12:00",
+        "AFTERNOON": "14:00",
+        "DINNER": "18:00",
+        "EVENING": "20:00",
+        "NIGHT": "22:00",
+    }
+
+    def _fallback_visit_time(place: dict, index: int) -> str:
+        section_hint = place.get("section")
+        if section_hint:
+            normalized = str(section_hint).strip().upper()
+            if normalized in section_time_map:
+                return section_time_map[normalized]
+
+        sequence = place.get("visit_sequence")
+        try:
+            sequence_value = int(sequence)
+        except (TypeError, ValueError):
+            sequence_value = index + 1
+
+        base_hour = 9 + max(0, sequence_value - 1) * 2
+        if base_hour > 23:
+            base_hour = 23
+        return f"{base_hour:02d}:00"
+
+    def _apply_fallback() -> list[dict]:
+        for day in daily_places:
+            for index, place in enumerate(day.get("places", [])):
+                place["visit_time"] = _fallback_visit_time(place, index)
+                place.pop("section", None)
+        return daily_places
 
     input_days = []
     for day in daily_places:
@@ -504,23 +540,40 @@ async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
         format_instructions=parser.get_format_instructions(),
     )
 
-    response = await get_llm().ainvoke(messages)
-    content = _strip_code_fence(response.content)
-    visit_plan = parser.parse(content)
+    try:
+        response = await asyncio.wait_for(get_llm().ainvoke(messages), timeout=timeout_seconds)
+    except asyncio.TimeoutError:
+        logger.error("Visit time LLM timed out after %s seconds", timeout_seconds)
+        return _apply_fallback()
+    except Exception:
+        logger.exception("Visit time LLM call failed")
+        return _apply_fallback()
+
+    try:
+        content = _strip_code_fence(response.content)
+        visit_plan = parser.parse(content)
+    except Exception:
+        logger.exception("Visit time parse failed")
+        return _apply_fallback()
 
     visit_time_map = {
         (day.day_number, slot.visit_sequence): slot.visit_time for day in visit_plan.days for slot in day.places
     }
 
     for day in daily_places:
-        for place in day.get("places", []):
-            key = (day.get("day_number"), place.get("visit_sequence"))
+        day_number = day.get("day_number")
+        for index, place in enumerate(day.get("places", [])):
+            key = (day_number, place.get("visit_sequence"))
             visit_time = visit_time_map.get(key)
             if not visit_time:
-                raise ValueError("visit_time 생성 결과가 누락되었습니다.")
+                logger.warning(
+                    "Missing visit_time for day %s sequence %s; using fallback",
+                    day_number,
+                    place.get("visit_sequence"),
+                )
+                visit_time = _fallback_visit_time(place, index)
             place["visit_time"] = visit_time
-            if "section" in place:
-                place.pop("section")
+            place.pop("section", None)
 
     return daily_places
 
