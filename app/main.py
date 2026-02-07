@@ -2,11 +2,12 @@
 
 from fastapi import FastAPI
 
-from app.api import endpoints
+from app.api import endpoints, generate
 
 app = FastAPI()
 
 app.include_router(endpoints.router)
+app.include_router(generate.router)
 
 
 @app.get("/")

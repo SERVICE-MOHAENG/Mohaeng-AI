@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     JWT_ACCESS_SECRET: str
     JWT_ACCESS_EXPIRY_MINUTES: int
+    SERVICE_SECRET: str
+    LLM_MODEL_NAME: str = "gpt-4o-mini"
+    LLM_TIMEOUT_SECONDS: int = 60
+    CALLBACK_TIMEOUT_SECONDS: int = 10
 
     model_config = SettingsConfigDict(
         env_file=".env",
