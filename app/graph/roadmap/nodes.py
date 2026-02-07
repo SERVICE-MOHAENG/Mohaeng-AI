@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import date, timedelta
 from functools import lru_cache
 from typing import Iterable
@@ -10,6 +11,7 @@ from typing import Iterable
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
@@ -51,6 +53,26 @@ def _strip_code_fence(text: str) -> str:
             if content.startswith("json"):
                 content = content[4:].strip()
     return content.strip()
+
+
+class VisitTimeSlot(BaseModel):
+    """방문 순서별 방문 시각 모델."""
+
+    visit_sequence: int = Field(..., ge=1, description="방문 순서")
+    visit_time: str = Field(..., description="방문 시각 (HH:MM, 24시간)")
+
+
+class VisitTimeDay(BaseModel):
+    """일자별 방문 시각 모델."""
+
+    day_number: int = Field(..., ge=1, description="여행 일자")
+    places: list[VisitTimeSlot] = Field(..., description="방문 시각 목록")
+
+
+class VisitTimePlan(BaseModel):
+    """LLM이 생성한 방문 시각 결과 모델."""
+
+    days: list[VisitTimeDay] = Field(..., description="일자별 방문 시각 결과")
 
 
 def _join_values(values: Iterable) -> str:
@@ -390,15 +412,6 @@ def _prepare_final_context(
 
     context_lines = []
     daily_places_for_schema = []
-    time_map = {
-        "MORNING": "09:00",
-        "LUNCH": "12:00",
-        "AFTERNOON": "14:00",
-        "DINNER": "18:00",
-        "EVENING": "20:00",
-        "NIGHT": "22:00",
-    }
-
     for day_plan in skeleton_plan:
         day_number = day_plan["day_number"]
         current_date = course_request.start_date + timedelta(days=day_number - 1)
@@ -415,20 +428,28 @@ def _prepare_final_context(
                 context_lines.append(f"- {slot['section']}: {place['name']} (키워드: {slot['keyword']})")
 
                 if planning_preference == PlanningPreference.PLANNED:
-                    visit_time = time_map.get(slot["section"], slot["section"])
+                    visit_time = None
                 else:
                     visit_time = slot["section"]
+                geometry = place.get("geometry") or {}
+                place_url = place.get("url")
+                if not place_url and place.get("place_id"):
+                    place_url = f"https://www.google.com/maps/search/?api=1&query={place['name']}&query_place_id={place.get('place_id')}"
 
-                day_places.append(
-                    {
-                        "place_name": place["name"],
-                        "place_id": place.get("place_id"),
-                        "photo_reference": place.get("photo_reference"),
-                        "description": f"{place['name']}에 대한 한 줄 설명입니다.",
-                        "visit_sequence": visit_sequence_counter,
-                        "visit_time": visit_time,
-                    }
-                )
+                place_payload = {
+                    "place_name": place["name"],
+                    "place_id": place.get("place_id"),
+                    "address": place.get("address"),
+                    "latitude": geometry.get("latitude"),
+                    "longitude": geometry.get("longitude"),
+                    "place_url": place_url,
+                    "description": f"{place['name']}에 대한 한 줄 설명입니다.",
+                    "visit_sequence": visit_sequence_counter,
+                    "visit_time": visit_time,
+                }
+                if planning_preference == PlanningPreference.PLANNED:
+                    place_payload["section"] = slot.get("section")
+                day_places.append(place_payload)
                 visit_sequence_counter += 1  # 장소가 추가될 때만 카운터 증가
 
         daily_places_for_schema.append(
@@ -436,6 +457,125 @@ def _prepare_final_context(
         )
 
     return "\n".join(context_lines), daily_places_for_schema
+
+
+async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
+    """LLM을 통해 방문 시각을 채운다."""
+    parser = PydanticOutputParser(pydantic_object=VisitTimePlan)
+    settings = get_settings()
+    timeout_seconds = settings.LLM_TIMEOUT_SECONDS
+
+    section_time_map = {
+        "MORNING": "09:00",
+        "LUNCH": "12:00",
+        "AFTERNOON": "14:00",
+        "DINNER": "18:00",
+        "EVENING": "20:00",
+        "NIGHT": "22:00",
+    }
+
+    def _fallback_visit_time(place: dict, index: int) -> str:
+        section_hint = place.get("section")
+        if section_hint:
+            normalized = str(section_hint).strip().upper()
+            if normalized in section_time_map:
+                return section_time_map[normalized]
+
+        sequence = place.get("visit_sequence")
+        try:
+            sequence_value = int(sequence)
+        except (TypeError, ValueError):
+            sequence_value = index + 1
+
+        base_hour = 9 + max(0, sequence_value - 1) * 2
+        if base_hour > 23:
+            base_hour = 23
+        return f"{base_hour:02d}:00"
+
+    def _apply_fallback() -> list[dict]:
+        for day in daily_places:
+            for index, place in enumerate(day.get("places", [])):
+                place["visit_time"] = _fallback_visit_time(place, index)
+                place.pop("section", None)
+        return daily_places
+
+    input_days = []
+    for day in daily_places:
+        input_days.append(
+            {
+                "day_number": day.get("day_number"),
+                "daily_date": day.get("daily_date"),
+                "places": [
+                    {
+                        "visit_sequence": place.get("visit_sequence"),
+                        "place_name": place.get("place_name"),
+                        "section_hint": place.get("section"),
+                        "address": place.get("address"),
+                        "latitude": place.get("latitude"),
+                        "longitude": place.get("longitude"),
+                    }
+                    for place in day.get("places", [])
+                ],
+            }
+        )
+
+    system_prompt = (
+        "당신은 여행 일정의 방문 시각을 계획하는 전문가입니다.\n"
+        "먼저 전체 일정을 훑고 내부적으로 추론한 뒤, 각 장소의 방문 시각을 24시간 HH:MM 형식으로 작성하세요.\n"
+        "section_hint는 시간대 힌트이며, 실제 시간은 동선과 장소 간 이동을 고려해 자연스럽게 배치하세요.\n"
+        "각 날짜의 시작 시간은 09:00이며, visit_sequence 순서를 유지하고 시간은 점진적으로 증가해야 합니다.\n"
+        "입력에 없는 장소를 추가하거나 순서를 바꾸지 마세요. 사고 과정은 출력하지 말고 JSON만 반환하세요."
+    )
+    user_prompt = (
+        "아래 장소 목록을 기준으로 방문 시각을 채워주세요.\n"
+        "시작 시간: 09:00\n"
+        "입력 데이터:\n"
+        "{places}\n\n"
+        "{format_instructions}"
+    )
+
+    prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", user_prompt)])
+    messages = prompt.format_messages(
+        places=json.dumps(input_days, ensure_ascii=False, indent=2),
+        format_instructions=parser.get_format_instructions(),
+    )
+
+    try:
+        response = await asyncio.wait_for(get_llm().ainvoke(messages), timeout=timeout_seconds)
+    except asyncio.TimeoutError:
+        logger.error("Visit time LLM timed out after %s seconds", timeout_seconds)
+        return _apply_fallback()
+    except Exception:
+        logger.exception("Visit time LLM call failed")
+        return _apply_fallback()
+
+    try:
+        content = _strip_code_fence(response.content)
+        visit_plan = parser.parse(content)
+    except Exception:
+        logger.exception("Visit time parse failed")
+        return _apply_fallback()
+
+    visit_time_map = {
+        (day.day_number, slot.visit_sequence): slot.visit_time for day in visit_plan.days for slot in day.places
+    }
+
+    for day in daily_places:
+        day_number = day.get("day_number")
+        for index, place in enumerate(day.get("places", [])):
+            key = (day_number, place.get("visit_sequence"))
+            visit_time = visit_time_map.get(key)
+            if not visit_time:
+                logger.warning(
+                    "Missing visit_time for day %s sequence %s; using fallback",
+                    day_number,
+                    place.get("visit_sequence"),
+                )
+                visit_time = _fallback_visit_time(place, index)
+            place["visit_time"] = visit_time
+            place.pop("section", None)
+
+    return daily_places
 
 
 async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
@@ -446,7 +586,9 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
     try:
         # 1. LLM에 전달할 컨텍스트 데이터 준비
         itinerary_context, daily_places = _prepare_final_context(state)
-        course_request = state["course_request"]
+        course_request = CourseRequest.model_validate(state["course_request"])
+        if course_request.planning_preference == PlanningPreference.PLANNED:
+            daily_places = await _fill_visit_times_with_llm(daily_places)
 
         # 2. LLM 출력 파서 설정 (itinerary 제외)
         parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
@@ -465,12 +607,15 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "{itinerary_context}\n\n"
             "## 생성 작업 가이드\n"
             "1. '원본 사용자 요청'을 참고하여, 이 여행 전체를 아우르는 창의적이고 매력적인 `title`을 생성해주세요. "
-            "(반드시 한국어로 작성해주세요)\n"
-            "2. 전체 일정을 대표할 수 있는 핵심 키워드 태그 3~5개를 `tags` 필드에 한국어로 생성해주세요.\n"
-            "3. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
+            "(반드시 한국어로 작성하며 10자 이내로 짧게 작성하고, 나라명 또는 도시명을 반드시 포함해주세요)\n"
+            "2. 로드맵을 한 줄로 요약한 `summary`를 한국어로 작성해주세요. (1문장)\n"
+            "3. 전체 일정을 대표할 수 있는 핵심 키워드 태그 3~5개를 `tags` 필드에 한국어로 생성해주세요.\n"
+            "4. '원본 사용자 요청'과 '확정된 장소 목록'을 모두 고려하여, 왜 이 코스가 사용자에게 최고의 선택인지 "
             "설득력 있게 설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
-            "4. 사용자가 이 여행 계획을 받은 후 할 수 있는 다음 행동을 `next_action_suggestion`에 간단히 제안해주세요. "
-            "(예: '숙소 예약하기', '항공권 알아보기' 등)\n\n"
+            "5. 사용자가 바로 입력할 수 있는 다음 행동 문장을 `next_action_suggestion`에 JSON 배열로 작성해주세요. "
+            "(2~3개, 사용자 요청과 일정 내용을 바탕으로 맞춤형으로 작성하며 아래 예시는 절대 그대로 출력하지 마세요. "
+            '예시 형식: "도쿄 시부야 맛집을 넣어서 2일차 일정을 수정해줘.", '
+            '"지금 로드맵에서 더 자연친화적으로 만드는 방법은 없어?")\n\n'
             "## 출력 포맷\n"
             "{format_instructions}"
         )
@@ -488,7 +633,6 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         content = _strip_code_fence(response.content)
 
         # 5. 응답 파싱 및 데이터 조합
-        course_request = CourseRequest.model_validate(state["course_request"])
         trip_days = state["trip_days"]
         llm_output = parser.parse(content).model_dump()
 

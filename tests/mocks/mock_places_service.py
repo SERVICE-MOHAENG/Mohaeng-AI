@@ -116,7 +116,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
                             rating=sample["rating"],
                             user_ratings_total=sample["user_ratings_total"],
                             types=sample["types"],
-                            photo_reference=f"mock_photo_{sample['place_id'][-8:]}",
+                            url=f"https://maps.google.com/?q=place_id:{sample['place_id']}",
                         )
                     )
                 break
@@ -142,7 +142,7 @@ class MockGooglePlacesService(PlacesServiceProtocol):
                 rating=4.0 + (i % 10) * 0.1,
                 user_ratings_total=100 + i * 50,
                 types=["tourist_attraction", "point_of_interest"],
-                photo_reference=f"mock_photo_default_{i}",
+                url=f"https://maps.google.com/?q=place_id:mock_{query.replace(' ', '_')}_{i}",
             )
             for i in range(1, 4)
         ]

@@ -91,14 +91,17 @@ class CourseRequest(BaseModel):
 
 
 class CoursePlace(BaseModel):
-    """최하위 단위: 개별 방문 장소 모델."""
+    """최하단 단위: 개별 방문 장소 모델."""
 
     place_name: str = Field(..., description="장소의 공식 명칭 (Google Places API 기준)")
-    place_id: Optional[str] = Field(None, description="Google Places ID (프론트엔드에서 상세 정보 조회용)")
-    photo_reference: Optional[str] = Field(None, description="장소 이미지 참조 키")
+    place_id: Optional[str] = Field(None, description="Google Places ID (상세 정보 조회용)")
+    address: Optional[str] = Field(None, description="장소 주소")
+    latitude: Optional[float] = Field(None, description="위도")
+    longitude: Optional[float] = Field(None, description="경도")
+    place_url: Optional[str] = Field(None, description="구글 맵 URL")
     description: str = Field(..., description="장소에 대한 한 줄 설명")
-    visit_sequence: int = Field(..., ge=1, description="해당 일차 내에서의 방문 순서 (1부터 시작)")
-    visit_time: str = Field(..., description="방문 시점 (예: 아침, 점심 or 10:00 AM, 12:30 PM 등)")
+    visit_sequence: int = Field(..., ge=1, description="해당 일자 내 방문 순서 (1부터 시작)")
+    visit_time: str = Field(..., description="방문 시점 (예: 오전, 10:00 AM, 12:30 PM)")
 
 
 class DailyItinerary(BaseModel):
@@ -122,15 +125,17 @@ class CourseResponse(BaseModel):
 
     # AI 생성 컨텐츠
     title: str = Field(..., description="여행 로드맵의 제목")
+    summary: str = Field(..., description="로드맵 한 줄 설명")
     itinerary: List[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
     llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
-    next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")
+    next_action_suggestion: list[str] = Field(..., description="사용자가 바로 입력할 수 있는 다음 행동 문장 목록")
 
 
 class CourseResponseLLMOutput(BaseModel):
     """LLM이 생성할 필드만 포함하는 파싱 전용 모델."""
 
     title: str = Field(..., description="여행 로드맵의 제목")
+    summary: str = Field(..., description="로드맵 한 줄 설명")
     tags: list[str] = Field(..., description="여행 전체를 요약하는 3~5개의 키워드 태그")
     llm_commentary: str = Field(..., description="코스 선정 이유 및 전체 흐름 설명")
-    next_action_suggestion: str = Field(..., description="사용자에게 제안할 다음 액션")
+    next_action_suggestion: list[str] = Field(..., description="사용자가 바로 입력할 수 있는 다음 행동 문장 목록")
