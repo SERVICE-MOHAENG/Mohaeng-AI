@@ -1,5 +1,7 @@
 """API 의존성 모음."""
 
+import hmac
+
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -48,7 +50,7 @@ def require_service_secret(
             detail="서비스 시크릿 설정이 없습니다.",
         )
 
-    if x_service_secret != settings.SERVICE_SECRET:
+    if not hmac.compare_digest(x_service_secret, settings.SERVICE_SECRET):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="유효하지 않은 서비스 시크릿입니다.",
