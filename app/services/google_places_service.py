@@ -38,7 +38,17 @@ class GooglePlacesService(PlacesServiceProtocol):
         self._api_key = api_key
         self._timeout_seconds = timeout_seconds
         self._page_size = page_size
-        self._session = requests.Session()
+
+    def close(self) -> None:
+        """Close resources (kept for API symmetry/context manager use)."""
+        # Requests sessions are created per-call for thread safety, so nothing to close here.
+        return None
+
+    def __enter__(self) -> "GooglePlacesService":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
 
     @classmethod
     def from_settings(cls) -> "GooglePlacesService":
@@ -95,13 +105,15 @@ class GooglePlacesService(PlacesServiceProtocol):
         }
 
         def _send() -> requests.Response:
-            return self._session.request(
-                method=method,
-                url=url,
-                json=payload,
-                headers=headers,
-                timeout=self._timeout_seconds,
-            )
+            # Create a session per request to avoid cross-thread session reuse.
+            with requests.Session() as session:
+                return session.request(
+                    method=method,
+                    url=url,
+                    json=payload,
+                    headers=headers,
+                    timeout=self._timeout_seconds,
+                )
 
         try:
             response = await asyncio.to_thread(_send)
@@ -153,5 +165,5 @@ class GooglePlacesService(PlacesServiceProtocol):
 
 @lru_cache(maxsize=1)
 def get_google_places_service() -> GooglePlacesService:
-    """Process-wide singleton for GooglePlacesService to reuse the HTTP session."""
+    """Process-wide singleton for configuration reuse."""
     return GooglePlacesService.from_settings()
