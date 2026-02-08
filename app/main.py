@@ -3,6 +3,9 @@
 from fastapi import FastAPI
 
 from app.api import endpoints, generate
+from app.core.logging_config import configure_logging
+
+configure_logging()
 
 app = FastAPI()
 
@@ -12,5 +15,5 @@ app.include_router(generate.router)
 
 @app.get("/")
 def health_check() -> dict:
-    """서버 상태를 확인합니다."""
+    """헬스 체크 엔드포인트."""
     return {"status": "ok", "message": "Mohaeng AI Server is running"}
