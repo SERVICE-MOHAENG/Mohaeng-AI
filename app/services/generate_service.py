@@ -11,14 +11,19 @@ from app.core.logger import get_logger
 from app.graph.roadmap import compiled_roadmap_graph
 from app.schemas.course import CourseRequest, CourseResponse
 from app.schemas.generate import CallbackError, GenerateCallbackFailure, GenerateCallbackSuccess
+from app.services.google_places_service import GooglePlacesService
 
 logger = get_logger(__name__)
 
 
 async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
-    """로드맵 그래프를 실행하고 결과를 반환한다."""
+    """로드맵 그래프를 실행하고 결과를 반환합니다."""
     initial_state = {"course_request": request.model_dump(mode="json")}
-    result = await compiled_roadmap_graph.ainvoke(initial_state)
+    places_service = GooglePlacesService.from_settings()
+    result = await compiled_roadmap_graph.ainvoke(
+        initial_state,
+        config={"configurable": {"places_service": places_service}},
+    )
 
     if error := result.get("error"):
         raise RuntimeError(error)
@@ -31,12 +36,12 @@ async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
 
 
 def _build_callback_url(base_url: str, job_id: str) -> str:
-    """결과 콜백을 위한 최종 URL을 만든다."""
+    """콜백 URL을 구성합니다."""
     return f"{base_url.rstrip('/')}/itineraries/{job_id}/result"
 
 
 async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
-    """콜백 URL로 결과를 전송한다."""
+    """콜백 URL로 결과를 전송합니다."""
 
     def _send() -> None:
         response = requests.post(
@@ -54,7 +59,7 @@ async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int,
 
 
 async def process_generate_request(job_id: str, callback_url: str, payload: CourseRequest) -> None:
-    """로드맵 생성 후 콜백을 전송한다."""
+    """로드맵 생성 후 콜백을 전송합니다."""
     settings = get_settings()
 
     try:
