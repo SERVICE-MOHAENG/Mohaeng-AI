@@ -134,11 +134,11 @@ class GooglePlacesService(PlacesServiceProtocol):
 
     def _map_place(self, raw: dict[str, Any]) -> Place | None:
         display_name = raw.get("displayName") or {}
-        name = display_name.get("text") or raw.get("name")
+        name = display_name.get("text")
         location = raw.get("location") or {}
         latitude = location.get("latitude")
         longitude = location.get("longitude")
-        place_id = raw.get("id") or raw.get("placeId") or raw.get("name")
+        place_id = raw.get("id") or raw.get("placeId")
 
         if not (name and place_id and latitude is not None and longitude is not None):
             return None
