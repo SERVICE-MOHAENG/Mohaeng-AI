@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from functools import lru_cache
 from typing import Any
 
 import requests
@@ -148,3 +149,9 @@ class GooglePlacesService(PlacesServiceProtocol):
             if place.rating >= self.MIN_RATING and place.user_ratings_total >= self.MIN_REVIEWS
         ]
         return sorted(filtered, key=lambda p: (p.rating, p.user_ratings_total), reverse=True)
+
+
+@lru_cache(maxsize=1)
+def get_google_places_service() -> GooglePlacesService:
+    """Process-wide singleton for GooglePlacesService to reuse the HTTP session."""
+    return GooglePlacesService.from_settings()

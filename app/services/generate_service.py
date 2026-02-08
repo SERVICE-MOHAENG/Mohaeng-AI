@@ -11,7 +11,7 @@ from app.core.logger import get_logger
 from app.graph.roadmap import compiled_roadmap_graph
 from app.schemas.course import CourseRequest, CourseResponse
 from app.schemas.generate import CallbackError, GenerateCallbackFailure, GenerateCallbackSuccess
-from app.services.google_places_service import GooglePlacesService
+from app.services.google_places_service import get_google_places_service
 
 logger = get_logger(__name__)
 
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
     """로드맵 그래프를 실행하고 결과를 반환합니다."""
     initial_state = {"course_request": request.model_dump(mode="json")}
-    places_service = GooglePlacesService.from_settings()
+    places_service = get_google_places_service()
     result = await compiled_roadmap_graph.ainvoke(
         initial_state,
         config={"configurable": {"places_service": places_service}},
