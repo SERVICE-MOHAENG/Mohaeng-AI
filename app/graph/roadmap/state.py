@@ -22,7 +22,19 @@ class RoadmapDayPlan(TypedDict):
 
 
 class RoadmapState(TypedDict, total=False):
-    """로드맵 생성 그래프 상태."""
+    """로드맵 생성 그래프 상태.
+
+    Keys:
+        course_request: 요청 페이로드
+        trip_days: 여행 일수
+        slot_min: 슬롯 최소 개수
+        slot_max: 슬롯 최대 개수
+        skeleton_plan: 스켈레톤 플랜
+        skeleton_warnings: 스켈레톤 경고 목록
+        fetched_places: 슬롯 키별 장소 목록
+        final_roadmap: 최종 로드맵 응답
+        error: 오류 메시지
+    """
 
     course_request: dict
     trip_days: int
@@ -30,6 +42,6 @@ class RoadmapState(TypedDict, total=False):
     slot_max: int
     skeleton_plan: list[RoadmapDayPlan]
     skeleton_warnings: list[str]
-    fetched_places: dict[str, list]  # 슬롯 키 -> Place 목록 매핑
-    final_roadmap: dict | None  # 최종 생성된 로드맵 응답
+    fetched_places: dict[str, list]
+    final_roadmap: dict | None
     error: str | None

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     LLM_MODEL_NAME: str = "gpt-4o-mini"
     LLM_TIMEOUT_SECONDS: int = 60
     CALLBACK_TIMEOUT_SECONDS: int = 10
+    GOOGLE_PLACES_API_KEY: str | None = None
+    GOOGLE_PLACES_TIMEOUT_SECONDS: int = 10
 
     model_config = SettingsConfigDict(
         env_file=".env",
