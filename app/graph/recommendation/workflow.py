@@ -1,21 +1,18 @@
-"""`LangGraph` 워크플로우 구성."""
+"""추천 그래프 워크플로우 구성."""
 
 from langgraph.graph import END, StateGraph
 
-from app.core.logger import get_logger
-from app.graph.nodes import (
+from app.graph.recommendation.nodes import (
     generate_recommendations,
     rerank_regions,
     search_regions,
     transform_input,
 )
-from app.graph.state import GraphState
-
-logger = get_logger(__name__)
+from app.graph.recommendation.state import GraphState
 
 
 def _create_workflow() -> StateGraph:
-    """`LangGraph` 워크플로우를 생성합니다."""
+    """추천 그래프 워크플로우를 생성합니다."""
     workflow = StateGraph(GraphState)
 
     workflow.add_node("transform_input", transform_input)
