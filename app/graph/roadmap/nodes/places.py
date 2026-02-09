@@ -107,7 +107,8 @@ async def fetch_places_from_slots(
     if places_service is None:
         try:
             places_service = get_google_places_service()
-        except Exception:
+        except Exception as exc:
+            logger.error("PlacesService 초기화 실패: %s", exc)
             return {**state, "error": "PlacesService가 주입되지 않았습니다."}
 
     raw_request = state.get("course_request") or {}
