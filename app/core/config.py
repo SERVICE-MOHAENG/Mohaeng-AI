@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     CALLBACK_TIMEOUT_SECONDS: int = 10
     GOOGLE_PLACES_API_KEY: str | None = None
     GOOGLE_PLACES_TIMEOUT_SECONDS: int = 10
+    GOOGLE_PLACES_LANGUAGE_CODE: str = "ko"
 
     model_config = SettingsConfigDict(
         env_file=".env",
