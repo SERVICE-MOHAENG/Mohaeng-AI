@@ -154,7 +154,6 @@ def _build_segment_prompt(
         "- 목적지 성향: {destination_preference}\n"
         "- 활동 성향: {activity_preference}\n"
         "- 우선순위: {priority_preference}\n"
-        "- 예산: {budget_range}\n"
         "- 추가 메모: {notes}\n\n"
         "요구사항:\n"
         "- 정확히 {segment_days}일치 DayPlan을 생성하세요\n"
@@ -183,7 +182,6 @@ def _build_segment_prompt(
         destination_preference=request.destination_preference,
         activity_preference=request.activity_preference,
         priority_preference=request.priority_preference,
-        budget_range=request.budget_range,
         notes=request.notes or "none",
         slot_min=slot_min,
         slot_max=slot_max,

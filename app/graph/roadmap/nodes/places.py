@@ -9,10 +9,24 @@ from langchain_core.runnables import RunnableConfig
 from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_search_query, build_slot_key
+from app.schemas.enums import BudgetRange
 from app.services.google_places_service import get_google_places_service
 from app.services.places_service import PlacesServiceProtocol
 
 logger = get_logger(__name__)
+
+
+def _map_budget_to_price_levels(budget_range: str | BudgetRange | None) -> list[str] | None:
+    if not budget_range:
+        return None
+    value = budget_range.value if isinstance(budget_range, BudgetRange) else str(budget_range)
+    mapping = {
+        BudgetRange.LOW.value: ["PRICE_LEVEL_INEXPENSIVE"],
+        BudgetRange.MID.value: ["PRICE_LEVEL_MODERATE"],
+        BudgetRange.HIGH.value: ["PRICE_LEVEL_EXPENSIVE"],
+        BudgetRange.LUXURY.value: ["PRICE_LEVEL_VERY_EXPENSIVE"],
+    }
+    return mapping.get(value)
 
 
 async def fetch_places_from_slots(
@@ -34,6 +48,13 @@ async def fetch_places_from_slots(
         except Exception:
             return {**state, "error": "PlacesService가 주입되지 않았습니다."}
 
+    raw_request = state.get("course_request") or {}
+    if isinstance(raw_request, dict):
+        budget_range = raw_request.get("budget_range")
+    else:
+        budget_range = getattr(raw_request, "budget_range", None)
+    price_levels = _map_budget_to_price_levels(budget_range)
+
     fetched_places: dict[str, list] = {}
 
     tasks: list[tuple[str, str]] = []
@@ -50,7 +71,7 @@ async def fetch_places_from_slots(
 
     async def search_for_slot(slot_key: str, query: str) -> tuple[str, list]:
         try:
-            places = await places_service.search(query)
+            places = await places_service.search(query, price_levels=price_levels)
             return slot_key, [place.model_dump() for place in places]
         except Exception as exc:
             logger.warning("슬롯 %s 검색 실패: %s", slot_key, exc)

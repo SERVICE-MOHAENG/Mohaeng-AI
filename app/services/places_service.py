@@ -12,11 +12,12 @@ class PlacesServiceProtocol(ABC):
     MIN_REVIEWS: int = 100
 
     @abstractmethod
-    async def search(self, query: str) -> list[Place]:
+    async def search(self, query: str, price_levels: list[str] | None = None) -> list[Place]:
         """검색 쿼리로 장소를 검색합니다.
 
         Args:
             query: 검색 쿼리
+            price_levels: Google Places priceLevels 필터 값 목록
 
         Returns:
             평점 필터링이 적용된 장소 목록

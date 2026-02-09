@@ -243,6 +243,9 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         if course_request.planning_preference == PlanningPreference.PLANNED:
             daily_places = await _fill_visit_times_with_llm(daily_places)
 
+        course_request_payload = course_request.model_dump(mode="json")
+        course_request_payload.pop("budget_range", None)
+
         parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
 
         system_prompt = (
@@ -273,7 +276,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
 
         prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", human_prompt_template)])
         messages = prompt.format_messages(
-            course_request=course_request,
+            course_request=course_request_payload,
             itinerary_context=itinerary_context,
             format_instructions=parser.get_format_instructions(),
         )

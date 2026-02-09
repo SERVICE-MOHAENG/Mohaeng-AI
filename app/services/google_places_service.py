@@ -70,7 +70,7 @@ class GooglePlacesService(PlacesServiceProtocol):
             language_code=settings.GOOGLE_PLACES_LANGUAGE_CODE,
         )
 
-    async def search(self, query: str) -> list[Place]:
+    async def search(self, query: str, price_levels: list[str] | None = None) -> list[Place]:
         """검색 쿼리로 장소를 검색합니다."""
         if not query.strip():
             return []
@@ -78,6 +78,10 @@ class GooglePlacesService(PlacesServiceProtocol):
         payload = {"textQuery": query, "pageSize": self._page_size}
         if self._language_code:
             payload["languageCode"] = self._language_code
+        if price_levels:
+            normalized_levels = [str(level).strip() for level in price_levels if str(level).strip()]
+            if normalized_levels:
+                payload["priceLevels"] = normalized_levels
         data = await self._request(
             method="POST",
             url=f"{self._BASE_URL}{self._SEARCH_PATH}",
