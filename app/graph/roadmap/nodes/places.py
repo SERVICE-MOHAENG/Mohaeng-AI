@@ -16,6 +16,52 @@ from app.services.places_service import PlacesServiceProtocol
 logger = get_logger(__name__)
 
 
+_FOOD_KEYWORD_HINTS = (
+    "맛집",
+    "식당",
+    "레스토랑",
+    "음식",
+    "한식",
+    "중식",
+    "일식",
+    "양식",
+    "분식",
+    "뷔페",
+    "카페",
+    "커피",
+    "디저트",
+    "베이커리",
+    "브런치",
+    "아이스크림",
+    "치킨",
+    "피자",
+    "버거",
+    "스테이크",
+    "파스타",
+    "라멘",
+    "우동",
+    "초밥",
+    "스시",
+    "돈까스",
+    "고기",
+    "삼겹",
+    "갈비",
+    "해산물",
+    "횟집",
+    "bar",
+    "pub",
+    "izakaya",
+    "bbq",
+    "bistro",
+    "restaurant",
+    "cafe",
+    "coffee",
+    "bakery",
+    "dessert",
+    "brunch",
+)
+
+
 def _map_budget_to_price_levels(budget_range: str | BudgetRange | None) -> list[str] | None:
     if not budget_range:
         return None
@@ -27,6 +73,22 @@ def _map_budget_to_price_levels(budget_range: str | BudgetRange | None) -> list[
         BudgetRange.LUXURY.value: ["PRICE_LEVEL_VERY_EXPENSIVE"],
     }
     return mapping.get(value)
+
+
+def _is_food_keyword(keyword: str) -> bool:
+    normalized = (keyword or "").strip().lower()
+    if not normalized:
+        return False
+    return any(hint in normalized for hint in _FOOD_KEYWORD_HINTS)
+
+
+def _price_levels_for_slot(slot: dict, base_price_levels: list[str] | None) -> list[str] | None:
+    if not base_price_levels:
+        return None
+    keyword = str(slot.get("keyword") or "").strip()
+    if not _is_food_keyword(keyword):
+        return None
+    return base_price_levels
 
 
 async def fetch_places_from_slots(
@@ -53,11 +115,11 @@ async def fetch_places_from_slots(
         budget_range = raw_request.get("budget_range")
     else:
         budget_range = getattr(raw_request, "budget_range", None)
-    price_levels = _map_budget_to_price_levels(budget_range)
+    base_price_levels = _map_budget_to_price_levels(budget_range)
 
     fetched_places: dict[str, list] = {}
 
-    tasks: list[tuple[str, str]] = []
+    tasks: list[tuple[str, str, list[str] | None]] = []
     for day in skeleton_plan:
         day_number = day.get("day_number", 0)
         slots = day.get("slots", [])
@@ -65,19 +127,22 @@ async def fetch_places_from_slots(
             slot_key = build_slot_key(day_number, slot_index)
             query = build_search_query(slot)
             if query:
-                tasks.append((slot_key, query))
+                slot_price_levels = _price_levels_for_slot(slot, base_price_levels)
+                tasks.append((slot_key, query, slot_price_levels))
             else:
                 fetched_places[slot_key] = []
 
-    async def search_for_slot(slot_key: str, query: str) -> tuple[str, list]:
+    async def search_for_slot(slot_key: str, query: str, price_levels: list[str] | None) -> tuple[str, list]:
         try:
             places = await places_service.search(query, price_levels=price_levels)
+            if price_levels and not places:
+                places = await places_service.search(query, price_levels=None)
             return slot_key, [place.model_dump() for place in places]
         except Exception as exc:
             logger.warning("슬롯 %s 검색 실패: %s", slot_key, exc)
             return slot_key, []
 
-    results = await asyncio.gather(*[search_for_slot(key, query) for key, query in tasks])
+    results = await asyncio.gather(*[search_for_slot(key, query, levels) for key, query, levels in tasks])
 
     for slot_key, places in results:
         fetched_places[slot_key] = places
