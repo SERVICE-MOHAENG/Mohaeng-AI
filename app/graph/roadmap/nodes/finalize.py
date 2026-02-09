@@ -114,6 +114,19 @@ def _prepare_final_context(
     return "\n".join(context_lines), daily_places_for_schema
 
 
+def _safe_next_action_suggestions(trip_days: int) -> list[str]:
+    """시스템 기능과 100% 일치하는 다음 행동 문장을 반환합니다."""
+    suggestions = [
+        "이 로드맵을 일정 밀도만 조정해서 다시 만들어줘.",
+        "이 로드맵의 이동 동선과 구성 이유를 설명해줘.",
+    ]
+    if trip_days >= 2:
+        suggestions.append("2일차 일정을 더 자세히 설명해줘.")
+    else:
+        suggestions.append("이 일정의 핵심 포인트를 더 자세히 설명해줘.")
+    return suggestions
+
+
 async def _fill_place_details_with_llm(
     daily_places: list[dict],
     planning_preference: PlanningPreference,
@@ -299,9 +312,10 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "4. 사용자 요청과 확정된 장소 목록을 모두 고려하여 왜 이 코스가 사용자에게 최적인지 "
             "설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
             "5. 사용자가 바로 입력할 수 있는 다음 행동 문장을 `next_action_suggestion` JSON 배열로 작성해주세요. "
-            "(2~3개, 사용자 요청과 일정 내용을 반영해 자연스럽게 작성하고 예시 문장은 그대로 출력하지 마세요. "
-            '예시 형식: "오늘 숙소 예약까지 마치고 2일차 일정을 조정해줘.", '
-            '"지금 로드맵에 맞춰 대중교통 이용 방법도 알려줘.")\n\n'
+            "(2~3개, 반드시 우리 시스템이 가능한 작업만 포함해야 합니다. "
+            "가능한 작업: 로드맵 생성/재생성/일정 조정 요청, 로드맵 내용에 대한 질문. "
+            "불가능한 작업: 숙소/항공/렌터카/티켓 예약, 결제, 구매, 환전, 보험, 외부 서비스 연동. "
+            "예시 문장은 그대로 출력하지 마세요.)\n\n"
             "## 출력 형식\n"
             "{format_instructions}"
         )
@@ -318,6 +332,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
 
         trip_days = state["trip_days"]
         llm_output = parser.parse(content).model_dump()
+        llm_output["next_action_suggestion"] = _safe_next_action_suggestions(trip_days)
 
         final_roadmap = {
             "start_date": course_request.start_date.isoformat(),
