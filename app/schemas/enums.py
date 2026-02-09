@@ -190,3 +190,20 @@ class BudgetRange(StrEnum):
     MID = "MID"
     HIGH = "HIGH"
     LUXURY = "LUXURY"
+
+
+class ModifyOperation(StrEnum):
+    """로드맵 수정 Operation 타입 Enum."""
+
+    REPLACE = "REPLACE"
+    ADD = "ADD"
+    REMOVE = "REMOVE"
+    MOVE = "MOVE"
+
+
+class ModifyStatus(StrEnum):
+    """로드맵 수정 결과 상태 Enum."""
+
+    SUCCESS = "SUCCESS"
+    ASK_CLARIFICATION = "ASK_CLARIFICATION"
+    REJECTED = "REJECTED"
