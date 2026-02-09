@@ -32,12 +32,19 @@ class GooglePlacesService(PlacesServiceProtocol):
     )
     _DETAILS_FIELD_MASK = "id,displayName,formattedAddress,location,rating,userRatingCount,types,googleMapsUri"
 
-    def __init__(self, api_key: str, timeout_seconds: int = 10, page_size: int = 5) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        timeout_seconds: int = 10,
+        page_size: int = 5,
+        language_code: str = "ko",
+    ) -> None:
         if not api_key:
             raise GooglePlacesError("GOOGLE_PLACES_API_KEY가 설정되어 있지 않습니다.")
         self._api_key = api_key
         self._timeout_seconds = timeout_seconds
         self._page_size = page_size
+        self._language_code = language_code.strip() if language_code else ""
 
     def close(self) -> None:
         """Close resources (kept for API symmetry/context manager use)."""
@@ -57,18 +64,29 @@ class GooglePlacesService(PlacesServiceProtocol):
         timeout_seconds = settings.GOOGLE_PLACES_TIMEOUT_SECONDS
         if not settings.GOOGLE_PLACES_API_KEY:
             logger.error("GOOGLE_PLACES_API_KEY가 설정되어 있지 않습니다.")
-        return cls(api_key=settings.GOOGLE_PLACES_API_KEY or "", timeout_seconds=timeout_seconds)
+        return cls(
+            api_key=settings.GOOGLE_PLACES_API_KEY or "",
+            timeout_seconds=timeout_seconds,
+            language_code=settings.GOOGLE_PLACES_LANGUAGE_CODE,
+        )
 
-    async def search(self, query: str) -> list[Place]:
+    async def search(self, query: str, price_levels: list[str] | None = None) -> list[Place]:
         """검색 쿼리로 장소를 검색합니다."""
         if not query.strip():
             return []
 
         payload = {"textQuery": query, "pageSize": self._page_size}
+        if self._language_code:
+            payload["languageCode"] = self._language_code
+        if price_levels:
+            normalized_levels = [str(level).strip() for level in price_levels if str(level).strip()]
+            if normalized_levels:
+                payload["priceLevels"] = normalized_levels
         data = await self._request(
             method="POST",
             url=f"{self._BASE_URL}{self._SEARCH_PATH}",
             payload=payload,
+            params=None,
             field_mask=self._SEARCH_FIELD_MASK,
         )
 
@@ -82,10 +100,15 @@ class GooglePlacesService(PlacesServiceProtocol):
             return None
 
         resource = place_id if place_id.startswith("places/") else f"places/{place_id}"
+        params = {}
+        if self._language_code:
+            params["languageCode"] = self._language_code
+
         data = await self._request(
             method="GET",
             url=f"{self._BASE_URL}/{resource}",
             payload=None,
+            params=params or None,
             field_mask=self._DETAILS_FIELD_MASK,
         )
 
@@ -96,6 +119,7 @@ class GooglePlacesService(PlacesServiceProtocol):
         method: str,
         url: str,
         payload: dict[str, Any] | None,
+        params: dict[str, Any] | None,
         field_mask: str,
     ) -> dict[str, Any] | None:
         headers = {
@@ -111,6 +135,7 @@ class GooglePlacesService(PlacesServiceProtocol):
                     method=method,
                     url=url,
                     json=payload,
+                    params=params,
                     headers=headers,
                     timeout=self._timeout_seconds,
                 )

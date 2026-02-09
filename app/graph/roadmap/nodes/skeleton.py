@@ -31,7 +31,35 @@ def _join_values(values: Iterable) -> str:
     return ", ".join([str(value) for value in values]) if values else "none"
 
 
-def _validate_plan(plan: SkeletonPlan, total_days: int, slot_min: int, slot_max: int) -> list[str]:
+def _build_slot_targets(segment_days: int, slot_min: int, slot_max: int) -> list[int]:
+    if segment_days <= 0:
+        return []
+    if slot_min >= slot_max:
+        return [slot_min] * segment_days
+    if segment_days == 1:
+        return [slot_min]
+    if segment_days == 2:
+        return [slot_max, slot_min]
+    targets = [slot_min] * segment_days
+    if segment_days > 2:
+        for index in range(1, segment_days - 1):
+            targets[index] = slot_max
+    return targets
+
+
+def _format_slot_targets(slot_targets: list[int]) -> str:
+    if not slot_targets:
+        return "none"
+    return ", ".join([f"Day{index + 1}={count}" for index, count in enumerate(slot_targets)])
+
+
+def _validate_plan(
+    plan: SkeletonPlan,
+    total_days: int,
+    slot_min: int,
+    slot_max: int,
+    slot_targets: list[int] | None = None,
+) -> list[str]:
     errors: list[str] = []
 
     if len(plan.days) != total_days:
@@ -44,6 +72,10 @@ def _validate_plan(plan: SkeletonPlan, total_days: int, slot_min: int, slot_max:
 
     for day in plan.days:
         slot_count = len(day.slots)
+        if slot_targets and 0 < day.day_number <= len(slot_targets):
+            target_count = slot_targets[day.day_number - 1]
+            if slot_count != target_count:
+                errors.append(f"{day.day_number}일차 슬롯 수는 {target_count}개여야 합니다.")
         if slot_count < slot_min or slot_count > slot_max:
             errors.append(f"{day.day_number}일차 슬롯 수가 {slot_count}개입니다 (허용 범위: {slot_min}-{slot_max}).")
 
@@ -91,20 +123,23 @@ def _build_segment_prompt(
     segment_days: int,
     slot_min: int,
     slot_max: int,
+    slot_targets: list[int],
     parser: PydanticOutputParser,
 ) -> list:
+    slot_targets_text = _format_slot_targets(slot_targets)
     system_prompt = (
         "당신은 검색을 위한 여행 일정 스켈레톤을 설계하는 전문 여행 플래너입니다.\n"
         "제약 조건:\n"
         "- 특정 상호명 브랜드는 출력하지 마세요\n"
         "- 각 슬롯은 반드시 Area + Keyword 형식이어야 합니다 "
         "Area는 동네/구역명 Keyword는 활동 또는 장소 유형입니다\n"
-        "- 이동 시간을 줄이기 위해 하루에 2~3개의 지역만 포함하세요 "
         "밀접한 지역이 없다면 오전/오후를 구분해 인접 지역으로 묶습니다\n"
+        "- 각 day는 {slot_min}~{slot_max}개의 슬롯을 포함해야 합니다\n"
+        "- 슬롯 수 배분은 다음과 같아야 합니다: {slot_targets}\n"
         "- day_number는 지역 구간 내에서 1부터 시작해야 합니다\n"
         "- region은 모든 day에서 반드시 '{region}' 값이어야 합니다\n"
         "- 출력은 스키마를 정확히 따라야 하며 추가 텍스트는 금지합니다\n"
-    ).format(region=segment.region)
+    ).format(region=segment.region, slot_min=slot_min, slot_max=slot_max, slot_targets=slot_targets_text)
 
     user_prompt = (
         "여행 정보(지역 구간 기준):\n"
@@ -119,12 +154,12 @@ def _build_segment_prompt(
         "- 목적지 성향: {destination_preference}\n"
         "- 활동 성향: {activity_preference}\n"
         "- 우선순위: {priority_preference}\n"
-        "- 예산: {budget_range}\n"
         "- 추가 메모: {notes}\n\n"
         "요구사항:\n"
         "- 정확히 {segment_days}일치 DayPlan을 생성하세요\n"
         "- 각 day의 region 필드는 반드시 '{region}' 값이어야 합니다\n"
-        "- 각 day는 {slot_min}~{slot_max}개의 슬롯을 포함해야 합니다\n"
+        "- 각 day는 반드시 {slot_min}~{slot_max}개의 범위 내에서 슬롯을 포함해야 합니다\n"
+        "- 각 day의 슬롯 수는 다음 배분을 정확히 따라야 합니다: {slot_targets}\n"
         "- 각 슬롯은 section, area, keyword를 포함해야 합니다\n"
         "- section은 다음 중 하나여야 합니다 MORNING, LUNCH, AFTERNOON, DINNER, EVENING, NIGHT\n\n"
         "{format_instructions}"
@@ -147,10 +182,10 @@ def _build_segment_prompt(
         destination_preference=request.destination_preference,
         activity_preference=request.activity_preference,
         priority_preference=request.priority_preference,
-        budget_range=request.budget_range,
         notes=request.notes or "none",
         slot_min=slot_min,
         slot_max=slot_max,
+        slot_targets=slot_targets_text,
         format_instructions=parser.get_format_instructions(),
     )
 
@@ -187,6 +222,7 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
 
     for segment in sorted_regions:
         segment_days = (segment.end_date - segment.start_date).days + 1
+        slot_targets = _build_slot_targets(segment_days, slot_min, slot_max)
 
         messages = _build_segment_prompt(
             request=request,
@@ -194,6 +230,7 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
             segment_days=segment_days,
             slot_min=slot_min,
             slot_max=slot_max,
+            slot_targets=slot_targets,
             parser=parser,
         )
 
@@ -205,7 +242,7 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
             logger.error("Skeleton 생성 실패: %s", exc)
             return {**state, "error": "Skeleton 생성에 실패했습니다."}
 
-        validation_errors = _validate_plan(plan, segment_days, slot_min, slot_max)
+        validation_errors = _validate_plan(plan, segment_days, slot_min, slot_max, slot_targets=slot_targets)
         warnings.extend(_area_warnings(plan))
         if validation_errors:
             logger.warning("Skeleton 검증 실패: %s", validation_errors)

@@ -20,24 +20,25 @@ from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningP
 logger = get_logger(__name__)
 
 
-class VisitTimeSlot(BaseModel):
-    """방문 순서별 방문 시각 모델."""
+class PlaceDetailSlot(BaseModel):
+    """방문 순서별 상세 정보 모델."""
 
     visit_sequence: int = Field(..., ge=1, description="방문 순서")
-    visit_time: str = Field(..., description="방문 시각 (HH:MM, 24시간)")
+    visit_time: str | None = Field(None, description="방문 시각 (HH:MM, 24시간)")
+    description: str | None = Field(None, description="장소에 대한 한 줄 설명")
 
 
-class VisitTimeDay(BaseModel):
-    """일자별 방문 시각 모델."""
+class PlaceDetailDay(BaseModel):
+    """일자별 상세 정보 모델."""
 
     day_number: int = Field(..., ge=1, description="여행 일자")
-    places: list[VisitTimeSlot] = Field(..., description="방문 시각 목록")
+    places: list[PlaceDetailSlot] = Field(..., description="방문 상세 정보 목록")
 
 
-class VisitTimePlan(BaseModel):
-    """LLM이 생성한 방문 시각 결과 모델."""
+class PlaceDetailPlan(BaseModel):
+    """LLM이 생성한 장소 상세 결과 모델."""
 
-    days: list[VisitTimeDay] = Field(..., description="일자별 방문 시각 결과")
+    days: list[PlaceDetailDay] = Field(..., description="일자별 장소 상세 결과")
 
 
 def _prepare_final_context(
@@ -113,11 +114,28 @@ def _prepare_final_context(
     return "\n".join(context_lines), daily_places_for_schema
 
 
-async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
-    """LLM을 통해 방문 시각을 채웁니다."""
-    parser = PydanticOutputParser(pydantic_object=VisitTimePlan)
+def _safe_next_action_suggestions(trip_days: int) -> list[str]:
+    """시스템 기능과 100% 일치하는 다음 행동 문장을 반환합니다."""
+    suggestions = [
+        "이 로드맵을 일정 밀도만 조정해서 다시 만들어줘.",
+        "이 로드맵의 이동 동선과 구성 이유를 설명해줘.",
+    ]
+    if trip_days >= 2:
+        suggestions.append("2일차 일정을 더 자세히 설명해줘.")
+    else:
+        suggestions.append("이 일정의 핵심 포인트를 더 자세히 설명해줘.")
+    return suggestions
+
+
+async def _fill_place_details_with_llm(
+    daily_places: list[dict],
+    planning_preference: PlanningPreference,
+) -> list[dict]:
+    """LLM을 통해 장소 설명과 (필요 시) 방문 시각을 채웁니다."""
+    parser = PydanticOutputParser(pydantic_object=PlaceDetailPlan)
     settings = get_settings()
     timeout_seconds = settings.LLM_TIMEOUT_SECONDS
+    planned = planning_preference == PlanningPreference.PLANNED
 
     section_time_map = {
         "MORNING": "09:00",
@@ -146,12 +164,22 @@ async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
             base_hour = 23
         return f"{base_hour:02d}:00"
 
+    def _fallback_description(place: dict) -> str:
+        place_name = place.get("place_name") or place.get("name") or "장소"
+        return f"{place_name}에서 즐기는 대표 활동입니다."
+
     def _apply_fallback() -> list[dict]:
         for day in daily_places:
             for index, place in enumerate(day.get("places", [])):
-                place["visit_time"] = _fallback_visit_time(place, index)
+                if not place.get("description"):
+                    place["description"] = _fallback_description(place)
+                if planned:
+                    place["visit_time"] = _fallback_visit_time(place, index)
                 place.pop("section", None)
         return daily_places
+
+    if not any(day.get("places") for day in daily_places):
+        return _apply_fallback()
 
     input_days = []
     for day in daily_places:
@@ -164,9 +192,11 @@ async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
                         "visit_sequence": place.get("visit_sequence"),
                         "place_name": place.get("place_name"),
                         "section_hint": place.get("section"),
+                        "time_hint": place.get("visit_time"),
                         "address": place.get("address"),
                         "latitude": place.get("latitude"),
                         "longitude": place.get("longitude"),
+                        "place_url": place.get("place_url"),
                     }
                     for place in day.get("places", [])
                 ],
@@ -174,15 +204,19 @@ async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
         )
 
     system_prompt = (
-        "당신은 여행 일정의 방문 시각을 계획하는 전문가입니다.\n"
-        "전체 일정과 이동 동선을 고려해 각 장소의 방문 시각을 24시간 HH:MM 형식으로 작성하세요\n"
-        "section_hint는 참고용이며 실제 시간은 이동 시간과 동선을 고려해 자연스럽게 배치하세요\n"
-        "하루 시작 시각은 09:00이며 visit_sequence 순서를 지키고 시간은 점진적으로 증가해야 합니다\n"
+        "당신은 여행 일정의 장소 설명과 방문 시각을 작성하는 전문가입니다.\n"
+        "모든 장소에 대해 한국어 한 문장으로 description을 작성하세요.\n"
+        "description은 장소명 또는 대표 활동을 포함하고 30자 내외로 간결하게 작성하세요.\n"
+        "과장, 이모지, 해시태그, 불확실한 정보는 피하고 입력 정보에 기반해 작성하세요.\n"
+        "visit_time은 24시간 HH:MM 형식이며 visit_sequence 순서를 지키고 시간은 점진적으로 증가해야 합니다.\n"
+        "section_hint와 time_hint는 참고용이며 실제 시간은 이동 동선에 맞게 자연스럽게 배치하세요.\n"
         "입력에 없는 장소를 추가하거나 방문 순서를 바꾸지 말고 결과 과정은 출력하지 말고 JSON만 반환하세요"
     )
     user_prompt = (
-        "아래 장소 목록을 기반으로 방문 시각을 채워주세요\n"
+        "아래 장소 목록을 기반으로 description과 visit_time을 채워주세요\n"
         "시작 시각: 09:00\n"
+        "planning_preference가 PLANNED가 아니더라도 visit_time은 작성하되, "
+        "출력 값은 참고용이므로 형식만 지키면 됩니다.\n"
         "입력 데이터:\n"
         "{places}\n\n"
         "{format_instructions}"
@@ -197,36 +231,45 @@ async def _fill_visit_times_with_llm(daily_places: list[dict]) -> list[dict]:
     try:
         response = await asyncio.wait_for(get_llm().ainvoke(messages), timeout=timeout_seconds)
     except asyncio.TimeoutError:
-        logger.error("Visit time LLM timed out after %s seconds", timeout_seconds)
+        logger.error("Place detail LLM timed out after %s seconds", timeout_seconds)
         return _apply_fallback()
     except Exception:
-        logger.exception("Visit time LLM call failed")
+        logger.exception("Place detail LLM call failed")
         return _apply_fallback()
 
     try:
         content = strip_code_fence(response.content)
-        visit_plan = parser.parse(content)
+        detail_plan = parser.parse(content)
     except Exception:
-        logger.exception("Visit time parse failed")
+        logger.exception("Place detail parse failed")
         return _apply_fallback()
 
-    visit_time_map = {
-        (day.day_number, slot.visit_sequence): slot.visit_time for day in visit_plan.days for slot in day.places
-    }
+    detail_map = {(day.day_number, slot.visit_sequence): slot for day in detail_plan.days for slot in day.places}
 
     for day in daily_places:
         day_number = day.get("day_number")
         for index, place in enumerate(day.get("places", [])):
             key = (day_number, place.get("visit_sequence"))
-            visit_time = visit_time_map.get(key)
-            if not visit_time:
-                logger.warning(
-                    "Missing visit_time for day %s sequence %s; using fallback",
-                    day_number,
-                    place.get("visit_sequence"),
-                )
-                visit_time = _fallback_visit_time(place, index)
-            place["visit_time"] = visit_time
+            detail = detail_map.get(key)
+            if detail:
+                description = (detail.description or "").strip()
+                if description:
+                    place["description"] = description
+                elif not place.get("description"):
+                    place["description"] = _fallback_description(place)
+            elif not place.get("description"):
+                place["description"] = _fallback_description(place)
+
+            if planned:
+                visit_time = (detail.visit_time or "").strip() if detail else ""
+                if not visit_time:
+                    logger.warning(
+                        "Missing visit_time for day %s sequence %s; using fallback",
+                        day_number,
+                        place.get("visit_sequence"),
+                    )
+                    visit_time = _fallback_visit_time(place, index)
+                place["visit_time"] = visit_time
             place.pop("section", None)
 
     return daily_places
@@ -240,8 +283,13 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
     try:
         itinerary_context, daily_places = _prepare_final_context(state)
         course_request = CourseRequest.model_validate(state["course_request"])
-        if course_request.planning_preference == PlanningPreference.PLANNED:
-            daily_places = await _fill_visit_times_with_llm(daily_places)
+        daily_places = await _fill_place_details_with_llm(
+            daily_places,
+            course_request.planning_preference,
+        )
+
+        course_request_payload = course_request.model_dump(mode="json")
+        course_request_payload.pop("budget_range", None)
 
         parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
 
@@ -264,16 +312,17 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "4. 사용자 요청과 확정된 장소 목록을 모두 고려하여 왜 이 코스가 사용자에게 최적인지 "
             "설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
             "5. 사용자가 바로 입력할 수 있는 다음 행동 문장을 `next_action_suggestion` JSON 배열로 작성해주세요. "
-            "(2~3개, 사용자 요청과 일정 내용을 반영해 자연스럽게 작성하고 예시 문장은 그대로 출력하지 마세요. "
-            '예시 형식: "오늘 숙소 예약까지 마치고 2일차 일정을 조정해줘.", '
-            '"지금 로드맵에 맞춰 대중교통 이용 방법도 알려줘.")\n\n'
+            "(2~3개, 반드시 우리 시스템이 가능한 작업만 포함해야 합니다. "
+            "가능한 작업: 로드맵 생성/재생성/일정 조정 요청, 로드맵 내용에 대한 질문. "
+            "불가능한 작업: 숙소/항공/렌터카/티켓 예약, 결제, 구매, 환전, 보험, 외부 서비스 연동. "
+            "예시 문장은 그대로 출력하지 마세요.)\n\n"
             "## 출력 형식\n"
             "{format_instructions}"
         )
 
         prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", human_prompt_template)])
         messages = prompt.format_messages(
-            course_request=course_request,
+            course_request=course_request_payload,
             itinerary_context=itinerary_context,
             format_instructions=parser.get_format_instructions(),
         )
@@ -283,6 +332,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
 
         trip_days = state["trip_days"]
         llm_output = parser.parse(content).model_dump()
+        llm_output["next_action_suggestion"] = _safe_next_action_suggestions(trip_days)
 
         final_roadmap = {
             "start_date": course_request.start_date.isoformat(),
