@@ -9,6 +9,7 @@ from langchain_core.runnables import RunnableConfig
 from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_search_query, build_slot_key
+from app.services.google_places_service import get_google_places_service
 from app.services.places_service import PlacesServiceProtocol
 
 logger = get_logger(__name__)
@@ -16,8 +17,7 @@ logger = get_logger(__name__)
 
 async def fetch_places_from_slots(
     state: RoadmapState,
-    config: RunnableConfig | None = None,
-    places_service: PlacesServiceProtocol | None = None,
+    config: RunnableConfig,
 ) -> RoadmapState:
     """스켈레톤 슬롯을 기반으로 장소를 검색해 상태에 저장합니다."""
     if state.get("error"):
@@ -27,10 +27,12 @@ async def fetch_places_from_slots(
     if not skeleton_plan:
         return {**state, "error": "fetch_places_from_slots에는 skeleton_plan이 필요합니다."}
 
-    if places_service is None and config:
-        places_service = config.get("configurable", {}).get("places_service")
+    places_service: PlacesServiceProtocol | None = config.get("configurable", {}).get("places_service")
     if places_service is None:
-        return {**state, "error": "PlacesService가 주입되지 않았습니다."}
+        try:
+            places_service = get_google_places_service()
+        except Exception:
+            return {**state, "error": "PlacesService가 주입되지 않았습니다."}
 
     fetched_places: dict[str, list] = {}
 
