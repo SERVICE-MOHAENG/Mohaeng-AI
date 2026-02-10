@@ -130,6 +130,7 @@ async def mutate(state: ModifyState) -> ModifyState:
             dest_pos = min(dest_pos, len(dest_places))
             dest_places.insert(dest_pos, moved)
             reorder_visit_sequence(dest_places)
+            dest_day["places"] = dest_places
             diff_keys.append(build_diff_key(dest_day_num, dest_pos + 1))
 
     day["places"] = places
