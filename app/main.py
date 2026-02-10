@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from app.api import endpoints, generate
+from app.api import endpoints, generate, modify
 from app.core.logging_config import configure_logging
 
 configure_logging()
@@ -11,6 +11,7 @@ app = FastAPI()
 
 app.include_router(endpoints.router)
 app.include_router(generate.router)
+app.include_router(modify.router)
 
 
 @app.get("/")
