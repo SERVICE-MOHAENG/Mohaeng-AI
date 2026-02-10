@@ -94,7 +94,9 @@ async def mutate(state: ModifyState) -> ModifyState:
         diff_keys.append(build_diff_key(target_day_num, target_index))
 
     elif op == ModifyOperation.ADD:
-        insert_pos = min(target_pos, len(places))
+        if target_index < 1 or target_index > len(places) + 1:
+            return {**state, "error": f"{target_day_num}일차에 {target_index}번 위치에 추가할 수 없습니다."}
+        insert_pos = target_index - 1
         new_place, search_results, err = await _search_place(intent, day)
         if err:
             return {**state, "search_results": search_results, **err}
