@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 
 from app.core.logger import get_logger
+from app.graph.modify.llm import get_llm
 from app.graph.modify.state import ModifyState
 from app.graph.modify.utils import (
     build_diff_key,
@@ -160,12 +161,15 @@ async def _search_place(intent: dict, day: dict) -> tuple:
     search_results = [r.model_dump() for r in results]
 
     if not results:
+        suggested = _suggest_alternative_keyword(keyword)
         return (
             None,
             search_results,
             {
                 "status": ModifyStatus.ASK_CLARIFICATION,
-                "change_summary": f"'{keyword}' 검색 결과가 없습니다.",
+                "change_summary": f"'{keyword}' 검색 결과가 없습니다."
+                + (f" '{suggested}'(으)로 다시 검색해볼까요?" if suggested else ""),
+                "suggested_keyword": suggested,
             },
         )
 
@@ -180,3 +184,16 @@ async def _search_place(intent: dict, day: dict) -> tuple:
             results = filtered
 
     return results[0], search_results, None
+
+
+def _suggest_alternative_keyword(keyword: str) -> str | None:
+    """LLM을 통해 검색 키워드의 상위 카테고리를 추출합니다."""
+    try:
+        response = get_llm().invoke(
+            f"'{keyword}'의 상위 카테고리 키워드를 한 단어로 답하세요. 예: '오마카세' → '일식당'"
+        )
+        suggested = response.content.strip().strip("'\"")
+        return suggested if suggested and suggested != keyword else None
+    except Exception as exc:
+        logger.warning("대안 키워드 추출 실패: %s", exc)
+        return None
