@@ -126,6 +126,7 @@ async def mutate(state: ModifyState) -> ModifyState:
                 return {**state, "error": f"{dest_day_num}일차를 찾을 수 없습니다."}
             moved = places.pop(target_pos)
             reorder_visit_sequence(places)
+            diff_keys.append(build_diff_key(target_day_num, 1))
             dest_places = dest_day.get("places", [])
             dest_pos = min(dest_pos, len(dest_places))
             dest_places.insert(dest_pos, moved)
