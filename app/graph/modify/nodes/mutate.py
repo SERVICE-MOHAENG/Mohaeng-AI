@@ -111,7 +111,7 @@ async def mutate(state: ModifyState) -> ModifyState:
 
     elif op == ModifyOperation.MOVE:
         dest_day_num = intent.get("destination_day", target_day_num)
-        dest_index = intent.get("destination_index", 1)
+        dest_index = max(1, intent.get("destination_index", 1))
         dest_pos = dest_index - 1
 
         if dest_day_num == target_day_num:
