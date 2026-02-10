@@ -61,7 +61,13 @@ def respond(state: ModifyState) -> ModifyState:
     error = state.get("error")
 
     if error:
-        return {**state, "status": ModifyStatus.REJECTED, "change_summary": error}
+        # CodeRabbit 리뷰 반영: 내부 오류를 사용자에게 직접 노출하지 않음
+        logger.warning("수정 그래프 내 오류 발생: %s", error)
+        return {
+            **state,
+            "status": ModifyStatus.REJECTED,
+            "change_summary": "요청을 처리하는 중 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+        }
 
     is_compound = intent.get("is_compound", False)
 
