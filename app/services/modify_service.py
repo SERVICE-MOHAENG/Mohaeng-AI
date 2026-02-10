@@ -38,4 +38,5 @@ async def run_modify_pipeline(request: ModifyRequest) -> ModifyResponse:
         diff_keys=result.get("diff_keys", []),
         warnings=result.get("warnings", []),
         suggested_keyword=result.get("suggested_keyword"),
+        clarification_question=result.get("clarification_question"),
     )

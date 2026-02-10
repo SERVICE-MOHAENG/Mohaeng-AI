@@ -90,4 +90,8 @@ def respond(state: ModifyState) -> ModifyState:
 
     final_status = status if status else ModifyStatus.SUCCESS
 
-    return {**state, "status": final_status, "change_summary": generated}
+    response_state = {**state, "status": final_status, "change_summary": generated}
+    if final_status == ModifyStatus.ASK_CLARIFICATION:
+        response_state["clarification_question"] = generated
+
+    return response_state
