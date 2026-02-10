@@ -44,7 +44,7 @@ def _place_to_course_place(place, visit_sequence: int) -> dict:
         "latitude": place.geometry.latitude,
         "longitude": place.geometry.longitude,
         "place_url": place.url,
-        "description": place.name,
+        "description": f"{place.name}에서 즐기는 대표 활동입니다.",
         "visit_sequence": visit_sequence,
         "visit_time": "",
     }
