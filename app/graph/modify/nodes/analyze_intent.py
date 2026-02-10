@@ -9,6 +9,7 @@ from app.core.logger import get_logger
 from app.graph.modify.llm import get_llm
 from app.graph.modify.state import ModifyState
 from app.graph.roadmap.utils import strip_code_fence
+from app.schemas.enums import ModifyStatus
 from app.schemas.modify import ModifyIntent
 
 logger = get_logger(__name__)
@@ -38,7 +39,8 @@ SYSTEM_PROMPT = """\
    - is_compound를 true로 설정하세요.
 
 5. **모호성 감지**
-   - 대상을 특정할 수 없으면 reasoning에 "ASK_CLARIFICATION"이라고 명시하세요.
+   - 대상을 특정할 수 없으면 needs_clarification을 true로 설정하세요.
+   - reasoning에 어떤 부분이 모호한지 구체적으로 작성하세요.
    - 예: "식당 바꿔줘" 인데 식당이 2곳 이상인 경우
 
 ## 현재 로드맵 매핑 테이블
@@ -114,11 +116,11 @@ def analyze_intent(state: ModifyState) -> ModifyState:
         logger.error("의도 분석 LLM 호출 실패: %s", exc)
         return {**state, "error": "수정 의도 분석에 실패했습니다."}
 
-    if "ASK_CLARIFICATION" in intent.reasoning:
+    if intent.needs_clarification:
         return {
             **state,
             "intent": intent.model_dump(),
-            "status": "ASK_CLARIFICATION",
+            "status": ModifyStatus.ASK_CLARIFICATION,
             "change_summary": intent.reasoning,
         }
 

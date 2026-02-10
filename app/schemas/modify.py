@@ -46,6 +46,7 @@ class ModifyIntent(BaseModel):
     search_keyword: str | None = Field(default=None, description="REPLACE/ADD 시 검색 키워드")
     reasoning: str = Field(..., description="해당 인덱스를 선택한 근거")
     is_compound: bool = Field(default=False, description="복합 요청 여부 (True 시 첫 번째만 처리)")
+    needs_clarification: bool = Field(default=False, description="대상 특정 불가 시 True")
 
 
 class ModifyResponse(BaseModel):
