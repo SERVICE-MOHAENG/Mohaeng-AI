@@ -34,6 +34,10 @@ SYSTEM_PROMPT = """\
    - REPLACE/ADD 시 Google Places API 검색에 사용할 키워드를 추출하세요.
    - REMOVE/MOVE 시 search_keyword는 null로 설정하세요.
 
+6. **MOVE 이동 목적지**
+   - MOVE 시 destination_day(이동 목적지 일자)와 destination_index(이동 목적지 순서)를 반드시 설정하세요.
+   - REPLACE/ADD/REMOVE 시 destination_day와 destination_index는 null로 설정하세요.
+
 4. **복합 요청 처리**
    - 두 가지 이상의 수정이 감지되면 **첫 번째 요청만** 추출하세요.
    - is_compound를 true로 설정하세요.

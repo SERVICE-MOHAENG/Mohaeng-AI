@@ -1,6 +1,6 @@
 """로드맵 수정 요청/응답 스키마."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.course import CourseResponse
 from app.schemas.enums import ModifyOperation, ModifyStatus
@@ -43,10 +43,22 @@ class ModifyIntent(BaseModel):
     op: ModifyOperation = Field(..., description="수정 Operation (REPLACE / ADD / REMOVE / MOVE)")
     target_day: int = Field(..., ge=1, description="대상 일자 (1-based)")
     target_index: int = Field(..., ge=1, description="대상 visit_sequence (1-based)")
+    destination_day: int | None = Field(default=None, ge=1, description="이동 목적지 일자 (MOVE 시 필수, 1-based)")
+    destination_index: int | None = Field(
+        default=None, ge=1, description="이동 목적지 visit_sequence (MOVE 시 필수, 1-based)"
+    )
     search_keyword: str | None = Field(default=None, description="REPLACE/ADD 시 검색 키워드")
     reasoning: str = Field(..., description="해당 인덱스를 선택한 근거")
     is_compound: bool = Field(default=False, description="복합 요청 여부 (True 시 첫 번째만 처리)")
     needs_clarification: bool = Field(default=False, description="대상 특정 불가 시 True")
+
+    @model_validator(mode="after")
+    def validate_move_destination(self):
+        """MOVE 시 destination_day, destination_index 필수 검증."""
+        if self.op == ModifyOperation.MOVE:
+            if self.destination_day is None or self.destination_index is None:
+                raise ValueError("MOVE 시 destination_day와 destination_index가 필요합니다.")
+        return self
 
 
 class ModifyResponse(BaseModel):
