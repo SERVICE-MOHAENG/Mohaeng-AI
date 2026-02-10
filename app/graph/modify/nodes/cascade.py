@@ -5,6 +5,8 @@ from __future__ import annotations
 from app.core.logger import get_logger
 from app.graph.modify.state import ModifyState
 from app.graph.modify.utils import haversine_distance
+from app.schemas.course import CourseResponse
+from app.schemas.enums import ModifyStatus
 
 logger = get_logger(__name__)
 
@@ -127,5 +129,16 @@ def cascade(state: ModifyState) -> ModifyState:
             if current_hour >= 24:
                 warnings.append(f"{day_num}일차 일정이 자정을 초과합니다.")
                 break
+
+    try:
+        CourseResponse.model_validate(itinerary)
+    except Exception as exc:
+        logger.error("수정된 로드맵 스키마 검증 실패: %s", exc)
+        return {
+            **state,
+            "status": ModifyStatus.REJECTED,
+            "error": "수정된 로드맵이 스키마 검증에 실패했습니다.",
+            "warnings": warnings,
+        }
 
     return {**state, "modified_itinerary": itinerary, "warnings": warnings}
