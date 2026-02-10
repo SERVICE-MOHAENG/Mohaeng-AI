@@ -131,6 +131,8 @@ def cascade(state: ModifyState) -> ModifyState:
 
             if current_hour >= 24:
                 warnings.append(f"{day_num}일차 일정이 자정을 초과합니다.")
+                for remaining in places[i + 1 :]:
+                    remaining["visit_time"] = "일정 초과"
                 break
 
     try:
