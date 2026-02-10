@@ -39,6 +39,9 @@ def _parse_time(visit_time: str) -> tuple[int, int] | None:
     elif is_am and hour == 12:
         hour = 0
 
+    if not (0 <= hour < 24 and 0 <= minute < 60):
+        return None
+
     return hour, minute
 
 
