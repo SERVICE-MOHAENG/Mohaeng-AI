@@ -78,8 +78,6 @@ def cascade(state: ModifyState) -> ModifyState:
         return {**state, "error": "cascade에는 modified_itinerary가 필요합니다."}
 
     modified_days = _extract_modified_days(diff_keys)
-    if not modified_days:
-        return state
 
     warnings: list[str] = list(state.get("warnings", []))
 
