@@ -117,13 +117,13 @@ async def process_chat_request(request: ChatRequest) -> None:
         payload = _build_callback_payload(result)
     except asyncio.TimeoutError:
         payload = {
-            "status": "FAILED",
+            "status": ChatStatus.FAILED.value,
             "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
         }
     except Exception:
         logger.exception("대화 파이프라인 처리 중 예외 발생")
         payload = {
-            "status": "FAILED",
+            "status": ChatStatus.FAILED.value,
             "error": {"code": "PIPELINE_ERROR", "message": "대화 처리 중 내부 오류가 발생했습니다."},
         }
 
