@@ -18,6 +18,8 @@ from app.services.google_places_service import get_google_places_service
 logger = get_logger(__name__)
 
 _RADIUS_KM = 10.0
+_MAX_PLACES_PER_DAY = 10
+_MIN_PLACES_PER_DAY = 1
 
 
 def _day_center(day: dict) -> tuple[float, float]:
@@ -94,6 +96,12 @@ async def mutate(state: ChatState) -> ChatState:
         diff_keys.append(build_diff_key(target_day_num, target_index))
 
     elif op == ChatOperation.ADD:
+        if len(places) >= _MAX_PLACES_PER_DAY:
+            return {
+                **state,
+                "status": ChatStatus.REJECTED,
+                "change_summary": "한 일차에는 최대 10개 일정만 추가할 수 있습니다.",
+            }
         if target_index < 1 or target_index > len(places) + 1:
             return {**state, "error": f"{target_day_num}일차에 {target_index}번 위치에 추가할 수 없습니다."}
         insert_pos = target_index - 1
@@ -105,12 +113,24 @@ async def mutate(state: ChatState) -> ChatState:
         diff_keys.append(build_diff_key(target_day_num, insert_pos + 1))
 
     elif op == ChatOperation.REMOVE:
+        if len(places) <= _MIN_PLACES_PER_DAY:
+            return {
+                **state,
+                "status": ChatStatus.REJECTED,
+                "change_summary": "일차별 일정은 최소 1개 이상 유지되어야 합니다.",
+            }
         places.pop(target_pos)
         reorder_visit_sequence(places)
         diff_keys.append(build_diff_key(target_day_num, target_index))
 
     elif op == ChatOperation.MOVE:
         dest_day_num = intent.get("destination_day", target_day_num)
+        if dest_day_num != target_day_num:
+            return {
+                **state,
+                "status": ChatStatus.REJECTED,
+                "change_summary": "일차 간 이동은 지원하지 않습니다. 같은 일차 내 순서만 변경할 수 있습니다.",
+            }
         dest_index = max(1, intent.get("destination_index", 1))
         dest_pos = dest_index - 1
 

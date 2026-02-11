@@ -29,6 +29,20 @@ CLASSIFIER_SYSTEM_PROMPT = """\
 규칙:
 - 단순 정보 질문, 이유 설명, 추천 요청은 GENERAL_CHAT입니다.
 - 명시적 변경 동사(바꿔/추가/삭제/옮겨 등)나 수정 의도가 있으면 MODIFICATION입니다.
+- MODIFICATION이라면 requested_action과 target_scope도 함께 분류하세요.
+- requested_action:
+  - DELETE: 삭제 요청
+  - ADD: 추가 요청
+  - REPLACE: 교체 요청
+  - MOVE: 순서/위치 이동 요청
+  - UNKNOWN: 수정은 맞지만 유형 불명확
+- target_scope:
+  - DAY_LEVEL: 일차 자체(예: "1일차 삭제", "2일차를 3일차로 이동", "날짜 변경")
+  - ITEM_LEVEL: 일차 내부 장소(visit_sequence/place) 단위
+  - UNKNOWN: 단위를 특정할 수 없음
+- "1일차 삭제해줘"는 DAY_LEVEL DELETE입니다.
+- "1일차 2번째 방문지 삭제해줘"는 ITEM_LEVEL DELETE입니다.
+- "1일차 방문지 삭제해줘"처럼 대상을 특정하지 못하면 target_scope를 UNKNOWN으로 둡니다.
 - 응답은 JSON만 출력하세요.
 """
 
@@ -101,6 +115,14 @@ class ChatIntentRoute(BaseModel):
     """대화 라우팅 분류 결과."""
 
     intent_type: Literal["GENERAL_CHAT", "MODIFICATION"] = Field(..., description="의도 분류 결과")
+    requested_action: Literal["DELETE", "ADD", "REPLACE", "MOVE", "UNKNOWN"] = Field(
+        default="UNKNOWN",
+        description="수정 요청 액션 분류",
+    )
+    target_scope: Literal["DAY_LEVEL", "ITEM_LEVEL", "UNKNOWN"] = Field(
+        default="UNKNOWN",
+        description="수정 대상 범위 분류",
+    )
     reasoning: str = Field(default="", description="분류 근거")
 
 
@@ -316,8 +338,78 @@ def _has_modification_keyword(user_query: str) -> bool:
     return any(keyword in normalized for keyword in keywords)
 
 
-def _classify_intent_type(itinerary_table: str, history_context: str, user_query: str) -> str:
-    """요청을 GENERAL_CHAT 또는 MODIFICATION으로 분류합니다."""
+def _is_day_or_date_change_request(user_query: str) -> bool:
+    """일차/날짜 자체 변경 요청을 휴리스틱으로 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if not text:
+        return False
+
+    day_tokens = (
+        "일차를",
+        "일정을 날짜",
+        "날짜를",
+        "여행 날짜",
+        "trip day",
+        "day를",
+        "date를",
+        "date ",
+    )
+    change_tokens = (
+        "바꿔",
+        "변경",
+        "수정",
+        "옮겨",
+        "이동",
+        "swap",
+        "change",
+        "move",
+    )
+
+    if any(day in text for day in day_tokens) and any(change in text for change in change_tokens):
+        return True
+
+    # "1일차를 2일차로 ..." 형태와 같이 day 번호 간 변경 요청을 추가 감지
+    if re.search(r"\d+\s*일차", text) and "일차" in text and any(change in text for change in change_tokens):
+        if ("에서" in text and "로" in text) or ("to" in text):
+            return True
+
+    return False
+
+
+def _is_explicit_day_delete_request(user_query: str) -> bool:
+    """일차 자체 삭제 요청을 휴리스틱으로 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if not text:
+        return False
+
+    patterns = (
+        r"\d+\s*일차\s*(전체|통째|자체)?\s*(를|은|는)?\s*(삭제|지워|빼줘|제거)",
+        r"(day\s*\d+)\s*(전체|entire)?\s*(delete|remove|drop)",
+    )
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
+def _is_ambiguous_day_item_delete_request(user_query: str) -> bool:
+    """일차 내부 삭제 의도는 있으나 대상 장소 특정이 없는 요청을 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if not text:
+        return False
+
+    day_ref = bool(re.search(r"\d+\s*일차", text)) or "day " in text or "day" in text
+    has_delete = any(token in text for token in ("삭제", "지워", "빼줘", "제거", "remove", "delete", "drop"))
+    if not (day_ref and has_delete):
+        return False
+
+    if _is_explicit_day_delete_request(text):
+        return False
+
+    has_item_word = any(token in text for token in ("장소", "방문지", "스팟", "place", "visit_sequence", "일정"))
+    has_item_selector = bool(re.search(r"\d+\s*(번|번째)", text))
+    return has_item_word and not has_item_selector
+
+
+def _classify_intent_route(itinerary_table: str, history_context: str, user_query: str) -> ChatIntentRoute:
+    """요청을 라우팅 스키마(GENERAL_CHAT/MODIFICATION + 상세 분류)로 분류합니다."""
     parser = PydanticOutputParser(pydantic_object=ChatIntentRoute)
     prompt = ChatPromptTemplate.from_messages([("system", CLASSIFIER_SYSTEM_PROMPT), ("human", CLASSIFIER_USER_PROMPT)])
     messages = prompt.format_messages(
@@ -330,11 +422,33 @@ def _classify_intent_type(itinerary_table: str, history_context: str, user_query
     try:
         response = get_llm().invoke(messages)
         content = strip_code_fence(response.content)
-        route = parser.parse(content)
-        return route.intent_type
+        return parser.parse(content)
     except Exception as exc:
         logger.warning("의도 분류 LLM 호출 실패, 휴리스틱으로 대체: %s", exc)
-        return "MODIFICATION" if _has_modification_keyword(user_query) else "GENERAL_CHAT"
+        if _is_day_or_date_change_request(user_query):
+            return ChatIntentRoute(
+                intent_type="MODIFICATION",
+                requested_action="MOVE",
+                target_scope="DAY_LEVEL",
+                reasoning="휴리스틱: 일차/날짜 변경 요청",
+            )
+        if _is_explicit_day_delete_request(user_query):
+            return ChatIntentRoute(
+                intent_type="MODIFICATION",
+                requested_action="DELETE",
+                target_scope="DAY_LEVEL",
+                reasoning="휴리스틱: 일차 단위 삭제 요청",
+            )
+        if _is_ambiguous_day_item_delete_request(user_query):
+            return ChatIntentRoute(
+                intent_type="MODIFICATION",
+                requested_action="DELETE",
+                target_scope="UNKNOWN",
+                reasoning="휴리스틱: 삭제 대상이 모호한 요청",
+            )
+        if _has_modification_keyword(user_query):
+            return ChatIntentRoute(intent_type="MODIFICATION", reasoning="휴리스틱: 수정 의도 키워드 감지")
+        return ChatIntentRoute(intent_type="GENERAL_CHAT", reasoning="휴리스틱: 일반 대화")
 
 
 def _extract_json_object(text: str) -> dict | None:
@@ -406,9 +520,33 @@ def analyze_intent(state: ChatState) -> ChatState:
     day_region_hints = _build_day_region_hints(current_itinerary)
     day_region_context = _format_day_region_context(day_region_hints)
 
-    intent_type = _classify_intent_type(itinerary_table, history_context, user_query)
-    if intent_type == "GENERAL_CHAT":
+    route = _classify_intent_route(itinerary_table, history_context, user_query)
+    if route.intent_type == "GENERAL_CHAT":
         return {**state, "intent_type": "GENERAL_CHAT"}
+
+    if route.requested_action == "DELETE" and route.target_scope == "DAY_LEVEL":
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "status": ChatStatus.REJECTED,
+            "change_summary": "일차 삭제는 지원하지 않습니다. 삭제할 장소 순서를 지정해 주세요.",
+        }
+
+    if route.requested_action == "DELETE" and route.target_scope == "UNKNOWN":
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "status": ChatStatus.ASK_CLARIFICATION,
+            "change_summary": "삭제할 일차와 장소 순서를 함께 알려주세요. 예: '1일차 2번째 장소 삭제해줘'",
+        }
+
+    if route.target_scope == "DAY_LEVEL" or _is_day_or_date_change_request(user_query):
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "status": ChatStatus.REJECTED,
+            "change_summary": "일차(날짜) 자체는 변경할 수 없습니다. 각 일차 내부 장소 일정만 수정할 수 있어요.",
+        }
 
     try:
         intent_draft = _parse_modification_intent(

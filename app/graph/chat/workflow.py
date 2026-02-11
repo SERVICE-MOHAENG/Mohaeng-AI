@@ -13,6 +13,8 @@ def _route_after_intent(state: ChatState) -> str:
         return "respond"
     if state.get("intent_type") == "GENERAL_CHAT":
         return "general_chat"
+    if state.get("status") == ChatStatus.REJECTED:
+        return "respond"
     if state.get("status") == ChatStatus.ASK_CLARIFICATION:
         return "respond"
     return "mutate"
@@ -21,6 +23,8 @@ def _route_after_intent(state: ChatState) -> str:
 def _route_after_mutate(state: ChatState) -> str:
     """mutate 결과에 따라 다음 노드를 결정합니다."""
     if state.get("error"):
+        return "respond"
+    if state.get("status") == ChatStatus.REJECTED:
         return "respond"
     if state.get("status") == ChatStatus.ASK_CLARIFICATION:
         return "respond"
