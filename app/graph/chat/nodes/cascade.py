@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from app.core.logger import get_logger
-from app.graph.modify.state import ModifyState
-from app.graph.modify.utils import haversine_distance
-from app.schemas.course import CourseResponse
-from app.schemas.enums import ModifyStatus
+from app.graph.chat.state import ChatState
+from app.graph.chat.utils import haversine_distance
+from app.schemas.chat import ChatRoadmap
+from app.schemas.enums import ChatStatus
 
 logger = get_logger(__name__)
 
@@ -69,7 +69,7 @@ def _extract_modified_days(diff_keys: list[str]) -> set[int]:
     return days
 
 
-def cascade(state: ModifyState) -> ModifyState:
+def cascade(state: ChatState) -> ChatState:
     """수정된 Day의 타임라인을 재계산하고 제약조건을 검증합니다."""
     itinerary = state.get("modified_itinerary")
     diff_keys = state.get("diff_keys", [])
@@ -134,12 +134,12 @@ def cascade(state: ModifyState) -> ModifyState:
                 break
 
     try:
-        CourseResponse.model_validate(itinerary)
+        ChatRoadmap.model_validate(itinerary)
     except Exception as exc:
         logger.error("수정된 로드맵 스키마 검증 실패: %s", exc)
         return {
             **state,
-            "status": ModifyStatus.REJECTED,
+            "status": ChatStatus.REJECTED,
             "error": "수정된 로드맵이 스키마 검증에 실패했습니다.",
             "warnings": warnings,
         }
