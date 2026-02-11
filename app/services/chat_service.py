@@ -16,7 +16,6 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         "current_itinerary": request.current_itinerary.model_dump(mode="json"),
         "user_query": request.user_query,
         "session_history": [msg.model_dump() for msg in request.session_history],
-        "metadata": request.metadata.model_dump() if request.metadata else {},
     }
 
     result = await compiled_chat_graph.ainvoke(initial_state)

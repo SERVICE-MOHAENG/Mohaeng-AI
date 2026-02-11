@@ -13,14 +13,6 @@ class Message(BaseModel):
     content: str = Field(..., description="메시지 내용")
 
 
-class ChatMetadata(BaseModel):
-    """대화 요청 부가 메타데이터."""
-
-    latitude: float | None = Field(default=None, description="사용자 현재 위도")
-    longitude: float | None = Field(default=None, description="사용자 현재 경도")
-    preferred_categories: list[str] = Field(default_factory=list, description="선호 카테고리 목록")
-
-
 class ChatRequest(BaseModel):
     """로드맵 대화 요청 모델.
 
@@ -28,13 +20,11 @@ class ChatRequest(BaseModel):
         current_itinerary: 현재 세션의 전체 로드맵
         user_query: 사용자 수정 요청 발화
         session_history: 최근 3~5건 대화 맥락 (지시어 해소용)
-        metadata: 사용자 위치, 선호 카테고리 등
     """
 
     current_itinerary: CourseResponse = Field(..., description="현재 세션의 전체 로드맵 데이터")
     user_query: str = Field(..., min_length=1, description="사용자 수정 요청 발화")
     session_history: list[Message] = Field(default_factory=list, description="최근 대화 맥락")
-    metadata: ChatMetadata | None = Field(default=None, description="부가 메타데이터")
 
 
 class ChatIntent(BaseModel):

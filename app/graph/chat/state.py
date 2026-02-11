@@ -10,7 +10,6 @@ class ChatState(TypedDict, total=False):
         current_itinerary: 현재 로드맵 데이터
         user_query: 사용자 수정 요청 발화
         session_history: 최근 대화 맥락
-        metadata: 사용자 위치, 선호 카테고리 등
         intent: LLM이 추출한 수정 의도
         search_results: Google Places 검색 결과
         warnings: 경고 메시지 누적
@@ -26,7 +25,6 @@ class ChatState(TypedDict, total=False):
     current_itinerary: dict
     user_query: str
     session_history: list[dict]
-    metadata: dict
 
     # Processing
     intent: dict
