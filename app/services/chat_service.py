@@ -21,21 +21,18 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
     result = await compiled_chat_graph.ainvoke(initial_state)
 
     status = result.get("status", ChatStatus.SUCCESS)
-    change_summary = result.get("change_summary", "")
+    message = result.get("message") or result.get("change_summary") or result.get("clarification_question") or ""
 
     if error := result.get("error"):
         logger.error("대화 파이프라인 에러: %s", error)
         return ChatResponse(
             status=ChatStatus.REJECTED,
-            change_summary=error,
+            message=error,
         )
 
     return ChatResponse(
         status=status,
         modified_itinerary=result.get("modified_itinerary"),
-        change_summary=change_summary,
+        message=message,
         diff_keys=result.get("diff_keys", []),
-        warnings=result.get("warnings", []),
-        suggested_keyword=result.get("suggested_keyword"),
-        clarification_question=result.get("clarification_question"),
     )

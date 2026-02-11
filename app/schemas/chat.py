@@ -1,8 +1,10 @@
 """대화(Chat) 요청/응답 스키마."""
 
+from datetime import date
+
 from pydantic import BaseModel, Field, model_validator
 
-from app.schemas.course import CourseResponse
+from app.schemas.course import DailyItinerary
 from app.schemas.enums import ChatOperation, ChatStatus
 
 
@@ -11,6 +13,20 @@ class Message(BaseModel):
 
     role: str = Field(..., description="메시지 역할 (user / assistant)")
     content: str = Field(..., description="메시지 내용")
+
+
+class ChatRoadmap(BaseModel):
+    """대화 기능에서 사용하는 여행 로드맵 모델."""
+
+    start_date: date = Field(..., description="여행 시작일")
+    end_date: date = Field(..., description="여행 종료일")
+    trip_days: int = Field(..., description="총 여행 일수")
+    nights: int = Field(..., description="총 숙박 수")
+    people_count: int = Field(..., description="총 인원 수")
+    tags: list[str] = Field(..., description="여행 전체의 특징을 나타내는 태그 목록")
+    title: str = Field(..., description="여행 로드맵의 제목")
+    summary: str = Field(..., description="로드맵 한 줄 설명")
+    itinerary: list[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
 
 
 class ChatRequest(BaseModel):
@@ -22,7 +38,7 @@ class ChatRequest(BaseModel):
         session_history: 최근 3~5건 대화 맥락 (지시어 해소용)
     """
 
-    current_itinerary: CourseResponse = Field(..., description="현재 세션의 전체 로드맵 데이터")
+    current_itinerary: ChatRoadmap = Field(..., description="현재 세션의 전체 로드맵 데이터")
     user_query: str = Field(..., min_length=1, description="사용자 수정 요청 발화")
     session_history: list[Message] = Field(default_factory=list, description="최근 대화 맥락")
 
@@ -57,17 +73,11 @@ class ChatResponse(BaseModel):
     Fields:
         status: 수정 결과 상태
         modified_itinerary: 수정 완료된 로드맵 (SUCCESS 시)
-        change_summary: 변경 사항 자연어 피드백
+        message: 사용자에게 전달할 단일 응답 메시지
         diff_keys: UI 하이라이트용 수정 노드 ID 리스트
-        clarification_question: 모호성 해소 질문 (ASK_CLARIFICATION 시)
-        warnings: 경고 메시지 목록
-        suggested_keyword: 검색 실패 시 대안 키워드 제안
     """
 
     status: ChatStatus = Field(..., description="수정 결과 상태")
-    modified_itinerary: CourseResponse | None = Field(default=None, description="수정 완료된 로드맵")
-    change_summary: str = Field(default="", description="변경 사항 자연어 피드백")
+    modified_itinerary: ChatRoadmap | None = Field(default=None, description="수정 완료된 로드맵")
+    message: str = Field(default="", description="사용자에게 전달할 단일 응답 메시지")
     diff_keys: list[str] = Field(default_factory=list, description="수정된 노드 ID 리스트")
-    clarification_question: str | None = Field(default=None, description="모호성 해소 질문")
-    warnings: list[str] = Field(default_factory=list, description="경고 메시지 목록")
-    suggested_keyword: str | None = Field(default=None, description="검색 실패 시 대안 키워드")

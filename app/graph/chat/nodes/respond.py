@@ -66,7 +66,7 @@ def respond(state: ChatState) -> ChatState:
         return {
             **state,
             "status": ChatStatus.REJECTED,
-            "change_summary": "요청을 처리하는 중 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+            "message": "요청을 처리하는 중 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
         }
 
     is_compound = intent.get("is_compound", False)
@@ -90,8 +90,4 @@ def respond(state: ChatState) -> ChatState:
 
     final_status = status if status else ChatStatus.SUCCESS
 
-    response_state = {**state, "status": final_status, "change_summary": generated}
-    if final_status == ChatStatus.ASK_CLARIFICATION:
-        response_state["clarification_question"] = generated
-
-    return response_state
+    return {**state, "status": final_status, "message": generated}

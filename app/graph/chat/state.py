@@ -16,6 +16,7 @@ class ChatState(TypedDict, total=False):
         modified_itinerary: 수정 완료된 로드맵
         status: 수정 결과 상태
         change_summary: 변경 사항 자연어 피드백
+        message: 사용자 전달용 최종 메시지
         diff_keys: 수정된 노드 ID 리스트
         suggested_keyword: 검색 실패 시 대안 키워드
         error: 오류 메시지
@@ -35,6 +36,7 @@ class ChatState(TypedDict, total=False):
     modified_itinerary: dict | None
     status: str
     change_summary: str
+    message: str
     diff_keys: list[str]
     suggested_keyword: str | None
     error: str | None
