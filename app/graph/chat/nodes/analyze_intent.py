@@ -6,11 +6,11 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.logger import get_logger
-from app.graph.modify.llm import get_llm
-from app.graph.modify.state import ModifyState
+from app.graph.chat.llm import get_llm
+from app.graph.chat.state import ChatState
 from app.graph.roadmap.utils import strip_code_fence
-from app.schemas.enums import ModifyStatus
-from app.schemas.modify import ModifyIntent
+from app.schemas.chat import ChatIntent
+from app.schemas.enums import ChatStatus
 
 logger = get_logger(__name__)
 
@@ -89,8 +89,8 @@ def _build_history_context(session_history: list[dict]) -> str:
     return "최근 대화 맥락:\n" + "\n".join(lines) + "\n\n"
 
 
-def analyze_intent(state: ModifyState) -> ModifyState:
-    """사용자의 수정 요청에서 구조화된 의도(ModifyIntent)를 추출합니다."""
+def analyze_intent(state: ChatState) -> ChatState:
+    """사용자의 수정 요청에서 구조화된 의도(ChatIntent)를 추출합니다."""
     current_itinerary = state.get("current_itinerary")
     user_query = state.get("user_query")
     session_history = state.get("session_history", [])
@@ -98,7 +98,7 @@ def analyze_intent(state: ModifyState) -> ModifyState:
     if not current_itinerary or not user_query:
         return {**state, "error": "의도 분석에는 current_itinerary와 user_query가 필요합니다."}
 
-    parser = PydanticOutputParser(pydantic_object=ModifyIntent)
+    parser = PydanticOutputParser(pydantic_object=ChatIntent)
 
     itinerary_table = _build_itinerary_table(current_itinerary)
     history_context = _build_history_context(session_history)
@@ -124,7 +124,7 @@ def analyze_intent(state: ModifyState) -> ModifyState:
         return {
             **state,
             "intent": intent.model_dump(),
-            "status": ModifyStatus.ASK_CLARIFICATION,
+            "status": ChatStatus.ASK_CLARIFICATION,
             "change_summary": intent.reasoning,
         }
 

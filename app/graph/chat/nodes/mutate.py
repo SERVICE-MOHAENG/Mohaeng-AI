@@ -5,14 +5,14 @@ from __future__ import annotations
 import copy
 
 from app.core.logger import get_logger
-from app.graph.modify.llm import get_llm
-from app.graph.modify.state import ModifyState
-from app.graph.modify.utils import (
+from app.graph.chat.llm import get_llm
+from app.graph.chat.state import ChatState
+from app.graph.chat.utils import (
     build_diff_key,
     haversine_distance,
     reorder_visit_sequence,
 )
-from app.schemas.enums import ModifyOperation, ModifyStatus
+from app.schemas.enums import ChatOperation, ChatStatus
 from app.services.google_places_service import get_google_places_service
 
 logger = get_logger(__name__)
@@ -58,7 +58,7 @@ def _find_day(itinerary: dict, day_number: int) -> dict | None:
     return None
 
 
-async def mutate(state: ModifyState) -> ModifyState:
+async def mutate(state: ChatState) -> ChatState:
     """Intent에 따라 로드맵 JSON을 수정합니다."""
     intent = state.get("intent")
     current_itinerary = state.get("current_itinerary")
@@ -78,7 +78,7 @@ async def mutate(state: ModifyState) -> ModifyState:
     places = day.get("places", [])
     target_pos = target_index - 1
 
-    if op in (ModifyOperation.REPLACE, ModifyOperation.REMOVE, ModifyOperation.MOVE):
+    if op in (ChatOperation.REPLACE, ChatOperation.REMOVE, ChatOperation.MOVE):
         if target_pos < 0 or target_pos >= len(places):
             return {**state, "error": f"{target_day_num}일차에 {target_index}번 장소가 없습니다."}
 
@@ -86,14 +86,14 @@ async def mutate(state: ModifyState) -> ModifyState:
     warnings: list[str] = state.get("warnings", [])
     search_results: list = []
 
-    if op == ModifyOperation.REPLACE:
+    if op == ChatOperation.REPLACE:
         new_place, search_results, err = await _search_place(intent, day)
         if err:
             return {**state, "search_results": search_results, **err}
         places[target_pos] = _place_to_course_place(new_place, target_index)
         diff_keys.append(build_diff_key(target_day_num, target_index))
 
-    elif op == ModifyOperation.ADD:
+    elif op == ChatOperation.ADD:
         if target_index < 1 or target_index > len(places) + 1:
             return {**state, "error": f"{target_day_num}일차에 {target_index}번 위치에 추가할 수 없습니다."}
         insert_pos = target_index - 1
@@ -104,12 +104,12 @@ async def mutate(state: ModifyState) -> ModifyState:
         reorder_visit_sequence(places)
         diff_keys.append(build_diff_key(target_day_num, insert_pos + 1))
 
-    elif op == ModifyOperation.REMOVE:
+    elif op == ChatOperation.REMOVE:
         places.pop(target_pos)
         reorder_visit_sequence(places)
         diff_keys.append(build_diff_key(target_day_num, target_index))
 
-    elif op == ModifyOperation.MOVE:
+    elif op == ChatOperation.MOVE:
         dest_day_num = intent.get("destination_day", target_day_num)
         dest_index = max(1, intent.get("destination_index", 1))
         dest_pos = dest_index - 1
@@ -170,7 +170,7 @@ async def _search_place(intent: dict, day: dict) -> tuple:
             None,
             search_results,
             {
-                "status": ModifyStatus.ASK_CLARIFICATION,
+                "status": ChatStatus.ASK_CLARIFICATION,
                 "change_summary": f"'{keyword}' 검색 결과가 없습니다."
                 + (f" '{suggested}'(으)로 다시 검색해볼까요?" if suggested else ""),
                 "suggested_keyword": suggested,

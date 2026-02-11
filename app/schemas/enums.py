@@ -192,8 +192,8 @@ class BudgetRange(StrEnum):
     LUXURY = "LUXURY"
 
 
-class ModifyOperation(StrEnum):
-    """로드맵 수정 Operation 타입 Enum."""
+class ChatOperation(StrEnum):
+    """로드맵 대화의 수정 Operation 타입 Enum."""
 
     REPLACE = "REPLACE"
     ADD = "ADD"
@@ -201,8 +201,8 @@ class ModifyOperation(StrEnum):
     MOVE = "MOVE"
 
 
-class ModifyStatus(StrEnum):
-    """로드맵 수정 결과 상태 Enum."""
+class ChatStatus(StrEnum):
+    """로드맵 대화 결과 상태 Enum."""
 
     SUCCESS = "SUCCESS"
     ASK_CLARIFICATION = "ASK_CLARIFICATION"

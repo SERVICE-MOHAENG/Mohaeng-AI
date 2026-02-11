@@ -1,10 +1,10 @@
-"""로드맵 수정 그래프 상태 정의."""
+"""로드맵 대화 그래프 상태 정의."""
 
 from typing import TypedDict
 
 
-class ModifyState(TypedDict, total=False):
-    """로드맵 수정 그래프 상태.
+class ChatState(TypedDict, total=False):
+    """로드맵 대화 그래프 상태.
 
     Keys:
         current_itinerary: 현재 로드맵 데이터

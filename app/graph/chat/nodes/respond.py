@@ -5,9 +5,9 @@ from __future__ import annotations
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.logger import get_logger
-from app.graph.modify.llm import get_llm
-from app.graph.modify.state import ModifyState
-from app.schemas.enums import ModifyStatus
+from app.graph.chat.llm import get_llm
+from app.graph.chat.state import ChatState
+from app.schemas.enums import ChatStatus
 
 logger = get_logger(__name__)
 
@@ -50,9 +50,9 @@ USER_PROMPT = """\
 """
 
 
-def respond(state: ModifyState) -> ModifyState:
+def respond(state: ChatState) -> ChatState:
     """수정 결과에 대한 자연어 응답을 생성합니다."""
-    status = state.get("status", ModifyStatus.SUCCESS)
+    status = state.get("status", ChatStatus.SUCCESS)
     user_query = state.get("user_query", "")
     change_summary = state.get("change_summary", "")
     warnings = state.get("warnings", [])
@@ -65,7 +65,7 @@ def respond(state: ModifyState) -> ModifyState:
         logger.warning("수정 그래프 내 오류 발생: %s", error)
         return {
             **state,
-            "status": ModifyStatus.REJECTED,
+            "status": ChatStatus.REJECTED,
             "change_summary": "요청을 처리하는 중 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
         }
 
@@ -88,10 +88,10 @@ def respond(state: ModifyState) -> ModifyState:
         logger.error("응답 생성 LLM 호출 실패: %s", exc)
         generated = change_summary or "수정 처리 중 오류가 발생했습니다."
 
-    final_status = status if status else ModifyStatus.SUCCESS
+    final_status = status if status else ChatStatus.SUCCESS
 
     response_state = {**state, "status": final_status, "change_summary": generated}
-    if final_status == ModifyStatus.ASK_CLARIFICATION:
+    if final_status == ChatStatus.ASK_CLARIFICATION:
         response_state["clarification_question"] = generated
 
     return response_state

@@ -1,4 +1,4 @@
-"""로드맵 수정 그래프 LLM 인스턴스 관리."""
+"""로드맵 대화 그래프 LLM 인스턴스 관리."""
 
 from functools import lru_cache
 
