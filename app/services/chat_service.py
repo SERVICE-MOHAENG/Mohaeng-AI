@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
+import requests
+from pydantic import BaseModel
+
+from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.graph.chat import compiled_chat_graph
 from app.schemas.chat import ChatRequest, ChatResponse
@@ -14,8 +19,12 @@ logger = get_logger(__name__)
 
 async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
     """로드맵 대화 그래프를 실행하고 결과를 반환합니다."""
+    current_itinerary = request.current_itinerary
+    if isinstance(current_itinerary, BaseModel):
+        current_itinerary = current_itinerary.model_dump(mode="json")
+
     initial_state = {
-        "current_itinerary": request.current_itinerary.model_dump(mode="json"),
+        "current_itinerary": current_itinerary,
         "user_query": request.user_query,
         "session_history": [msg.model_dump() for msg in request.session_history],
     }
@@ -26,10 +35,7 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         raise
     except Exception:
         logger.exception("대화 그래프 실행 중 예외 발생")
-        return ChatResponse(
-            status=ChatStatus.REJECTED,
-            message="요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-        )
+        raise
 
     status = result.get("status", ChatStatus.SUCCESS)
     message = result.get("message") or result.get("change_summary") or result.get("clarification_question") or ""
@@ -46,4 +52,85 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         modified_itinerary=result.get("modified_itinerary"),
         message=message,
         diff_keys=result.get("diff_keys", []),
+    )
+
+
+def _serialize_itinerary(itinerary: Any) -> dict | None:
+    if itinerary is None:
+        return None
+    if isinstance(itinerary, BaseModel):
+        return itinerary.model_dump(mode="json")
+    if isinstance(itinerary, dict):
+        return itinerary
+    return None
+
+
+def _build_callback_payload(result: ChatResponse) -> dict:
+    status_value = result.status.value if isinstance(result.status, ChatStatus) else str(result.status)
+    payload = {
+        "status": status_value,
+        "message": result.message or "",
+        "diff_keys": result.diff_keys or [],
+        "modified_itinerary": None,
+    }
+
+    if status_value == ChatStatus.SUCCESS.value:
+        payload["modified_itinerary"] = _serialize_itinerary(result.modified_itinerary)
+
+    return payload
+
+
+def _build_chat_callback_url(base_url: str, job_id: str) -> str:
+    """NestJS 콜백 엔드포인트를 구성합니다."""
+    return f"{base_url.rstrip('/')}/itineraries/{job_id}/chat-result"
+
+
+async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
+    """콜백 URL로 결과를 전송합니다."""
+
+    headers = {"x-service-secret": service_secret} if service_secret else {}
+
+    def _send() -> None:
+        response = requests.post(
+            callback_url,
+            json=payload,
+            headers=headers,
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
+
+    try:
+        await asyncio.to_thread(_send)
+    except Exception as exc:
+        logger.error("콜백 전송 실패: %s", exc)
+
+
+async def process_chat_request(request: ChatRequest) -> None:
+    """대화 요청을 처리하고 콜백으로 결과를 전달합니다."""
+    settings = get_settings()
+
+    try:
+        result = await asyncio.wait_for(
+            run_chat_pipeline(request),
+            timeout=settings.LLM_TIMEOUT_SECONDS,
+        )
+        payload = _build_callback_payload(result)
+    except asyncio.TimeoutError:
+        payload = {
+            "status": ChatStatus.FAILED.value,
+            "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
+        }
+    except Exception:
+        logger.exception("대화 파이프라인 처리 중 예외 발생")
+        payload = {
+            "status": ChatStatus.FAILED.value,
+            "error": {"code": "PIPELINE_ERROR", "message": "대화 처리 중 내부 오류가 발생했습니다."},
+        }
+
+    callback_endpoint = _build_chat_callback_url(str(request.callback_url), request.job_id)
+    await _post_callback(
+        callback_url=callback_endpoint,
+        payload=payload,
+        timeout_seconds=settings.CALLBACK_TIMEOUT_SECONDS,
+        service_secret=settings.SERVICE_SECRET,
     )

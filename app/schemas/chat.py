@@ -1,8 +1,9 @@
 """대화(Chat) 요청/응답 스키마."""
 
 from datetime import date
+from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.course import DailyItinerary
 from app.schemas.enums import ChatOperation, ChatStatus
@@ -18,6 +19,8 @@ class Message(BaseModel):
 class ChatRoadmap(BaseModel):
     """대화 기능에서 사용하는 여행 로드맵 모델."""
 
+    model_config = ConfigDict(extra="ignore")
+
     start_date: date = Field(..., description="여행 시작일")
     end_date: date = Field(..., description="여행 종료일")
     trip_days: int = Field(..., description="총 여행 일수")
@@ -27,20 +30,34 @@ class ChatRoadmap(BaseModel):
     title: str = Field(..., description="여행 로드맵의 제목")
     summary: str = Field(..., description="로드맵 한 줄 설명")
     itinerary: list[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
+    meta_data: dict[str, Any] | None = Field(default=None, description="NestJS에서 전달받는 메타 데이터")
 
 
 class ChatRequest(BaseModel):
     """로드맵 대화 요청 모델.
 
     Fields:
+        job_id: NestJS BullMQ job id
+        callback_url: NestJS 콜백 URL
         current_itinerary: 현재 세션의 전체 로드맵
         user_query: 사용자 수정 요청 발화
         session_history: 최근 3~5건 대화 맥락 (지시어 해소용)
     """
 
+    model_config = ConfigDict(extra="ignore")
+
+    job_id: str = Field(..., description="NestJS BullMQ job id")
+    callback_url: AnyHttpUrl = Field(..., description="NestJS 콜백 URL")
     current_itinerary: ChatRoadmap = Field(..., description="현재 세션의 전체 로드맵 데이터")
     user_query: str = Field(..., min_length=1, description="사용자 수정 요청 발화")
     session_history: list[Message] = Field(default_factory=list, description="최근 대화 맥락")
+
+
+class ChatAckResponse(BaseModel):
+    """/api/v1/chat 비동기 처리 수락 응답."""
+
+    job_id: str = Field(..., description="NestJS BullMQ job id")
+    status: str = Field("ACCEPTED", description="요청 수락 상태")
 
 
 class ChatIntent(BaseModel):
