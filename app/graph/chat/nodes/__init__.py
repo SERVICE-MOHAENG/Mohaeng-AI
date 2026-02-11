@@ -2,7 +2,8 @@
 
 from app.graph.chat.nodes.analyze_intent import analyze_intent
 from app.graph.chat.nodes.cascade import cascade
+from app.graph.chat.nodes.general_chat import general_chat
 from app.graph.chat.nodes.mutate import mutate
 from app.graph.chat.nodes.respond import respond
 
-__all__ = ["analyze_intent", "cascade", "mutate", "respond"]
+__all__ = ["analyze_intent", "cascade", "general_chat", "mutate", "respond"]

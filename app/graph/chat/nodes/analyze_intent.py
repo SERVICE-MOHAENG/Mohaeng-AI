@@ -1,20 +1,48 @@
-"""사용자 수정 요청 의도 분석 LLM 노드."""
+"""사용자 대화 의도 분류 및 수정 의도 분석 LLM 노드."""
 
 from __future__ import annotations
 
+import json
+import re
+from typing import Literal
+
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field, ValidationError
 
 from app.core.logger import get_logger
 from app.graph.chat.llm import get_llm
 from app.graph.chat.state import ChatState
 from app.graph.roadmap.utils import strip_code_fence
 from app.schemas.chat import ChatIntent
-from app.schemas.enums import ChatStatus
+from app.schemas.enums import ChatOperation, ChatStatus
 
 logger = get_logger(__name__)
 
-SYSTEM_PROMPT = """\
+CLASSIFIER_SYSTEM_PROMPT = """\
+당신은 여행 대화 라우터입니다.
+사용자 요청을 아래 두 가지 중 하나로 분류하세요.
+
+- GENERAL_CHAT: 일정 설명/추천/질문/안내 등 일반 대화
+- MODIFICATION: 일정 항목의 추가/삭제/교체/순서 이동 등 실제 변경 요청
+
+규칙:
+- 단순 정보 질문, 이유 설명, 추천 요청은 GENERAL_CHAT입니다.
+- 명시적 변경 동사(바꿔/추가/삭제/옮겨 등)나 수정 의도가 있으면 MODIFICATION입니다.
+- 응답은 JSON만 출력하세요.
+"""
+
+CLASSIFIER_USER_PROMPT = """\
+{history_context}\
+현재 로드맵 매핑:
+{itinerary_table}
+
+사용자 요청: {user_query}
+
+{format_instructions}
+"""
+
+MODIFICATION_SYSTEM_PROMPT = """\
 당신은 여행 로드맵 수정 요청을 분석하는 전문 어시스턴트입니다.
 사용자의 자연어 수정 요청을 분석하여 구조화된 수정 의도(Intent)를 추출하세요.
 
@@ -37,6 +65,7 @@ SYSTEM_PROMPT = """\
 6. **MOVE 이동 목적지**
    - MOVE 시 destination_day(이동 목적지 일자)와 destination_index(이동 목적지 순서)를 반드시 설정하세요.
    - REPLACE/ADD/REMOVE 시 destination_day와 destination_index는 null로 설정하세요.
+   - 단, needs_clarification=true라면 MOVE여도 destination_day와 destination_index는 null이어도 됩니다.
 
 4. **복합 요청 처리**
    - 두 가지 이상의 수정이 감지되면 **첫 번째 요청만** 추출하세요.
@@ -56,10 +85,34 @@ SYSTEM_PROMPT = """\
 {format_instructions}
 """
 
-USER_PROMPT = """\
+MODIFICATION_USER_PROMPT = """\
 {history_context}\
 사용자 요청: {user_query}
 """
+
+
+class ChatIntentRoute(BaseModel):
+    """대화 라우팅 분류 결과."""
+
+    intent_type: Literal["GENERAL_CHAT", "MODIFICATION"] = Field(..., description="의도 분류 결과")
+    reasoning: str = Field(default="", description="분류 근거")
+
+
+class ChatIntentDraft(BaseModel):
+    """수정 의도 초안 모델.
+
+    파싱 실패를 줄이기 위해 최소 제약으로 먼저 파싱한다.
+    """
+
+    op: ChatOperation
+    target_day: int = Field(ge=1, default=1)
+    target_index: int = Field(ge=1, default=1)
+    destination_day: int | None = Field(default=None, ge=1)
+    destination_index: int | None = Field(default=None, ge=1)
+    search_keyword: str | None = None
+    reasoning: str = ""
+    is_compound: bool = False
+    needs_clarification: bool = False
 
 
 def _build_itinerary_table(itinerary: dict) -> str:
@@ -89,21 +142,81 @@ def _build_history_context(session_history: list[dict]) -> str:
     return "최근 대화 맥락:\n" + "\n".join(lines) + "\n\n"
 
 
-def analyze_intent(state: ChatState) -> ChatState:
-    """사용자의 수정 요청에서 구조화된 의도(ChatIntent)를 추출합니다."""
-    current_itinerary = state.get("current_itinerary")
-    user_query = state.get("user_query")
-    session_history = state.get("session_history", [])
+def _has_modification_keyword(user_query: str) -> bool:
+    """LLM 분류 실패 시 사용할 간단한 수정 의도 키워드 휴리스틱."""
+    keywords = (
+        "바꿔",
+        "변경",
+        "수정",
+        "추가",
+        "삭제",
+        "제거",
+        "옮겨",
+        "이동",
+        "순서",
+        "replace",
+        "add",
+        "remove",
+        "move",
+    )
+    normalized = user_query.lower()
+    return any(keyword in normalized for keyword in keywords)
 
-    if not current_itinerary or not user_query:
-        return {**state, "error": "의도 분석에는 current_itinerary와 user_query가 필요합니다."}
 
-    parser = PydanticOutputParser(pydantic_object=ChatIntent)
+def _classify_intent_type(itinerary_table: str, history_context: str, user_query: str) -> str:
+    """요청을 GENERAL_CHAT 또는 MODIFICATION으로 분류합니다."""
+    parser = PydanticOutputParser(pydantic_object=ChatIntentRoute)
+    prompt = ChatPromptTemplate.from_messages([("system", CLASSIFIER_SYSTEM_PROMPT), ("human", CLASSIFIER_USER_PROMPT)])
+    messages = prompt.format_messages(
+        itinerary_table=itinerary_table,
+        history_context=history_context,
+        user_query=user_query,
+        format_instructions=parser.get_format_instructions(),
+    )
 
-    itinerary_table = _build_itinerary_table(current_itinerary)
-    history_context = _build_history_context(session_history)
+    try:
+        response = get_llm().invoke(messages)
+        content = strip_code_fence(response.content)
+        route = parser.parse(content)
+        return route.intent_type
+    except Exception as exc:
+        logger.warning("의도 분류 LLM 호출 실패, 휴리스틱으로 대체: %s", exc)
+        return "MODIFICATION" if _has_modification_keyword(user_query) else "GENERAL_CHAT"
 
-    prompt = ChatPromptTemplate.from_messages([("system", SYSTEM_PROMPT), ("human", USER_PROMPT)])
+
+def _extract_json_object(text: str) -> dict | None:
+    """LLM 응답 문자열에서 JSON 객체를 최대한 복구해 파싱합니다."""
+    content = strip_code_fence(text)
+    if not content:
+        return None
+
+    try:
+        parsed = json.loads(content)
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        pass
+
+    match = re.search(r"\{[\s\S]*\}", content)
+    if not match:
+        return None
+
+    try:
+        parsed = json.loads(match.group(0))
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+def _parse_modification_intent(
+    itinerary_table: str,
+    history_context: str,
+    user_query: str,
+) -> ChatIntentDraft:
+    """수정 의도 초안을 파싱합니다. 실패 시 JSON 복구를 시도합니다."""
+    parser = PydanticOutputParser(pydantic_object=ChatIntentDraft)
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", MODIFICATION_SYSTEM_PROMPT), ("human", MODIFICATION_USER_PROMPT)]
+    )
 
     messages = prompt.format_messages(
         itinerary_table=itinerary_table,
@@ -112,20 +225,62 @@ def analyze_intent(state: ChatState) -> ChatState:
         user_query=user_query,
     )
 
+    response = get_llm().invoke(messages)
+    content = strip_code_fence(response.content)
+
     try:
-        response = get_llm().invoke(messages)
-        content = strip_code_fence(response.content)
-        intent = parser.parse(content)
+        return parser.parse(content)
+    except Exception as exc:
+        recovered = _extract_json_object(content)
+        if recovered is not None:
+            return ChatIntentDraft.model_validate(recovered)
+        raise ValueError("수정 의도 응답 파싱에 실패했습니다.") from exc
+
+
+def analyze_intent(state: ChatState) -> ChatState:
+    """사용자 요청을 GENERAL_CHAT 또는 MODIFICATION으로 분류합니다."""
+    current_itinerary = state.get("current_itinerary")
+    user_query = state.get("user_query")
+    session_history = state.get("session_history", [])
+
+    if not current_itinerary or not user_query:
+        return {**state, "error": "의도 분석에는 current_itinerary와 user_query가 필요합니다."}
+
+    itinerary_table = _build_itinerary_table(current_itinerary)
+    history_context = _build_history_context(session_history)
+
+    intent_type = _classify_intent_type(itinerary_table, history_context, user_query)
+    if intent_type == "GENERAL_CHAT":
+        return {**state, "intent_type": "GENERAL_CHAT"}
+
+    try:
+        intent_draft = _parse_modification_intent(
+            itinerary_table=itinerary_table,
+            history_context=history_context,
+            user_query=user_query,
+        )
     except Exception as exc:
         logger.error("의도 분석 LLM 호출 실패: %s", exc)
         return {**state, "error": "수정 의도 분석에 실패했습니다."}
 
-    if intent.needs_clarification:
+    if intent_draft.needs_clarification:
         return {
             **state,
-            "intent": intent.model_dump(),
+            "intent_type": "MODIFICATION",
+            "intent": intent_draft.model_dump(),
             "status": ChatStatus.ASK_CLARIFICATION,
-            "change_summary": intent.reasoning,
+            "change_summary": intent_draft.reasoning or "요청이 모호하여 확인이 필요합니다.",
         }
 
-    return {**state, "intent": intent.model_dump()}
+    try:
+        strict_intent = ChatIntent.model_validate(intent_draft.model_dump())
+    except ValidationError:
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "intent": intent_draft.model_dump(),
+            "status": ChatStatus.ASK_CLARIFICATION,
+            "change_summary": intent_draft.reasoning or "수정 대상 확인을 위해 추가 정보가 필요합니다.",
+        }
+
+    return {**state, "intent_type": "MODIFICATION", "intent": strict_intent.model_dump()}

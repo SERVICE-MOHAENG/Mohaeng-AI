@@ -60,7 +60,13 @@ class ChatIntent(BaseModel):
 
     @model_validator(mode="after")
     def validate_move_destination(self):
-        """MOVE 시 destination_day, destination_index 필수 검증."""
+        """MOVE 시 destination_day, destination_index 필수 검증.
+
+        모호성 해소가 필요한 경우(needs_clarification=True)에는
+        목적지 값 누락을 허용해 ASK_CLARIFICATION 경로로 보낸다.
+        """
+        if self.needs_clarification:
+            return self
         if self.op == ChatOperation.MOVE:
             if self.destination_day is None or self.destination_index is None:
                 raise ValueError("MOVE 시 destination_day와 destination_index가 필요합니다.")

@@ -204,6 +204,7 @@ class ChatOperation(StrEnum):
 class ChatStatus(StrEnum):
     """로드맵 대화 결과 상태 Enum."""
 
+    GENERAL_CHAT = "GENERAL_CHAT"
     SUCCESS = "SUCCESS"
     ASK_CLARIFICATION = "ASK_CLARIFICATION"
     REJECTED = "REJECTED"
