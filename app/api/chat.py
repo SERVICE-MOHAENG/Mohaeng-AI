@@ -34,6 +34,28 @@ CHAT_ACK_EXAMPLES = {
     }
 }
 
+CHAT_ERROR_EXAMPLES = {
+    401: {
+        "missing_secret": {
+            "summary": "서비스 시크릿 누락",
+            "description": "x-service-secret 헤더가 누락된 경우",
+            "value": {"detail": "서비스 시크릿 헤더가 누락되었습니다."},
+        },
+        "invalid_secret": {
+            "summary": "서비스 시크릿 불일치",
+            "description": "x-service-secret 값이 올바르지 않은 경우",
+            "value": {"detail": "유효하지 않은 서비스 시크릿입니다."},
+        },
+    },
+    500: {
+        "missing_config": {
+            "summary": "서비스 시크릿 미설정",
+            "description": "서버에 SERVICE_SECRET 설정이 없는 경우",
+            "value": {"detail": "서비스 시크릿 설정이 없습니다."},
+        }
+    },
+}
+
 
 @router.post(
     "/chat",
@@ -48,7 +70,23 @@ CHAT_ACK_EXAMPLES = {
                     "examples": CHAT_ACK_EXAMPLES,
                 }
             },
-        }
+        },
+        401: {
+            "description": "인증 실패",
+            "content": {
+                "application/json": {
+                    "examples": CHAT_ERROR_EXAMPLES[401],
+                }
+            },
+        },
+        500: {
+            "description": "서버 오류",
+            "content": {
+                "application/json": {
+                    "examples": CHAT_ERROR_EXAMPLES[500],
+                }
+            },
+        },
     },
 )
 async def chat_roadmap(request: ChatRequest) -> ChatAckResponse:
