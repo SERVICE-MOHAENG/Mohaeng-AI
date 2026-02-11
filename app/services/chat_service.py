@@ -27,7 +27,7 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         logger.error("대화 파이프라인 에러: %s", error)
         return ChatResponse(
             status=ChatStatus.REJECTED,
-            message=error,
+            message=result.get("message") or "요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
         )
 
     return ChatResponse(
