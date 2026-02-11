@@ -120,10 +120,11 @@ async def process_chat_request(request: ChatRequest) -> None:
             "status": "FAILED",
             "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
         }
-    except Exception as exc:
+    except Exception:
+        logger.exception("대화 파이프라인 처리 중 예외 발생")
         payload = {
             "status": "FAILED",
-            "error": {"code": "PIPELINE_ERROR", "message": str(exc)},
+            "error": {"code": "PIPELINE_ERROR", "message": "대화 처리 중 내부 오류가 발생했습니다."},
         }
 
     callback_endpoint = _build_chat_callback_url(str(request.callback_url), request.job_id)
