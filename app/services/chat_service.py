@@ -80,6 +80,11 @@ def _build_callback_payload(result: ChatResponse) -> dict:
     return payload
 
 
+def _build_chat_callback_url(base_url: str, job_id: str) -> str:
+    """NestJS 콜백 엔드포인트를 구성합니다."""
+    return f"{base_url.rstrip('/')}/itineraries/{job_id}/chat-result"
+
+
 async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
     """콜백 URL로 결과를 전송합니다."""
 
@@ -121,8 +126,9 @@ async def process_chat_request(request: ChatRequest) -> None:
             "error": {"code": "PIPELINE_ERROR", "message": str(exc)},
         }
 
+    callback_endpoint = _build_chat_callback_url(str(request.callback_url), request.job_id)
     await _post_callback(
-        callback_url=str(request.callback_url),
+        callback_url=callback_endpoint,
         payload=payload,
         timeout_seconds=settings.CALLBACK_TIMEOUT_SECONDS,
         service_secret=settings.SERVICE_SECRET,
