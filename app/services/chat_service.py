@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from app.core.logger import get_logger
 from app.graph.chat import compiled_chat_graph
 from app.schemas.chat import ChatRequest, ChatResponse
@@ -18,7 +20,16 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         "session_history": [msg.model_dump() for msg in request.session_history],
     }
 
-    result = await compiled_chat_graph.ainvoke(initial_state)
+    try:
+        result = await compiled_chat_graph.ainvoke(initial_state)
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("대화 그래프 실행 중 예외 발생")
+        return ChatResponse(
+            status=ChatStatus.REJECTED,
+            message="요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+        )
 
     status = result.get("status", ChatStatus.SUCCESS)
     message = result.get("message") or result.get("change_summary") or result.get("clarification_question") or ""
