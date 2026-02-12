@@ -81,5 +81,5 @@ def to_requests_timeout(total_timeout_seconds: int) -> tuple[float, float]:
     """requests용 (connect, read) 타임아웃 튜플을 생성합니다."""
     total = float(max(_MIN_TIMEOUT_SECONDS, int(total_timeout_seconds)))
     connect_timeout = min(_MAX_CONNECT_TIMEOUT_SECONDS, max(1.0, total * _CONNECT_TIMEOUT_RATIO))
-    read_timeout = max(1.0, total - connect_timeout)
+    read_timeout = max(1.0, total - connect_timeout) if total > connect_timeout else max(0.5, total * 0.5)
     return (connect_timeout, read_timeout)
