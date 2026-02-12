@@ -58,10 +58,6 @@ jobs:
           script: |
             set -e
             cd '${{ env.DEPLOY_PATH }}'
-            cat > .env <<'EOF'
-            ${{ secrets.EC2_ENV_FILE }}
-            EOF
-            chmod 600 .env
             export IMAGE_TAG='${{ steps.vars.outputs.image_tag }}'
             docker compose pull
             docker compose up -d --remove-orphans
