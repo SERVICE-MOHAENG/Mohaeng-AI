@@ -62,7 +62,6 @@ class RecommendedDestination(BaseModel):
 class RecommendResultData(BaseModel):
     """추천 성공 시 콜백으로 전달되는 데이터 본문."""
 
-    analysis_summary: str = Field(..., description="사용자 성향 한 줄 요약")
     recommended_destinations: list[RecommendedDestination] = Field(
         ..., min_length=5, max_length=5, description="정확히 5개의 추천 여행지"
     )

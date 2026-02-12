@@ -144,13 +144,11 @@ def _build_recommend_prompt(
 {", ".join(candidate_names)}
 
 요구사항:
-1) 사용자 성향 요약을 한국어 한 문장으로 작성하세요.
-2) 후보 목록에서 중복 없이 정확히 5개를 선택하세요.
+1) 후보 목록에서 중복 없이 정확히 5개를 선택하세요.
 3) 이번 실행 변주 힌트: {variation_hint}
 
 반드시 JSON만 출력하세요. JSON 외 텍스트는 절대 출력하지 마세요.
 {{
-  "analysis_summary": "string",
   "recommended_destinations": [
     {{"region_name": "string"}}
   ]
@@ -234,14 +232,7 @@ def _normalize_result(
     if len(normalized) < DEFAULT_SELECTION_SIZE:
         raise RuntimeError("INSUFFICIENT_DESTINATIONS")
 
-    summary = parsed.get("analysis_summary")
-    if not isinstance(summary, str) or not summary.strip():
-        summary = "사용자 설문 성향과 제약 조건을 기준으로 여행지를 추천했습니다."
-
-    return RecommendResultData(
-        analysis_summary=summary.strip(),
-        recommended_destinations=normalized,
-    )
+    return RecommendResultData(recommended_destinations=normalized)
 
 
 async def run_recommendation_pipeline(request: RecommendRequest) -> RecommendResultData:
