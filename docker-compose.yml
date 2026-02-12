@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ${DOCKERHUB_USERNAME}/mohaeng-ai:${IMAGE_TAG:-latest}
+    container_name: mohaeng-ai
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
