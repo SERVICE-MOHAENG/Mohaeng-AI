@@ -13,6 +13,7 @@ from app.schemas.recommend import RecommendRequest
 
 
 def _set_required_env(monkeypatch, **overrides: str) -> None:
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("JWT_ACCESS_SECRET", "test-secret")
     monkeypatch.setenv("JWT_ACCESS_EXPIRY_MINUTES", "30")
@@ -29,15 +30,15 @@ def _load_main_module():
     return importlib.reload(main_module)
 
 
-def test_health_check_endpoint(monkeypatch) -> None:
+def test_livez_endpoint(monkeypatch) -> None:
     _set_required_env(monkeypatch)
     main_module = _load_main_module()
 
     client = TestClient(main_module.app)
-    response = client.get("/")
+    response = client.get("/livez")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "message": "Mohaeng AI Server is running"}
+    assert response.json() == {"status": "alive"}
 
 
 def test_chat_openapi_ack_example(monkeypatch) -> None:
@@ -118,7 +119,7 @@ def test_security_headers_are_attached(monkeypatch) -> None:
     main_module = _load_main_module()
 
     client = TestClient(main_module.app)
-    response = client.get("/")
+    response = client.get("/livez")
 
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
@@ -136,7 +137,7 @@ def test_cors_allowlist_from_env(monkeypatch) -> None:
     main_module = _load_main_module()
 
     client = TestClient(main_module.app)
-    response = client.get("/", headers={"Origin": "https://example.com"})
+    response = client.get("/livez", headers={"Origin": "https://example.com"})
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "https://example.com"
@@ -156,3 +157,49 @@ def test_request_timeout_middleware(monkeypatch) -> None:
 
     assert response.status_code == 504
     assert response.json() == {"detail": "요청 처리 시간이 초과되었습니다."}
+
+
+def test_readyz_returns_200_when_ready(monkeypatch) -> None:
+    _set_required_env(monkeypatch)
+    main_module = _load_main_module()
+
+    async def _fake_ready() -> dict:
+        return {
+            "status": "ready",
+            "checks": {
+                "db": {"status": "ok", "ok": True, "required": True, "detail": "ok"},
+                "openai": {"status": "ok", "ok": True, "required": True, "detail": "ok"},
+                "google_places": {"status": "skip", "ok": True, "required": False, "detail": "skip"},
+            },
+        }
+
+    monkeypatch.setattr(main_module, "collect_readiness_status", _fake_ready)
+
+    client = TestClient(main_module.app)
+    response = client.get("/readyz")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+
+
+def test_readyz_returns_503_when_not_ready(monkeypatch) -> None:
+    _set_required_env(monkeypatch)
+    main_module = _load_main_module()
+
+    async def _fake_not_ready() -> dict:
+        return {
+            "status": "not_ready",
+            "checks": {
+                "db": {"status": "fail", "ok": False, "required": True, "detail": "DB 연결 실패"},
+                "openai": {"status": "ok", "ok": True, "required": True, "detail": "ok"},
+                "google_places": {"status": "skip", "ok": True, "required": False, "detail": "skip"},
+            },
+        }
+
+    monkeypatch.setattr(main_module, "collect_readiness_status", _fake_not_ready)
+
+    client = TestClient(main_module.app)
+    response = client.get("/readyz")
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "not_ready"

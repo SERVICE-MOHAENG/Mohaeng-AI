@@ -17,6 +17,7 @@ from app.api.dependencies import require_service_secret
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.core.logging_config import configure_logging
+from app.core.readiness import collect_readiness_status
 from app.core.timeout_policy import get_timeout_policy
 
 configure_logging()
@@ -185,7 +186,15 @@ if docs_mode == "secret":
         return get_redoc_html(openapi_url="/openapi.json", title=f"{app.title} - ReDoc")
 
 
-@app.get("/")
-def health_check() -> dict:
-    """헬스 체크 엔드포인트."""
-    return {"status": "ok", "message": "Mohaeng AI Server is running"}
+@app.get("/livez")
+def livez() -> dict:
+    """프로세스 생존 여부를 반환합니다."""
+    return {"status": "alive"}
+
+
+@app.get("/readyz")
+async def readyz() -> JSONResponse:
+    """의존성 준비 상태를 점검합니다."""
+    payload = await collect_readiness_status()
+    status_code = 200 if payload.get("status") == "ready" else 503
+    return JSONResponse(status_code=status_code, content=payload)
