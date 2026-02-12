@@ -19,7 +19,7 @@ jobs:
           version: "latest"
 
       - name: Python 설정
-        run: uv python install 3.14
+        run: uv python install 3.12
 
       - name: 의존성 설치
         run: uv sync --all-extras --dev
@@ -30,10 +30,14 @@ jobs:
       - name: 포맷 검사 (Ruff Format)
         run: uv run ruff format --check .
 
-      # - name: 테스트 실행 (Pytest)
-      #   run: uv run pytest
-      #   env:
-      #     OPENAI_API_KEY: test-key-for-ci
-      #     DATABASE_URL: sqlite+aiosqlite:///./test.db
-      #     JWT_ACCESS_SECRET: test-secret
-      #     JWT_ACCESS_EXPIRY_MINUTES: "30"
+      - name: 테스트 실행 (Pytest)
+        run: uv run pytest
+        env:
+          OPENAI_API_KEY: test-key-for-ci
+          DATABASE_URL: sqlite:///./test.db
+          JWT_ACCESS_SECRET: test-secret
+          JWT_ACCESS_EXPIRY_MINUTES: "30"
+          SERVICE_SECRET: test-service-secret
+          LLM_TIMEOUT_SECONDS: "60"
+          CALLBACK_TIMEOUT_SECONDS: "10"
+          GOOGLE_PLACES_API_KEY: test-google-api-key
