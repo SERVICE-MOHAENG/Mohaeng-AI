@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 
 import pytest
@@ -139,3 +140,19 @@ def test_cors_allowlist_from_env(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "https://example.com"
+
+
+def test_request_timeout_middleware(monkeypatch) -> None:
+    _set_required_env(monkeypatch, REQUEST_TIMEOUT_SECONDS="1")
+    main_module = _load_main_module()
+
+    @main_module.app.get("/_slow-test")
+    async def _slow_test() -> dict:
+        await asyncio.sleep(1.2)
+        return {"ok": True}
+
+    client = TestClient(main_module.app)
+    response = client.get("/_slow-test")
+
+    assert response.status_code == 504
+    assert response.json() == {"detail": "요청 처리 시간이 초과되었습니다."}

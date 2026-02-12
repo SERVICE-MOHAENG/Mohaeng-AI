@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
@@ -15,10 +17,12 @@ from app.api.dependencies import require_service_secret
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.core.logging_config import configure_logging
+from app.core.timeout_policy import get_timeout_policy
 
 configure_logging()
 logger = get_logger(__name__)
 settings = get_settings()
+timeout_policy = get_timeout_policy(settings)
 
 
 def _split_csv(value: str) -> list[str]:
@@ -89,6 +93,16 @@ _configure_cors(app)
 app.include_router(generate.router)
 app.include_router(chat.router)
 app.include_router(recommend.router)
+
+
+@app.middleware("http")
+async def enforce_request_timeout(request: Request, call_next) -> Response:
+    """요청 단위 타임아웃을 적용합니다."""
+    try:
+        return await asyncio.wait_for(call_next(request), timeout=timeout_policy.request_timeout_seconds)
+    except asyncio.TimeoutError:
+        logger.warning("Request timeout: %s %s", request.method, request.url.path)
+        return JSONResponse(status_code=504, content={"detail": "요청 처리 시간이 초과되었습니다."})
 
 
 @app.middleware("http")

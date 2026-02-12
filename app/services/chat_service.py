@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy, to_requests_timeout
 from app.graph.chat import compiled_chat_graph
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.enums import ChatStatus
@@ -89,13 +90,14 @@ async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int,
     """콜백 URL로 결과를 전송합니다."""
 
     headers = {"x-service-secret": service_secret} if service_secret else {}
+    request_timeout = to_requests_timeout(timeout_seconds)
 
     def _send() -> None:
         response = requests.post(
             callback_url,
             json=payload,
             headers=headers,
-            timeout=timeout_seconds,
+            timeout=request_timeout,
         )
         response.raise_for_status()
 
@@ -108,11 +110,12 @@ async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int,
 async def process_chat_request(request: ChatRequest) -> None:
     """대화 요청을 처리하고 콜백으로 결과를 전달합니다."""
     settings = get_settings()
+    timeout_policy = get_timeout_policy(settings)
 
     try:
         result = await asyncio.wait_for(
             run_chat_pipeline(request),
-            timeout=settings.LLM_TIMEOUT_SECONDS,
+            timeout=timeout_policy.llm_timeout_seconds,
         )
         payload = _build_callback_payload(result)
     except asyncio.TimeoutError:
@@ -131,6 +134,6 @@ async def process_chat_request(request: ChatRequest) -> None:
     await _post_callback(
         callback_url=callback_endpoint,
         payload=payload,
-        timeout_seconds=settings.CALLBACK_TIMEOUT_SECONDS,
+        timeout_seconds=timeout_policy.callback_timeout_seconds,
         service_secret=settings.SERVICE_SECRET,
     )

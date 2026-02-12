@@ -10,6 +10,7 @@ import requests
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy, to_requests_timeout
 from app.schemas.place import Place, PlaceGeometry
 from app.services.places_service import PlacesServiceProtocol
 
@@ -61,7 +62,8 @@ class GooglePlacesService(PlacesServiceProtocol):
     def from_settings(cls) -> "GooglePlacesService":
         """환경 설정으로부터 서비스 인스턴스를 생성합니다."""
         settings = get_settings()
-        timeout_seconds = settings.GOOGLE_PLACES_TIMEOUT_SECONDS
+        timeout_policy = get_timeout_policy(settings)
+        timeout_seconds = timeout_policy.google_places_timeout_seconds
         if not settings.GOOGLE_PLACES_API_KEY:
             logger.error("GOOGLE_PLACES_API_KEY가 설정되어 있지 않습니다.")
         return cls(
@@ -127,6 +129,7 @@ class GooglePlacesService(PlacesServiceProtocol):
             "X-Goog-Api-Key": self._api_key,
             "X-Goog-FieldMask": field_mask,
         }
+        request_timeout = to_requests_timeout(self._timeout_seconds)
 
         def _send() -> requests.Response:
             # Create a session per request to avoid cross-thread session reuse.
@@ -137,7 +140,7 @@ class GooglePlacesService(PlacesServiceProtocol):
                     json=payload,
                     params=params,
                     headers=headers,
-                    timeout=self._timeout_seconds,
+                    timeout=request_timeout,
                 )
 
         try:

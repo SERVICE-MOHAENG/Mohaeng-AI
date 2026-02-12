@@ -15,6 +15,7 @@ from langchain_openai import ChatOpenAI
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy, to_requests_timeout
 from app.schemas.enums import Region
 from app.schemas.recommend import (
     BudgetLevel,
@@ -178,10 +179,12 @@ def _load_candidates(rng: random.Random) -> list[RegionCandidate]:
 def _get_recommend_llm() -> ChatOpenAI:
     """추천 전용 LLM 인스턴스를 생성한다."""
     settings = get_settings()
+    timeout_policy = get_timeout_policy(settings)
     return ChatOpenAI(
         model=settings.LLM_MODEL_NAME,
         temperature=settings.RECOMMEND_LLM_TEMPERATURE,
         api_key=settings.OPENAI_API_KEY,
+        request_timeout=timeout_policy.recommend_timeout_seconds,
     )
 
 
@@ -265,13 +268,14 @@ def _build_callback_url(base_url: str, job_id: str) -> str:
 
 async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
     headers = {"x-service-secret": service_secret} if service_secret else {}
+    request_timeout = to_requests_timeout(timeout_seconds)
 
     def _send() -> None:
         response = requests.post(
             callback_url,
             json=payload,
             headers=headers,
-            timeout=timeout_seconds,
+            timeout=request_timeout,
         )
         response.raise_for_status()
 
@@ -284,12 +288,13 @@ async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int,
 async def process_recommend_request(request: RecommendRequest) -> None:
     """추천 요청을 처리하고 완료/실패 결과를 NestJS 콜백으로 전달한다."""
     settings = get_settings()
+    timeout_policy = get_timeout_policy(settings)
     callback_endpoint = _build_callback_url(str(request.callback_url), request.job_id)
 
     try:
         result = await asyncio.wait_for(
             run_recommendation_pipeline(request),
-            timeout=settings.RECOMMEND_TIMEOUT_SECONDS,
+            timeout=timeout_policy.recommend_timeout_seconds,
         )
         callback_payload = RecommendCallbackSuccess(status="SUCCESS", data=result).model_dump(mode="json")
     except asyncio.TimeoutError:
@@ -307,6 +312,6 @@ async def process_recommend_request(request: RecommendRequest) -> None:
     await _post_callback(
         callback_url=callback_endpoint,
         payload=callback_payload,
-        timeout_seconds=settings.CALLBACK_TIMEOUT_SECONDS,
+        timeout_seconds=timeout_policy.callback_timeout_seconds,
         service_secret=settings.SERVICE_SECRET,
     )
