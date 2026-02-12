@@ -146,7 +146,7 @@ def _build_recommend_prompt(
 
 요구사항:
 1) 후보 목록에서 중복 없이 정확히 5개를 선택하세요.
-3) 이번 실행 변주 힌트: {variation_hint}
+2) 이번 실행 변주 힌트: {variation_hint}
 
 반드시 JSON만 출력하세요. JSON 외 텍스트는 절대 출력하지 마세요.
 {{
