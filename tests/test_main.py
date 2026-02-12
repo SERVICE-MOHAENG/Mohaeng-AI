@@ -13,7 +13,6 @@ from app.schemas.recommend import RecommendRequest
 
 
 def _set_required_env(monkeypatch, **overrides: str) -> None:
-    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("JWT_ACCESS_SECRET", "test-secret")
     monkeypatch.setenv("JWT_ACCESS_EXPIRY_MINUTES", "30")
@@ -167,7 +166,6 @@ def test_readyz_returns_200_when_ready(monkeypatch) -> None:
         return {
             "status": "ready",
             "checks": {
-                "db": {"status": "ok", "ok": True, "required": True, "detail": "ok"},
                 "openai": {"status": "ok", "ok": True, "required": True, "detail": "ok"},
                 "google_places": {"status": "skip", "ok": True, "required": False, "detail": "skip"},
             },
@@ -190,7 +188,6 @@ def test_readyz_returns_503_when_not_ready(monkeypatch) -> None:
         return {
             "status": "not_ready",
             "checks": {
-                "db": {"status": "fail", "ok": False, "required": True, "detail": "DB 연결 실패"},
                 "openai": {"status": "ok", "ok": True, "required": True, "detail": "ok"},
                 "google_places": {"status": "skip", "ok": True, "required": False, "detail": "skip"},
             },

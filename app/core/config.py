@@ -8,7 +8,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """환경 변수 기반 설정 모델."""
 
-    DATABASE_URL: str | None = None
     OPENAI_API_KEY: str
     JWT_ACCESS_SECRET: str
     JWT_ACCESS_EXPIRY_MINUTES: int
