@@ -63,6 +63,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "::error::DOCKERHUB_USERNAME secret is not set"
+            exit 1
+          fi
+
           repo_name="$(echo "${GITHUB_REPOSITORY##*/}" | tr '[:upper:]' '[:lower:]')"
           image_name="${{ secrets.DOCKERHUB_USERNAME }}/${repo_name}"
 
