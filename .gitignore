@@ -15,6 +15,7 @@ env/
 ENV/
 .env/
 .env.*
+!.env.example
 .python-version
 
 ############################
@@ -103,6 +104,7 @@ Desktop.ini
 *.pfx
 .env
 .venv/
+!.env.example
 
 ############################
 # AI artifacts
