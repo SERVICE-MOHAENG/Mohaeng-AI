@@ -266,6 +266,15 @@ def _build_callback_url(base_url: str, job_id: str) -> str:
     return f"{callback}/surveys/{job_id}/result"
 
 
+def _build_pipeline_error_message(exc: Exception, expose_internal_errors: bool) -> str:
+    """콜백용 파이프라인 오류 메시지를 구성한다."""
+    if expose_internal_errors:
+        message = str(exc).strip()
+        if message:
+            return message
+    return "추천 처리 중 내부 오류가 발생했습니다."
+
+
 async def _post_callback(
     callback_url: str,
     payload: dict,
@@ -302,9 +311,10 @@ async def process_recommend_request(request: RecommendRequest) -> None:
         ).model_dump(mode="json")
     except Exception as exc:
         logger.exception("Recommendation pipeline failed: %s", exc)
+        error_message = _build_pipeline_error_message(exc, settings.EXPOSE_INTERNAL_ERRORS)
         callback_payload = RecommendCallbackFailure(
             status="FAILED",
-            error=CallbackError(code="PIPELINE_ERROR", message=str(exc)),
+            error=CallbackError(code="PIPELINE_ERROR", message=error_message),
         ).model_dump(mode="json")
 
     await _post_callback(
