@@ -10,7 +10,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from app.api import chat, endpoints, generate
+from app.api import chat, generate, recommend
 from app.api.dependencies import require_service_secret
 from app.core.config import get_settings
 from app.core.logger import get_logger
@@ -86,9 +86,9 @@ _configure_proxy_headers(app)
 _configure_trusted_hosts(app)
 _configure_cors(app)
 
-app.include_router(endpoints.router)
 app.include_router(generate.router)
 app.include_router(chat.router)
+app.include_router(recommend.router)
 
 
 @app.middleware("http")

@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import importlib
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
+from app.schemas.recommend import RecommendRequest
 
 
 def _set_required_env(monkeypatch, **overrides: str) -> None:
-    monkeypatch.setenv("DATABASE_URL", "sqlite:///./test.db")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("JWT_ACCESS_SECRET", "test-secret")
     monkeypatch.setenv("JWT_ACCESS_EXPIRY_MINUTES", "30")
     monkeypatch.setenv("SERVICE_SECRET", "test-service-secret")
+    monkeypatch.setenv("DOCS_MODE", "disabled")
     for key, value in overrides.items():
         monkeypatch.setenv(key, value)
     get_settings.cache_clear()
@@ -27,7 +29,6 @@ def _load_main_module():
 
 
 def test_health_check_endpoint(monkeypatch) -> None:
-    """루트 헬스체크가 정상 응답을 반환해야 한다."""
     _set_required_env(monkeypatch)
     main_module = _load_main_module()
 
@@ -39,7 +40,6 @@ def test_health_check_endpoint(monkeypatch) -> None:
 
 
 def test_chat_openapi_ack_example(monkeypatch) -> None:
-    """채팅 API OpenAPI 예시에 ACK 샘플이 포함되어야 한다."""
     _set_required_env(monkeypatch)
     main_module = _load_main_module()
 
@@ -49,8 +49,46 @@ def test_chat_openapi_ack_example(monkeypatch) -> None:
     assert examples["accepted"]["value"] == {"status": "ACCEPTED", "job_id": "modify-job-12345"}
 
 
+def test_recommend_openapi_ack_example(monkeypatch) -> None:
+    _set_required_env(monkeypatch)
+    main_module = _load_main_module()
+
+    schema = main_module.app.openapi()
+    examples = schema["paths"]["/api/v1/recommend"]["post"]["responses"]["202"]["content"]["application/json"][
+        "examples"
+    ]
+
+    assert examples["accepted"]["value"] == {"status": "ACCEPTED", "job_id": "recommend-job-12345"}
+
+
+def test_recommend_schema_accepts_legacy_enum_values() -> None:
+    request = RecommendRequest(
+        job_id="job-1",
+        callback_url="https://example.com/internal",
+        weather="OCEAN_BEACH",
+        travel_range="SHORT_HAUL",
+        travel_style="MODERN_TRENDY",
+        budget_level="BALANCED",
+        food_personality=["LOCAL_HIDDEN_GEM"],
+        main_interests=["SHOPPING_TOUR", "DYNAMIC_ACTIVITY"],
+    )
+
+    assert request.weather == "OCEAN_BEACH"
+    assert request.travel_range == "SHORT_HAUL"
+    assert request.travel_style == "MODERN_TRENDY"
+    assert request.budget_level == "BALANCED"
+    assert request.food_personality == ["LOCAL_HIDDEN_GEM"]
+    assert request.main_interests == ["SHOPPING_TOUR", "DYNAMIC_ACTIVITY"]
+
+    with pytest.raises(ValueError):
+        RecommendRequest(
+            job_id="job-2",
+            callback_url="https://example.com/internal",
+            travel_range="ASIA",
+        )
+
+
 def test_docs_disabled_by_default(monkeypatch) -> None:
-    """기본 DOCS_MODE(disabled)에서는 문서 엔드포인트가 비활성화되어야 한다."""
     _set_required_env(monkeypatch)
     main_module = _load_main_module()
 
@@ -62,7 +100,6 @@ def test_docs_disabled_by_default(monkeypatch) -> None:
 
 
 def test_docs_secret_mode_requires_service_secret(monkeypatch) -> None:
-    """DOCS_MODE=secret인 경우 서비스 시크릿으로만 문서 접근이 가능해야 한다."""
     _set_required_env(monkeypatch, DOCS_MODE="secret")
     main_module = _load_main_module()
 
@@ -76,7 +113,6 @@ def test_docs_secret_mode_requires_service_secret(monkeypatch) -> None:
 
 
 def test_security_headers_are_attached(monkeypatch) -> None:
-    """기본 보안 헤더가 응답에 포함되어야 한다."""
     _set_required_env(monkeypatch)
     main_module = _load_main_module()
 
@@ -90,7 +126,6 @@ def test_security_headers_are_attached(monkeypatch) -> None:
 
 
 def test_cors_allowlist_from_env(monkeypatch) -> None:
-    """허용된 Origin에 대해서만 CORS 헤더가 반환되어야 한다."""
     _set_required_env(
         monkeypatch,
         CORS_ALLOW_ORIGINS="https://example.com",

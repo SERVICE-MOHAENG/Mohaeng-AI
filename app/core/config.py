@@ -8,13 +8,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """환경 변수 기반 설정 모델."""
 
-    DATABASE_URL: str
     OPENAI_API_KEY: str
     JWT_ACCESS_SECRET: str
     JWT_ACCESS_EXPIRY_MINUTES: int
     SERVICE_SECRET: str
     LLM_MODEL_NAME: str = "gpt-4o-mini"
     LLM_TIMEOUT_SECONDS: int = 60
+    RECOMMEND_TIMEOUT_SECONDS: int = 45
+    RECOMMEND_LLM_TEMPERATURE: float = 0.6
     CALLBACK_TIMEOUT_SECONDS: int = 10
     GOOGLE_PLACES_API_KEY: str | None = None
     GOOGLE_PLACES_TIMEOUT_SECONDS: int = 10
