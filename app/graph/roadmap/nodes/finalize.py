@@ -10,8 +10,8 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap.llm import get_llm
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
@@ -133,8 +133,8 @@ async def _fill_place_details_with_llm(
 ) -> list[dict]:
     """LLM을 통해 장소 설명과 (필요 시) 방문 시각을 채웁니다."""
     parser = PydanticOutputParser(pydantic_object=PlaceDetailPlan)
-    settings = get_settings()
-    timeout_seconds = settings.LLM_TIMEOUT_SECONDS
+    timeout_policy = get_timeout_policy()
+    timeout_seconds = timeout_policy.llm_timeout_seconds
     planned = planning_preference == PlanningPreference.PLANNED
 
     section_time_map = {

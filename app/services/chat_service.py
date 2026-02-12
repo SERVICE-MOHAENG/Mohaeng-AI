@@ -5,14 +5,15 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-import requests
 from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat import compiled_chat_graph
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.enums import ChatStatus
+from app.services.callback_delivery import post_callback_with_retry
 
 logger = get_logger(__name__)
 
@@ -85,34 +86,33 @@ def _build_chat_callback_url(base_url: str, job_id: str) -> str:
     return f"{base_url.rstrip('/')}/itineraries/{job_id}/chat-result"
 
 
-async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
+async def _post_callback(
+    callback_url: str,
+    payload: dict,
+    timeout_seconds: int,
+    service_secret: str,
+    job_id: str,
+) -> None:
     """콜백 URL로 결과를 전송합니다."""
-
     headers = {"x-service-secret": service_secret} if service_secret else {}
-
-    def _send() -> None:
-        response = requests.post(
-            callback_url,
-            json=payload,
-            headers=headers,
-            timeout=timeout_seconds,
-        )
-        response.raise_for_status()
-
-    try:
-        await asyncio.to_thread(_send)
-    except Exception as exc:
-        logger.error("콜백 전송 실패: %s", exc)
+    await post_callback_with_retry(
+        callback_url=callback_url,
+        payload=payload,
+        headers=headers,
+        timeout_seconds=timeout_seconds,
+        context={"job_id": job_id, "callback_type": "chat"},
+    )
 
 
 async def process_chat_request(request: ChatRequest) -> None:
     """대화 요청을 처리하고 콜백으로 결과를 전달합니다."""
     settings = get_settings()
+    timeout_policy = get_timeout_policy(settings)
 
     try:
         result = await asyncio.wait_for(
             run_chat_pipeline(request),
-            timeout=settings.LLM_TIMEOUT_SECONDS,
+            timeout=timeout_policy.llm_timeout_seconds,
         )
         payload = _build_callback_payload(result)
     except asyncio.TimeoutError:
@@ -131,6 +131,7 @@ async def process_chat_request(request: ChatRequest) -> None:
     await _post_callback(
         callback_url=callback_endpoint,
         payload=payload,
-        timeout_seconds=settings.CALLBACK_TIMEOUT_SECONDS,
+        timeout_seconds=timeout_policy.callback_timeout_seconds,
         service_secret=settings.SERVICE_SECRET,
+        job_id=request.job_id,
     )
