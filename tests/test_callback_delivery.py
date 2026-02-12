@@ -111,3 +111,39 @@ def test_post_callback_with_retry_does_not_retry_non_retryable_4xx(monkeypatch) 
     assert result is False
     assert call_count["value"] == 1
     assert sleep_delays == []
+
+
+def test_post_callback_with_retry_does_not_retry_invalid_url(monkeypatch) -> None:
+    _set_required_env(
+        monkeypatch,
+        CALLBACK_MAX_RETRIES="3",
+        CALLBACK_BACKOFF_BASE_SECONDS="0.5",
+        CALLBACK_BACKOFF_MAX_SECONDS="5",
+    )
+
+    call_count = {"value": 0}
+    sleep_delays: list[float] = []
+
+    def _fake_post(*args, **kwargs):
+        call_count["value"] += 1
+        raise requests.exceptions.InvalidURL("invalid callback url")
+
+    async def _fake_sleep(delay: float) -> None:
+        sleep_delays.append(delay)
+
+    monkeypatch.setattr("app.services.callback_delivery.requests.post", _fake_post)
+    monkeypatch.setattr("app.services.callback_delivery.asyncio.sleep", _fake_sleep)
+
+    result = asyncio.run(
+        post_callback_with_retry(
+            callback_url="::invalid-url::",
+            payload={"status": "FAILED"},
+            headers={"x-service-secret": "secret"},
+            timeout_seconds=10,
+            context={"job_id": "job-3"},
+        )
+    )
+
+    assert result is False
+    assert call_count["value"] == 1
+    assert sleep_delays == []

@@ -23,7 +23,7 @@ def _is_retryable_request_error(exc: Exception) -> bool:
         status_code = exc.response.status_code if exc.response is not None else None
         return status_code is None or status_code == 429 or status_code >= 500
 
-    return isinstance(exc, requests.RequestException)
+    return False
 
 
 async def post_callback_with_retry(
