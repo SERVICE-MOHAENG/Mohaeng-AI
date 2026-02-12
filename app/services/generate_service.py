@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import asyncio
 
-import requests
-
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.core.timeout_policy import get_timeout_policy, to_requests_timeout
+from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap import compiled_roadmap_graph
 from app.schemas.course import CourseRequest, CourseResponse
 from app.schemas.generate import CallbackError, GenerateCallbackFailure, GenerateCallbackSuccess
+from app.services.callback_delivery import post_callback_with_retry
 from app.services.google_places_service import get_google_places_service
 
 logger = get_logger(__name__)
@@ -41,24 +40,21 @@ def _build_callback_url(base_url: str, job_id: str) -> str:
     return f"{base_url.rstrip('/')}/itineraries/{job_id}/result"
 
 
-async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
+async def _post_callback(
+    callback_url: str,
+    payload: dict,
+    timeout_seconds: int,
+    service_secret: str,
+    job_id: str,
+) -> None:
     """콜백 URL로 결과를 전송합니다."""
-
-    request_timeout = to_requests_timeout(timeout_seconds)
-
-    def _send() -> None:
-        response = requests.post(
-            callback_url,
-            json=payload,
-            headers={"x-service-secret": service_secret},
-            timeout=request_timeout,
-        )
-        response.raise_for_status()
-
-    try:
-        await asyncio.to_thread(_send)
-    except Exception as exc:
-        logger.error("콜백 전송 실패: %s", exc)
+    await post_callback_with_retry(
+        callback_url=callback_url,
+        payload=payload,
+        headers={"x-service-secret": service_secret},
+        timeout_seconds=timeout_seconds,
+        context={"job_id": job_id, "callback_type": "generate"},
+    )
 
 
 async def process_generate_request(job_id: str, callback_url: str, payload: CourseRequest) -> None:
@@ -90,4 +86,5 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         payload=payload_data,
         timeout_seconds=timeout_policy.callback_timeout_seconds,
         service_secret=settings.SERVICE_SECRET,
+        job_id=job_id,
     )

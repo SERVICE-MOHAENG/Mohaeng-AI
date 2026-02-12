@@ -10,12 +10,11 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-import requests
 from langchain_openai import ChatOpenAI
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.core.timeout_policy import get_timeout_policy, to_requests_timeout
+from app.core.timeout_policy import get_timeout_policy
 from app.schemas.enums import Region
 from app.schemas.recommend import (
     BudgetLevel,
@@ -32,6 +31,7 @@ from app.schemas.recommend import (
     TravelStyle,
     Weather,
 )
+from app.services.callback_delivery import post_callback_with_retry
 
 logger = get_logger(__name__)
 DEFAULT_SELECTION_SIZE = 5
@@ -266,23 +266,21 @@ def _build_callback_url(base_url: str, job_id: str) -> str:
     return f"{callback}/surveys/{job_id}/result"
 
 
-async def _post_callback(callback_url: str, payload: dict, timeout_seconds: int, service_secret: str) -> None:
+async def _post_callback(
+    callback_url: str,
+    payload: dict,
+    timeout_seconds: int,
+    service_secret: str,
+    job_id: str,
+) -> None:
     headers = {"x-service-secret": service_secret} if service_secret else {}
-    request_timeout = to_requests_timeout(timeout_seconds)
-
-    def _send() -> None:
-        response = requests.post(
-            callback_url,
-            json=payload,
-            headers=headers,
-            timeout=request_timeout,
-        )
-        response.raise_for_status()
-
-    try:
-        await asyncio.to_thread(_send)
-    except Exception as exc:
-        logger.error("Recommendation callback failed: %s", exc)
+    await post_callback_with_retry(
+        callback_url=callback_url,
+        payload=payload,
+        headers=headers,
+        timeout_seconds=timeout_seconds,
+        context={"job_id": job_id, "callback_type": "recommend"},
+    )
 
 
 async def process_recommend_request(request: RecommendRequest) -> None:
@@ -314,4 +312,5 @@ async def process_recommend_request(request: RecommendRequest) -> None:
         payload=callback_payload,
         timeout_seconds=timeout_policy.callback_timeout_seconds,
         service_secret=settings.SERVICE_SECRET,
+        job_id=request.job_id,
     )
