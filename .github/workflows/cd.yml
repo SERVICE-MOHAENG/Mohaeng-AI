@@ -39,6 +39,10 @@ jobs:
           INPUT_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
         run: |
           if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            if ! [[ "${INPUT_IMAGE_TAG}" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+              echo "::error::Invalid image_tag format: only alphanumeric, dots, hyphens, underscores allowed"
+              exit 1
+            fi
             echo "image_tag=${INPUT_IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
           else
             echo "image_tag=latest" >> "${GITHUB_OUTPUT}"
