@@ -14,6 +14,7 @@ class ChatState(TypedDict, total=False):
         intent: LLM이 추출한 수정 의도
         search_results: Google Places 검색 결과
         warnings: 경고 메시지 누적
+        visit_time_proposals: 일자별 visit_sequence 기반 시각 제안
         modified_itinerary: 수정 완료된 로드맵
         status: 수정 결과 상태
         change_summary: 변경 사항 자연어 피드백
@@ -33,6 +34,7 @@ class ChatState(TypedDict, total=False):
     intent: dict
     search_results: list
     warnings: list[str]
+    visit_time_proposals: dict[int, dict[int, str]]
 
     # Output
     modified_itinerary: dict | None

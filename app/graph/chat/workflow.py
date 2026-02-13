@@ -2,7 +2,7 @@
 
 from langgraph.graph import END, StateGraph
 
-from app.graph.chat.nodes import analyze_intent, cascade, general_chat, mutate, respond
+from app.graph.chat.nodes import analyze_intent, cascade, general_chat, mutate, propose_visit_time, respond
 from app.graph.chat.state import ChatState
 from app.schemas.enums import ChatStatus
 
@@ -28,6 +28,17 @@ def _route_after_mutate(state: ChatState) -> str:
         return "respond"
     if state.get("status") == ChatStatus.ASK_CLARIFICATION:
         return "respond"
+    return "propose_visit_time"
+
+
+def _route_after_visit_time_proposal(state: ChatState) -> str:
+    """visit_time 제안 결과에 따라 다음 노드를 결정합니다."""
+    if state.get("error"):
+        return "respond"
+    if state.get("status") == ChatStatus.REJECTED:
+        return "respond"
+    if state.get("status") == ChatStatus.ASK_CLARIFICATION:
+        return "respond"
     return "cascade"
 
 
@@ -38,12 +49,14 @@ def _create_chat_workflow() -> StateGraph:
     workflow.add_node("analyze_intent", analyze_intent)
     workflow.add_node("general_chat", general_chat)
     workflow.add_node("mutate", mutate)
+    workflow.add_node("propose_visit_time", propose_visit_time)
     workflow.add_node("cascade", cascade)
     workflow.add_node("respond", respond)
 
     workflow.set_entry_point("analyze_intent")
     workflow.add_conditional_edges("analyze_intent", _route_after_intent, ["general_chat", "mutate", "respond"])
-    workflow.add_conditional_edges("mutate", _route_after_mutate, ["cascade", "respond"])
+    workflow.add_conditional_edges("mutate", _route_after_mutate, ["propose_visit_time", "respond"])
+    workflow.add_conditional_edges("propose_visit_time", _route_after_visit_time_proposal, ["cascade", "respond"])
     workflow.add_edge("general_chat", END)
     workflow.add_edge("cascade", "respond")
     workflow.add_edge("respond", END)

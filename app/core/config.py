@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     GOOGLE_PLACES_API_KEY: str | None = None
     GOOGLE_PLACES_TIMEOUT_SECONDS: int = 10
     GOOGLE_PLACES_LANGUAGE_CODE: str = "ko"
+    VISIT_TIME_START: str = "09:00"
+    VISIT_TIME_STAY_MINUTES: int = 90
+    VISIT_TIME_TRANSIT_FACTOR: float = 15.0
+    VISIT_TIME_TRANSIT_BASE_MINUTES: int = 10
+    VISIT_TIME_LATE_HOUR: int = 23
+    VISIT_TIME_WALK_WARNING_MINUTES: int = 30
     APP_ENV: str = "development"
     DOCS_MODE: str = "disabled"
     EXPOSE_INTERNAL_ERRORS: bool = False

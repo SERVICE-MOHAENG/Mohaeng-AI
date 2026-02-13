@@ -13,6 +13,12 @@ from pydantic import BaseModel, Field
 from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
+from app.core.visit_time_llm import propose_visit_times_for_days
+from app.core.visit_time_policy import (
+    VisitTimeOutputMode,
+    apply_visit_time_policy,
+    build_visit_time_policy_config,
+)
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningPreference
@@ -24,7 +30,6 @@ class PlaceDetailSlot(BaseModel):
     """방문 순서별 상세 정보 모델."""
 
     visit_sequence: int = Field(..., ge=1, description="방문 순서")
-    visit_time: str | None = Field(None, description="방문 시각 (HH:MM, 24시간)")
     description: str | None = Field(None, description="장소에 대한 한 줄 설명")
 
 
@@ -62,6 +67,7 @@ def _prepare_final_context(
         raise ValueError(f"CourseRequest 모델 유효성 검증에 실패했습니다: {exc}") from exc
 
     planning_preference = course_request.planning_preference
+    planned = planning_preference == PlanningPreference.PLANNED
 
     context_lines = []
     daily_places_for_schema = []
@@ -79,10 +85,6 @@ def _prepare_final_context(
                 place = places[0]
                 context_lines.append(f"- {slot['section']}: {place['name']} (키워드: {slot['keyword']})")
 
-                if planning_preference == PlanningPreference.PLANNED:
-                    visit_time = None
-                else:
-                    visit_time = slot["section"]
                 geometry = place.get("geometry") or {}
                 place_url = place.get("url")
                 if not place_url and place.get("place_id"):
@@ -91,20 +93,20 @@ def _prepare_final_context(
                         f"{place['name']}&query_place_id={place.get('place_id')}"
                     )
 
-                place_payload = {
-                    "place_name": place["name"],
-                    "place_id": place.get("place_id"),
-                    "address": place.get("address"),
-                    "latitude": geometry.get("latitude"),
-                    "longitude": geometry.get("longitude"),
-                    "place_url": place_url,
-                    "description": f"{place['name']}에서 즐기는 대표 활동입니다.",
-                    "visit_sequence": visit_sequence_counter,
-                    "visit_time": visit_time,
-                }
-                if planning_preference == PlanningPreference.PLANNED:
-                    place_payload["section"] = slot.get("section")
-                day_places.append(place_payload)
+                day_places.append(
+                    {
+                        "place_name": place["name"],
+                        "place_id": place.get("place_id"),
+                        "address": place.get("address"),
+                        "latitude": geometry.get("latitude"),
+                        "longitude": geometry.get("longitude"),
+                        "place_url": place_url,
+                        "description": f"{place['name']}에서 즐기는 대표 활동입니다.",
+                        "visit_sequence": visit_sequence_counter,
+                        "visit_time": None if planned else slot["section"],
+                        "section": slot.get("section"),
+                    }
+                )
                 visit_sequence_counter += 1
 
         daily_places_for_schema.append(
@@ -127,55 +129,20 @@ def _safe_next_action_suggestions(trip_days: int) -> list[str]:
     return suggestions
 
 
-async def _fill_place_details_with_llm(
-    daily_places: list[dict],
-    planning_preference: PlanningPreference,
-) -> list[dict]:
-    """LLM을 통해 장소 설명과 (필요 시) 방문 시각을 채웁니다."""
+async def _fill_place_descriptions_with_llm(daily_places: list[dict]) -> list[dict]:
+    """LLM을 통해 장소 description을 채웁니다."""
     parser = PydanticOutputParser(pydantic_object=PlaceDetailPlan)
-    timeout_policy = get_timeout_policy()
-    timeout_seconds = timeout_policy.llm_timeout_seconds
-    planned = planning_preference == PlanningPreference.PLANNED
-
-    section_time_map = {
-        "MORNING": "09:00",
-        "LUNCH": "12:00",
-        "AFTERNOON": "14:00",
-        "DINNER": "18:00",
-        "EVENING": "20:00",
-        "NIGHT": "22:00",
-    }
-
-    def _fallback_visit_time(place: dict, index: int) -> str:
-        section_hint = place.get("section")
-        if section_hint:
-            normalized = str(section_hint).strip().upper()
-            if normalized in section_time_map:
-                return section_time_map[normalized]
-
-        sequence = place.get("visit_sequence")
-        try:
-            sequence_value = int(sequence)
-        except (TypeError, ValueError):
-            sequence_value = index + 1
-
-        base_hour = 9 + max(0, sequence_value - 1) * 2
-        if base_hour > 23:
-            base_hour = 23
-        return f"{base_hour:02d}:00"
+    timeout_seconds = get_timeout_policy().llm_timeout_seconds
 
     def _fallback_description(place: dict) -> str:
-        place_name = place.get("place_name") or place.get("name") or "장소"
+        place_name = place.get("place_name") or "장소"
         return f"{place_name}에서 즐기는 대표 활동입니다."
 
     def _apply_fallback() -> list[dict]:
         for day in daily_places:
-            for index, place in enumerate(day.get("places", [])):
+            for place in day.get("places", []):
                 if not place.get("description"):
                     place["description"] = _fallback_description(place)
-                if planned:
-                    place["visit_time"] = _fallback_visit_time(place, index)
-                place.pop("section", None)
         return daily_places
 
     if not any(day.get("places") for day in daily_places):
@@ -191,8 +158,6 @@ async def _fill_place_details_with_llm(
                     {
                         "visit_sequence": place.get("visit_sequence"),
                         "place_name": place.get("place_name"),
-                        "section_hint": place.get("section"),
-                        "time_hint": place.get("visit_time"),
                         "address": place.get("address"),
                         "latitude": place.get("latitude"),
                         "longitude": place.get("longitude"),
@@ -204,22 +169,14 @@ async def _fill_place_details_with_llm(
         )
 
     system_prompt = (
-        "당신은 여행 일정의 장소 설명과 방문 시각을 작성하는 전문가입니다.\n"
+        "당신은 여행 일정의 장소 설명을 작성하는 전문가입니다.\n"
         "모든 장소에 대해 한국어 한 문장으로 description을 작성하세요.\n"
         "description은 장소명 또는 대표 활동을 포함하고 30자 내외로 간결하게 작성하세요.\n"
         "과장, 이모지, 해시태그, 불확실한 정보는 피하고 입력 정보에 기반해 작성하세요.\n"
-        "visit_time은 24시간 HH:MM 형식이며 visit_sequence 순서를 지키고 시간은 점진적으로 증가해야 합니다.\n"
-        "section_hint와 time_hint는 참고용이며 실제 시간은 이동 동선에 맞게 자연스럽게 배치하세요.\n"
-        "입력에 없는 장소를 추가하거나 방문 순서를 바꾸지 말고 결과 과정은 출력하지 말고 JSON만 반환하세요"
+        "입력에 없는 장소를 추가하거나 방문 순서를 바꾸지 말고 JSON만 반환하세요."
     )
     user_prompt = (
-        "아래 장소 목록을 기반으로 description과 visit_time을 채워주세요\n"
-        "시작 시각: 09:00\n"
-        "planning_preference가 PLANNED가 아니더라도 visit_time은 작성하되, "
-        "출력 값은 참고용이므로 형식만 지키면 됩니다.\n"
-        "입력 데이터:\n"
-        "{places}\n\n"
-        "{format_instructions}"
+        "아래 장소 목록을 기반으로 각 장소의 description을 채워주세요.\n입력 데이터:\n{places}\n\n{format_instructions}"
     )
 
     prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", user_prompt)])
@@ -234,47 +191,60 @@ async def _fill_place_details_with_llm(
             timeout=timeout_seconds,
         )
     except asyncio.TimeoutError:
-        logger.error("Place detail LLM timed out after %s seconds", timeout_seconds)
+        logger.error("Place description LLM timed out after %s seconds", timeout_seconds)
         return _apply_fallback()
     except Exception:
-        logger.exception("Place detail LLM call failed")
+        logger.exception("Place description LLM call failed")
         return _apply_fallback()
 
     try:
         content = strip_code_fence(response.content)
         detail_plan = parser.parse(content)
     except Exception:
-        logger.exception("Place detail parse failed")
+        logger.exception("Place description parse failed")
         return _apply_fallback()
 
     detail_map = {(day.day_number, slot.visit_sequence): slot for day in detail_plan.days for slot in day.places}
+    for day in daily_places:
+        day_number = day.get("day_number")
+        for place in day.get("places", []):
+            key = (day_number, place.get("visit_sequence"))
+            detail = detail_map.get(key)
+            description = (detail.description or "").strip() if detail else ""
+            place["description"] = description or _fallback_description(place)
+
+    return daily_places
+
+
+async def _apply_visit_time_for_daily_places(
+    daily_places: list[dict],
+    planning_preference: PlanningPreference,
+) -> list[dict]:
+    """공용 정책 엔진으로 visit_time을 확정합니다."""
+    output_mode = (
+        VisitTimeOutputMode.HHMM
+        if planning_preference == PlanningPreference.PLANNED
+        else VisitTimeOutputMode.SECTION_EN
+    )
+    policy_config = build_visit_time_policy_config()
+    proposals = await propose_visit_times_for_days(daily_places, stage=Stage.ROADMAP_PLACE_DETAIL)
+    warnings: list[str] = []
 
     for day in daily_places:
         day_number = day.get("day_number")
-        for index, place in enumerate(day.get("places", [])):
-            key = (day_number, place.get("visit_sequence"))
-            detail = detail_map.get(key)
-            if detail:
-                description = (detail.description or "").strip()
-                if description:
-                    place["description"] = description
-                elif not place.get("description"):
-                    place["description"] = _fallback_description(place)
-            elif not place.get("description"):
-                place["description"] = _fallback_description(place)
+        places = day.get("places", [])
+        resolved_places, day_warnings = apply_visit_time_policy(
+            places,
+            day_number=day_number,
+            config=policy_config,
+            llm_proposals_by_sequence=proposals.get(day_number, {}),
+            output_mode=output_mode,
+        )
+        day["places"] = resolved_places
+        warnings.extend(day_warnings)
 
-            if planned:
-                visit_time = (detail.visit_time or "").strip() if detail else ""
-                if not visit_time:
-                    logger.warning(
-                        "Missing visit_time for day %s sequence %s; using fallback",
-                        day_number,
-                        place.get("visit_sequence"),
-                    )
-                    visit_time = _fallback_visit_time(place, index)
-                place["visit_time"] = visit_time
-            place.pop("section", None)
-
+    if warnings:
+        logger.info("Visit time policy warnings: %s", " | ".join(warnings))
     return daily_places
 
 
@@ -286,7 +256,8 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
     try:
         itinerary_context, daily_places = _prepare_final_context(state)
         course_request = CourseRequest.model_validate(state["course_request"])
-        daily_places = await _fill_place_details_with_llm(
+        daily_places = await _fill_place_descriptions_with_llm(daily_places)
+        daily_places = await _apply_visit_time_for_daily_places(
             daily_places,
             course_request.planning_preference,
         )
@@ -350,5 +321,5 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         return {**state, "final_roadmap": final_roadmap}
 
     except Exception as exc:
-        logger.error(f"최종 로드맵 생성 실패: {exc}", exc_info=True)
+        logger.error("최종 로드맵 생성 실패: %s", exc, exc_info=True)
         return {**state, "error": f"최종 로드맵 생성에 실패했습니다: {exc}"}

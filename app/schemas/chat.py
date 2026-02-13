@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.course import DailyItinerary
-from app.schemas.enums import ChatOperation, ChatStatus
+from app.schemas.enums import ChatOperation, ChatStatus, PlanningPreference
 
 
 class Message(BaseModel):
@@ -29,6 +29,7 @@ class ChatRoadmap(BaseModel):
     tags: list[str] = Field(..., description="여행 전체의 특징을 나타내는 태그 목록")
     title: str = Field(..., description="여행 로드맵의 제목")
     summary: str = Field(..., description="로드맵 한 줄 설명")
+    planning_preference: PlanningPreference = Field(..., description="여행 계획 성향")
     itinerary: list[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
     meta_data: dict[str, Any] | None = Field(default=None, description="NestJS에서 전달받는 메타 데이터")
 
