@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
-from app.graph.chat.llm import get_llm
 from app.graph.chat.state import ChatState
 from app.schemas.enums import ChatStatus
 
@@ -82,7 +82,7 @@ def respond(state: ChatState) -> ChatState:
     )
 
     try:
-        response = get_llm().invoke(messages)
+        response = invoke(Stage.CHAT_RESPONSE, messages)
         generated = response.content.strip()
     except Exception as exc:
         logger.error("응답 생성 LLM 호출 실패: %s", exc)

@@ -12,7 +12,11 @@ class Settings(BaseSettings):
     JWT_ACCESS_SECRET: str
     JWT_ACCESS_EXPIRY_MINUTES: int
     SERVICE_SECRET: str
-    LLM_MODEL_NAME: str = "gpt-4o-mini"
+    LLM_MODEL_NAME: str
+    ENABLE_STAGE_LLM_ROUTING: bool = False
+    LLM_MODEL_QUALITY: str
+    LLM_MODEL_SPEED: str
+    LLM_MODEL_COST: str
     REQUEST_TIMEOUT_SECONDS: int = 60
     LLM_TIMEOUT_SECONDS: int = 60
     RECOMMEND_TIMEOUT_SECONDS: int = 45

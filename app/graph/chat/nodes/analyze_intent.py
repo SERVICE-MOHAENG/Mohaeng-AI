@@ -10,8 +10,8 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field, ValidationError
 
+from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
-from app.graph.chat.llm import get_llm
 from app.graph.chat.state import ChatState
 from app.graph.roadmap.utils import strip_code_fence
 from app.schemas.chat import ChatIntent
@@ -420,7 +420,7 @@ def _classify_intent_route(itinerary_table: str, history_context: str, user_quer
     )
 
     try:
-        response = get_llm().invoke(messages)
+        response = invoke(Stage.CHAT_INTENT_ROUTING, messages)
         content = strip_code_fence(response.content)
         return parser.parse(content)
     except Exception as exc:
@@ -494,7 +494,7 @@ def _parse_modification_intent(
         user_query=user_query,
     )
 
-    response = get_llm().invoke(messages)
+    response = invoke(Stage.CHAT_INTENT_STRUCTURING, messages)
     content = strip_code_fence(response.content)
 
     try:

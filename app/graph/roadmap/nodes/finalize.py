@@ -10,9 +10,9 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
+from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
-from app.graph.roadmap.llm import get_llm
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningPreference
@@ -229,7 +229,10 @@ async def _fill_place_details_with_llm(
     )
 
     try:
-        response = await asyncio.wait_for(get_llm().ainvoke(messages), timeout=timeout_seconds)
+        response = await asyncio.wait_for(
+            ainvoke(Stage.ROADMAP_PLACE_DETAIL, messages, timeout_seconds=timeout_seconds),
+            timeout=timeout_seconds,
+        )
     except asyncio.TimeoutError:
         logger.error("Place detail LLM timed out after %s seconds", timeout_seconds)
         return _apply_fallback()
@@ -327,7 +330,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             format_instructions=parser.get_format_instructions(),
         )
 
-        response = await get_llm().ainvoke(messages)
+        response = await ainvoke(Stage.ROADMAP_SUMMARY, messages)
         content = strip_code_fence(response.content)
 
         trip_days = state["trip_days"]

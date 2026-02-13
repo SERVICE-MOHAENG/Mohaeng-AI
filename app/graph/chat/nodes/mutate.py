@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import copy
 
+from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
-from app.graph.chat.llm import get_llm
 from app.graph.chat.state import ChatState
 from app.graph.chat.utils import (
     build_diff_key,
@@ -213,8 +213,9 @@ async def _search_place(intent: dict, day: dict) -> tuple:
 def _suggest_alternative_keyword(keyword: str) -> str | None:
     """LLM을 통해 검색 키워드의 상위 카테고리를 추출합니다."""
     try:
-        response = get_llm().invoke(
-            f"'{keyword}'의 상위 카테고리 키워드를 한 단어로 답하세요. 예: '오마카세' → '일식당'"
+        response = invoke(
+            Stage.CHAT_KEYWORD_ASSIST,
+            f"'{keyword}'의 상위 카테고리 키워드를 한 단어로 답하세요. 예: '오마카세' → '일식당'",
         )
         suggested = response.content.strip().strip("'\"")
         return suggested if suggested and suggested != keyword else None

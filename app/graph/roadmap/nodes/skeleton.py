@@ -8,8 +8,8 @@ from typing import Iterable
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
-from app.graph.roadmap.llm import get_llm
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import strip_code_fence
 from app.schemas.course import CourseRequest, PacePreference, RegionDateRange
@@ -235,7 +235,7 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
         )
 
         try:
-            response = get_llm().invoke(messages)
+            response = invoke(Stage.ROADMAP_SKELETON, messages)
             content = strip_code_fence(response.content)
             plan = parser.parse(content)
         except Exception as exc:

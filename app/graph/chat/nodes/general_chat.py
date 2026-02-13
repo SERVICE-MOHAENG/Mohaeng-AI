@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
-from app.graph.chat.llm import get_llm
 from app.graph.chat.state import ChatState
 from app.schemas.enums import ChatStatus
 
@@ -89,7 +89,7 @@ def general_chat(state: ChatState) -> ChatState:
     )
 
     try:
-        response = get_llm().invoke(messages)
+        response = invoke(Stage.CHAT_RESPONSE, messages)
         message = response.content.strip()
         if not message:
             message = "질문 의도를 파악했어요. 궁금한 부분을 조금 더 구체적으로 알려주세요."
