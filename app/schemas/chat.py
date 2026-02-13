@@ -1,12 +1,22 @@
 """대화(Chat) 요청/응답 스키마."""
 
 from datetime import date
-from typing import Any
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.course import DailyItinerary
-from app.schemas.enums import ChatOperation, ChatStatus, PlanningPreference
+from app.schemas.enums import (
+    ActivityPreference,
+    BudgetRange,
+    ChatOperation,
+    ChatStatus,
+    CompanionType,
+    DestinationPreference,
+    PacePreference,
+    PlanningPreference,
+    PriorityPreference,
+    TravelTheme,
+)
 
 
 class Message(BaseModel):
@@ -31,7 +41,6 @@ class ChatRoadmap(BaseModel):
     summary: str = Field(..., description="로드맵 한 줄 설명")
     planning_preference: PlanningPreference = Field(..., description="여행 계획 성향")
     itinerary: list[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
-    meta_data: dict[str, Any] | None = Field(default=None, description="NestJS에서 전달받는 메타 데이터")
 
 
 class ChatRequest(BaseModel):
@@ -41,6 +50,14 @@ class ChatRequest(BaseModel):
         job_id: NestJS BullMQ job id
         callback_url: NestJS 콜백 URL
         current_itinerary: 현재 세션의 전체 로드맵
+        companion_type: 동행자 유형
+        travel_themes: 여행 테마 목록
+        pace_preference: 일정 밀도 선호
+        planning_preference: 여행 계획 성향
+        destination_preference: 여행지 선호
+        activity_preference: 활동 선호
+        priority_preference: 우선 가치 선호
+        budget_range: 예산 범위
         user_query: 사용자 수정 요청 발화
         session_history: 최근 3~5건 대화 맥락 (지시어 해소용)
     """
@@ -50,6 +67,14 @@ class ChatRequest(BaseModel):
     job_id: str = Field(..., description="NestJS BullMQ job id")
     callback_url: AnyHttpUrl = Field(..., description="NestJS 콜백 URL")
     current_itinerary: ChatRoadmap = Field(..., description="현재 세션의 전체 로드맵 데이터")
+    companion_type: CompanionType = Field(..., description="동행자 유형")
+    travel_themes: list[TravelTheme] = Field(..., min_length=1, description="여행 테마 목록")
+    pace_preference: PacePreference = Field(..., description="일정 밀도 선호")
+    planning_preference: PlanningPreference = Field(..., description="여행 계획 성향")
+    destination_preference: DestinationPreference = Field(..., description="여행지 선호")
+    activity_preference: ActivityPreference = Field(..., description="활동 선호")
+    priority_preference: PriorityPreference = Field(..., description="우선 가치 선호")
+    budget_range: BudgetRange = Field(..., description="예산 범위")
     user_query: str = Field(..., min_length=1, description="사용자 수정 요청 발화")
     session_history: list[Message] = Field(default_factory=list, description="최근 대화 맥락")
 

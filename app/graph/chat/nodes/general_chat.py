@@ -25,6 +25,9 @@ USER_PROMPT = """\
 현재 로드맵 요약:
 {itinerary_context}
 
+여행자 선호 컨텍스트:
+{request_context}
+
 최근 대화 맥락:
 {history_context}
 
@@ -68,11 +71,32 @@ def _build_itinerary_context(itinerary: dict) -> str:
     return "\n".join(lines)
 
 
+def _build_request_context(request_context: dict) -> str:
+    """요청 기반 선호 정보를 일반 대화 프롬프트용 문자열로 변환합니다."""
+    if not request_context:
+        return "없음"
+
+    travel_themes = request_context.get("travel_themes") or []
+    themes_text = ", ".join([str(theme) for theme in travel_themes]) if travel_themes else "없음"
+    lines = [
+        f"- 동행자: {request_context.get('companion_type', '없음')}",
+        f"- 테마: {themes_text}",
+        f"- 일정 밀도: {request_context.get('pace_preference', '없음')}",
+        f"- 계획 성향: {request_context.get('planning_preference', '없음')}",
+        f"- 목적지 성향: {request_context.get('destination_preference', '없음')}",
+        f"- 활동 성향: {request_context.get('activity_preference', '없음')}",
+        f"- 우선 가치: {request_context.get('priority_preference', '없음')}",
+        f"- 예산: {request_context.get('budget_range', '없음')}",
+    ]
+    return "\n".join(lines)
+
+
 def general_chat(state: ChatState) -> ChatState:
     """일반 질문에 대한 대화 응답을 생성합니다."""
     user_query = (state.get("user_query") or "").strip()
     current_itinerary = state.get("current_itinerary") or {}
     session_history = state.get("session_history", [])
+    request_context = state.get("request_context", {})
 
     if not user_query:
         return {
@@ -84,6 +108,7 @@ def general_chat(state: ChatState) -> ChatState:
     prompt = ChatPromptTemplate.from_messages([("system", SYSTEM_PROMPT), ("human", USER_PROMPT)])
     messages = prompt.format_messages(
         itinerary_context=_build_itinerary_context(current_itinerary),
+        request_context=_build_request_context(request_context),
         history_context=_build_history_context(session_history),
         user_query=user_query,
     )
