@@ -84,6 +84,11 @@ def _to_proposal_map(plan: VisitTimeProposalPlan) -> dict[int, dict[int, str]]:
     return proposal_map
 
 
+def _fallback_grace_timeout(timeout_seconds: int) -> int:
+    """ainvoke 내부 fallback 시도 여유를 위해 외부 wait_for 타임아웃을 확장합니다."""
+    return max(1, int(timeout_seconds) * 2)
+
+
 async def propose_visit_times_for_days(
     daily_places: list[dict],
     *,
@@ -99,6 +104,7 @@ async def propose_visit_times_for_days(
     parser = PydanticOutputParser(pydantic_object=VisitTimeProposalPlan)
     policy = get_timeout_policy()
     resolved_timeout = timeout_seconds or policy.llm_timeout_seconds
+    wait_timeout = _fallback_grace_timeout(resolved_timeout)
     input_days = _build_input_days(daily_places)
 
     system_prompt = (
@@ -125,10 +131,15 @@ async def propose_visit_times_for_days(
     try:
         response = await asyncio.wait_for(
             ainvoke(stage, messages, timeout_seconds=resolved_timeout),
-            timeout=resolved_timeout,
+            timeout=wait_timeout,
         )
     except asyncio.TimeoutError:
-        logger.warning("Visit time LLM timed out: stage=%s timeout=%s", stage.value, resolved_timeout)
+        logger.warning(
+            "Visit time LLM timed out: stage=%s per_call_timeout=%s wait_timeout=%s",
+            stage.value,
+            resolved_timeout,
+            wait_timeout,
+        )
         return {}
     except Exception:
         logger.exception("Visit time LLM call failed: stage=%s", stage.value)

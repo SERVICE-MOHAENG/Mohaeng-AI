@@ -46,6 +46,11 @@ class PlaceDetailPlan(BaseModel):
     days: list[PlaceDetailDay] = Field(..., description="일자별 장소 상세 결과")
 
 
+def _fallback_grace_timeout(timeout_seconds: int) -> int:
+    """ainvoke 내부 fallback 시도 여유를 위해 외부 wait_for 타임아웃을 확장합니다."""
+    return max(1, int(timeout_seconds) * 2)
+
+
 def _prepare_final_context(
     state: RoadmapState,
 ) -> tuple[str, list[dict]]:
@@ -133,6 +138,7 @@ async def _fill_place_descriptions_with_llm(daily_places: list[dict]) -> list[di
     """LLM을 통해 장소 description을 채웁니다."""
     parser = PydanticOutputParser(pydantic_object=PlaceDetailPlan)
     timeout_seconds = get_timeout_policy().llm_timeout_seconds
+    wait_timeout_seconds = _fallback_grace_timeout(timeout_seconds)
 
     def _fallback_description(place: dict) -> str:
         place_name = place.get("place_name") or "장소"
@@ -188,10 +194,14 @@ async def _fill_place_descriptions_with_llm(daily_places: list[dict]) -> list[di
     try:
         response = await asyncio.wait_for(
             ainvoke(Stage.ROADMAP_PLACE_DETAIL, messages, timeout_seconds=timeout_seconds),
-            timeout=timeout_seconds,
+            timeout=wait_timeout_seconds,
         )
     except asyncio.TimeoutError:
-        logger.error("Place description LLM timed out after %s seconds", timeout_seconds)
+        logger.error(
+            "Place description LLM timed out: per_call_timeout=%s wait_timeout=%s",
+            timeout_seconds,
+            wait_timeout_seconds,
+        )
         return _apply_fallback()
     except Exception:
         logger.exception("Place description LLM call failed")
@@ -302,9 +312,10 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         )
 
         timeout_seconds = get_timeout_policy().llm_timeout_seconds
+        wait_timeout_seconds = _fallback_grace_timeout(timeout_seconds)
         response = await asyncio.wait_for(
             ainvoke(Stage.ROADMAP_SUMMARY, messages, timeout_seconds=timeout_seconds),
-            timeout=timeout_seconds,
+            timeout=wait_timeout_seconds,
         )
         content = strip_code_fence(response.content)
 
