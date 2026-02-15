@@ -23,6 +23,7 @@ _DEFAULT_TRANSIT_FACTOR = 15.0
 _DEFAULT_TRANSIT_BASE_MINUTES = 10
 _DEFAULT_LATE_HOUR = 23
 _DEFAULT_WALK_WARNING_MINUTES = 30
+_VISIT_TIME_MINUTE_STEP = 30
 
 
 class VisitTimeOutputMode(StrEnum):
@@ -187,6 +188,15 @@ def _format_visit_time(total_minutes: int, output_mode: VisitTimeOutputMode) -> 
     return format_minutes_to_hhmm(total_minutes)
 
 
+def _ceil_minutes_to_step(total_minutes: int, step_minutes: int = _VISIT_TIME_MINUTE_STEP) -> int:
+    normalized = max(0, int(total_minutes))
+    step = max(1, int(step_minutes))
+    remainder = normalized % step
+    if remainder == 0:
+        return normalized
+    return normalized + (step - remainder)
+
+
 def apply_visit_time_policy(
     places: list[dict],
     *,
@@ -247,6 +257,7 @@ def apply_visit_time_policy(
         proposal_minutes = parse_time_to_hhmm_minutes(proposal_text) if proposal_text else None
         anchor_time = _resolve_anchor_minutes(place, proposal_minutes)
         assigned_time = max(base_time, anchor_time) if anchor_time is not None else base_time
+        assigned_time = _ceil_minutes_to_step(assigned_time)
 
         if assigned_time >= 1440:
             warnings.append(f"{day_prefix} 일정이 자정을 초과합니다.")
