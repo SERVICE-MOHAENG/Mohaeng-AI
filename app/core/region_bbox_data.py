@@ -31,10 +31,10 @@ REGION_BBOX_MAP: dict[Region, GeoRectangle] = {
         max_lng=129.5543000,
     ),
     Region.TOKYO: GeoRectangle(
-        min_lat=20.2145811,
-        min_lng=135.8536855,
-        max_lat=35.8984245,
-        max_lng=154.2055410,
+        min_lat=35.4816556,
+        min_lng=139.5628986,
+        max_lat=35.8174827,
+        max_lng=139.9189004,
     ),
     Region.OSAKA: GeoRectangle(
         min_lat=34.5861540,
@@ -223,10 +223,10 @@ REGION_BBOX_MAP: dict[Region, GeoRectangle] = {
         max_lng=-80.1391570,
     ),
     Region.HAWAII: GeoRectangle(
-        min_lat=18.8654600,
-        min_lng=-178.4435930,
-        max_lat=28.5172690,
-        max_lng=-154.7557920,
+        min_lat=21.2548159,
+        min_lng=-158.2805762,
+        max_lat=21.7120060,
+        max_lng=-157.6486277,
     ),
     Region.VANCOUVER: GeoRectangle(
         min_lat=49.1989306,
@@ -301,10 +301,10 @@ REGION_BBOX_MAP: dict[Region, GeoRectangle] = {
         max_lng=-76.8705912,
     ),
     Region.CARTAGENA: GeoRectangle(
-        min_lat=37.5338600,
-        min_lng=-1.2261481,
-        max_lat=37.7308788,
-        max_lng=-0.6479296,
+        min_lat=10.3000000,
+        min_lng=-75.6300000,
+        max_lat=10.5200000,
+        max_lng=-75.4300000,
     ),
     Region.PARIS: GeoRectangle(
         min_lat=48.8155755,
@@ -457,10 +457,10 @@ REGION_BBOX_MAP: dict[Region, GeoRectangle] = {
         max_lng=19.3349258,
     ),
     Region.ATHENS: GeoRectangle(
-        min_lat=33.8480209,
-        min_lng=-83.5374696,
-        max_lat=34.0394660,
-        max_lng=-83.2408342,
+        min_lat=37.8155648,
+        min_lng=23.5748324,
+        max_lat=38.1355648,
+        max_lng=23.8948324,
     ),
     Region.SANTORINI: GeoRectangle(
         min_lat=36.3321735,
@@ -529,10 +529,10 @@ REGION_BBOX_MAP: dict[Region, GeoRectangle] = {
         max_lng=29.1358715,
     ),
     Region.CAPPADOCIA: GeoRectangle(
-        min_lat=38.6286124,
-        min_lng=34.8355184,
-        max_lat=38.6486124,
-        max_lng=34.8555184,
+        min_lat=38.3000000,
+        min_lng=34.6800000,
+        max_lat=38.8000000,
+        max_lng=35.1000000,
     ),
     Region.DUBAI: GeoRectangle(
         min_lat=24.6230661,
