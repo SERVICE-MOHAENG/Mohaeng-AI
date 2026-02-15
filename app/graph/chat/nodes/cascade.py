@@ -50,7 +50,7 @@ def cascade(state: ChatState) -> ChatState:
         return {
             **state,
             "status": ChatStatus.REJECTED,
-            "error": "current_itinerary.planning_preference가 유효하지 않습니다.",
+            "error": "modified_itinerary.planning_preference가 유효하지 않습니다.",
         }
 
     modified_days = _extract_modified_days(diff_keys)
