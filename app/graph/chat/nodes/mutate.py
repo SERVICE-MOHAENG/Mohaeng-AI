@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import copy
 
+from app.core.config import get_settings
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat.state import ChatState
 from app.graph.chat.utils import (
     build_diff_key,
@@ -14,6 +16,7 @@ from app.graph.chat.utils import (
 )
 from app.schemas.enums import ChatOperation, ChatStatus
 from app.services.google_places_service import get_google_places_service
+from app.services.place_rerank_service import select_place_id_for_chat
 
 logger = get_logger(__name__)
 
@@ -58,6 +61,16 @@ def _find_day(itinerary: dict, day_number: int) -> dict | None:
         if day.get("day_number") == day_number:
             return day
     return None
+
+
+def _reorder_results_by_place_id(results: list, selected_place_id: str) -> list:
+    selected_index = next(
+        (index for index, place in enumerate(results) if place.place_id == selected_place_id),
+        None,
+    )
+    if selected_index in (None, 0):
+        return results
+    return [results[selected_index], *results[:selected_index], *results[selected_index + 1 :]]
 
 
 async def mutate(state: ChatState) -> ChatState:
@@ -175,15 +188,31 @@ async def _search_place(intent: dict, day: dict) -> tuple:
     if not keyword:
         return None, [], {"error": "검색 키워드가 없습니다."}
 
+    settings = get_settings()
+    min_rating = settings.GOOGLE_PLACES_MIN_RATING
+    rerank_enabled = settings.GOOGLE_PLACES_LLM_RERANK_ENABLED
+    rerank_max_candidates = settings.GOOGLE_PLACES_LLM_RERANK_MAX_CANDIDATES
+    rerank_timeout_seconds = get_timeout_policy(settings).llm_timeout_seconds
+
     try:
         service = get_google_places_service()
-        results = await service.search(keyword)
+        results = await service.search(keyword, min_rating=min_rating)
+        fallback_to_unfiltered = False
+        if not results:
+            fallback_to_unfiltered = True
+            results = await service.search(keyword, min_rating=None)
+
+        logger.info(
+            "Chat place search result: min_rating_applied=%s fallback_to_unfiltered=%s candidate_count=%d",
+            min_rating is not None,
+            fallback_to_unfiltered,
+            len(results),
+        )
     except Exception as exc:
         logger.error("Google Places 검색 실패: %s", exc)
         return None, [], {"error": "장소 검색에 실패했습니다."}
 
     search_results = [r.model_dump() for r in results]
-
     if not results:
         suggested = _suggest_alternative_keyword(keyword)
         return (
@@ -207,6 +236,25 @@ async def _search_place(intent: dict, day: dict) -> tuple:
         if filtered:
             results = filtered
 
+    if rerank_enabled and len(results) > 1:
+        selected_place_id = await select_place_id_for_chat(
+            keyword=keyword,
+            candidates=[place.model_dump() for place in results[:rerank_max_candidates]],
+            day=day,
+            max_candidates=rerank_max_candidates,
+            timeout_seconds=rerank_timeout_seconds,
+        )
+        if selected_place_id:
+            results = _reorder_results_by_place_id(results, selected_place_id)
+        logger.info(
+            "Chat place rerank result: flow=chat batch_size=%d selected=%d missed=%d fallback_used=%s",
+            min(rerank_max_candidates, len(results)),
+            1 if selected_place_id else 0,
+            0 if selected_place_id else 1,
+            selected_place_id is None,
+        )
+
+    search_results = [r.model_dump() for r in results]
     return results[0], search_results, None
 
 

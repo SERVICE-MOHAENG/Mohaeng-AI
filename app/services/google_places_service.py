@@ -28,10 +28,9 @@ class GooglePlacesService(PlacesServiceProtocol):
     _SEARCH_PATH = "/places:searchText"
 
     _SEARCH_FIELD_MASK = (
-        "places.id,places.displayName,places.formattedAddress,places.location,"
-        "places.rating,places.userRatingCount,places.types,places.googleMapsUri"
+        "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.googleMapsUri"
     )
-    _DETAILS_FIELD_MASK = "id,displayName,formattedAddress,location,rating,userRatingCount,types,googleMapsUri"
+    _DETAILS_FIELD_MASK = "id,displayName,formattedAddress,location,types,googleMapsUri"
 
     def __init__(
         self,
@@ -72,7 +71,12 @@ class GooglePlacesService(PlacesServiceProtocol):
             language_code=settings.GOOGLE_PLACES_LANGUAGE_CODE,
         )
 
-    async def search(self, query: str, price_levels: list[str] | None = None) -> list[Place]:
+    async def search(
+        self,
+        query: str,
+        price_levels: list[str] | None = None,
+        min_rating: float | None = None,
+    ) -> list[Place]:
         """검색 쿼리로 장소를 검색합니다."""
         if not query.strip():
             return []
@@ -80,6 +84,8 @@ class GooglePlacesService(PlacesServiceProtocol):
         payload = {"textQuery": query, "pageSize": self._page_size}
         if self._language_code:
             payload["languageCode"] = self._language_code
+        if min_rating is not None:
+            payload["minRating"] = min(5.0, max(0.0, float(min_rating)))
         if price_levels:
             normalized_levels = [str(level).strip() for level in price_levels if str(level).strip()]
             if normalized_levels:
@@ -94,7 +100,12 @@ class GooglePlacesService(PlacesServiceProtocol):
 
         places_raw = (data or {}).get("places", [])
         places = [place for place in (self._map_place(item) for item in places_raw) if place]
-        return self._filter_and_rank(places)
+        logger.info(
+            "Google Places search completed: min_rating_applied=%s candidate_count=%d",
+            min_rating is not None,
+            len(places),
+        )
+        return places
 
     async def details(self, place_id: str) -> Place | None:
         """장소 상세 정보를 조회합니다."""
@@ -177,18 +188,8 @@ class GooglePlacesService(PlacesServiceProtocol):
             address=raw.get("formattedAddress"),
             geometry=PlaceGeometry(latitude=latitude, longitude=longitude),
             url=raw.get("googleMapsUri"),
-            rating=float(raw.get("rating") or 0.0),
-            user_ratings_total=int(raw.get("userRatingCount") or 0),
             types=raw.get("types") or [],
         )
-
-    def _filter_and_rank(self, places: list[Place]) -> list[Place]:
-        filtered = [
-            place
-            for place in places
-            if place.rating >= self.MIN_RATING and place.user_ratings_total >= self.MIN_REVIEWS
-        ]
-        return sorted(filtered, key=lambda p: (p.rating, p.user_ratings_total), reverse=True)
 
 
 @lru_cache(maxsize=1)

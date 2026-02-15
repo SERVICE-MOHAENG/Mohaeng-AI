@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,6 +30,9 @@ class Settings(BaseSettings):
     GOOGLE_PLACES_API_KEY: str | None = None
     GOOGLE_PLACES_TIMEOUT_SECONDS: int = 10
     GOOGLE_PLACES_LANGUAGE_CODE: str = "ko"
+    GOOGLE_PLACES_MIN_RATING: float = 4.0
+    GOOGLE_PLACES_LLM_RERANK_ENABLED: bool = True
+    GOOGLE_PLACES_LLM_RERANK_MAX_CANDIDATES: int = 5
     VISIT_TIME_START: str = "09:00"
     VISIT_TIME_STAY_MINUTES: int = 90
     VISIT_TIME_TRANSIT_FACTOR: float = 15.0
@@ -55,6 +59,24 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @field_validator("GOOGLE_PLACES_MIN_RATING", mode="before")
+    @classmethod
+    def _clamp_google_places_min_rating(cls, value: object) -> float:
+        try:
+            numeric = float(value) if value is not None else 4.0
+        except (TypeError, ValueError):
+            numeric = 4.0
+        return min(5.0, max(0.0, numeric))
+
+    @field_validator("GOOGLE_PLACES_LLM_RERANK_MAX_CANDIDATES", mode="before")
+    @classmethod
+    def _clamp_google_places_llm_rerank_max_candidates(cls, value: object) -> int:
+        try:
+            numeric = int(value) if value is not None else 5
+        except (TypeError, ValueError):
+            numeric = 5
+        return min(10, max(1, numeric))
 
 
 @lru_cache

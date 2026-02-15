@@ -6,11 +6,14 @@ import asyncio
 
 from langchain_core.runnables import RunnableConfig
 
+from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_search_query, build_slot_key
 from app.schemas.enums import BudgetRange
 from app.services.google_places_service import get_google_places_service
+from app.services.place_rerank_service import select_place_ids_for_day
 from app.services.places_service import PlacesServiceProtocol
 
 logger = get_logger(__name__)
@@ -91,6 +94,17 @@ def _price_levels_for_slot(slot: dict, base_price_levels: list[str] | None) -> l
     return base_price_levels
 
 
+def _move_selected_first(places: list[dict], selected_place_id: str) -> tuple[list[dict], bool]:
+    selected_index = next(
+        (index for index, place in enumerate(places) if str(place.get("place_id") or "").strip() == selected_place_id),
+        None,
+    )
+    if selected_index in (None, 0):
+        return places, False
+    reordered = [places[selected_index], *places[:selected_index], *places[selected_index + 1 :]]
+    return reordered, True
+
+
 async def fetch_places_from_slots(
     state: RoadmapState,
     config: RunnableConfig,
@@ -117,6 +131,11 @@ async def fetch_places_from_slots(
     else:
         budget_range = getattr(raw_request, "budget_range", None)
     base_price_levels = _map_budget_to_price_levels(budget_range)
+    settings = get_settings()
+    min_rating = settings.GOOGLE_PLACES_MIN_RATING
+    rerank_enabled = settings.GOOGLE_PLACES_LLM_RERANK_ENABLED
+    rerank_max_candidates = settings.GOOGLE_PLACES_LLM_RERANK_MAX_CANDIDATES
+    rerank_timeout_seconds = get_timeout_policy(settings).llm_timeout_seconds
 
     fetched_places: dict[str, list] = {}
 
@@ -135,9 +154,21 @@ async def fetch_places_from_slots(
 
     async def search_for_slot(slot_key: str, query: str, price_levels: list[str] | None) -> tuple[str, list]:
         try:
-            places = await places_service.search(query, price_levels=price_levels)
+            places = await places_service.search(query, price_levels=price_levels, min_rating=min_rating)
             if price_levels and not places:
-                places = await places_service.search(query, price_levels=None)
+                places = await places_service.search(query, price_levels=None, min_rating=min_rating)
+            fallback_to_unfiltered = False
+            if not places:
+                fallback_to_unfiltered = True
+                places = await places_service.search(query, price_levels=None, min_rating=None)
+
+            logger.info(
+                "Places search result: slot=%s min_rating_applied=%s fallback_to_unfiltered=%s candidate_count=%d",
+                slot_key,
+                min_rating is not None,
+                fallback_to_unfiltered,
+                len(places),
+            )
             return slot_key, [place.model_dump() for place in places]
         except Exception as exc:
             logger.warning("슬롯 %s 검색 실패: %s", slot_key, exc)
@@ -147,6 +178,73 @@ async def fetch_places_from_slots(
 
     for slot_key, places in results:
         fetched_places[slot_key] = places
+
+    if rerank_enabled:
+
+        async def rerank_for_day(day: dict) -> None:
+            day_number = day.get("day_number", 0)
+            slots_payload: list[dict] = []
+            for slot_index, slot in enumerate(day.get("slots", [])):
+                slot_key = build_slot_key(day_number, slot_index)
+                candidates = fetched_places.get(slot_key, [])
+                if not candidates:
+                    continue
+                slots_payload.append(
+                    {
+                        "slot_key": slot_key,
+                        "section": slot.get("section"),
+                        "area": slot.get("area"),
+                        "keyword": slot.get("keyword"),
+                        "candidates": candidates[:rerank_max_candidates],
+                    }
+                )
+
+            if not slots_payload:
+                return
+
+            selected_map = await select_place_ids_for_day(
+                day_number=day_number,
+                slots=slots_payload,
+                max_candidates=rerank_max_candidates,
+                timeout_seconds=rerank_timeout_seconds,
+            )
+            if selected_map is None:
+                logger.info(
+                    (
+                        "Roadmap place rerank result: flow=roadmap day=%s "
+                        "batch_size=%d selected=0 missed=%d fallback_used=true"
+                    ),
+                    day_number,
+                    len(slots_payload),
+                    len(slots_payload),
+                )
+                return
+
+            selected_count = 0
+            missed_count = 0
+            for slot in slots_payload:
+                slot_key = slot["slot_key"]
+                selected_place_id = selected_map.get(slot_key)
+                if not selected_place_id:
+                    missed_count += 1
+                    continue
+                selected_count += 1
+                original_places = fetched_places.get(slot_key, [])
+                reordered_places, _ = _move_selected_first(original_places, selected_place_id)
+                fetched_places[slot_key] = reordered_places
+
+            logger.info(
+                (
+                    "Roadmap place rerank result: flow=roadmap day=%s "
+                    "batch_size=%d selected=%d missed=%d fallback_used=false"
+                ),
+                day_number,
+                len(slots_payload),
+                selected_count,
+                missed_count,
+            )
+
+        await asyncio.gather(*[rerank_for_day(day) for day in skeleton_plan])
 
     logger.info("총 %d개 슬롯에서 장소 검색 완료", len(fetched_places))
 
