@@ -7,11 +7,13 @@ import asyncio
 from langchain_core.runnables import RunnableConfig
 
 from app.core.config import get_settings
+from app.core.geo import GeoRectangle
 from app.core.logger import get_logger
+from app.core.region_bbox import get_region_bbox
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_search_query, build_slot_key
-from app.schemas.enums import BudgetRange
+from app.schemas.enums import BudgetRange, Region
 from app.services.google_places_service import get_google_places_service
 from app.services.place_rerank_service import select_place_ids_for_day
 from app.services.places_service import PlacesServiceProtocol
@@ -23,34 +25,17 @@ _FOOD_KEYWORD_HINTS = (
     "맛집",
     "식당",
     "레스토랑",
-    "음식",
     "한식",
+    "양식",
     "중식",
     "일식",
-    "양식",
     "분식",
     "뷔페",
     "카페",
     "커피",
-    "디저트",
     "베이커리",
     "브런치",
-    "아이스크림",
-    "치킨",
-    "피자",
-    "버거",
-    "스테이크",
-    "파스타",
-    "라멘",
-    "우동",
-    "초밥",
-    "스시",
-    "돈까스",
-    "고기",
-    "삼겹",
-    "갈비",
-    "해산물",
-    "횟집",
+    "디저트",
     "bar",
     "pub",
     "izakaya",
@@ -105,11 +90,23 @@ def _move_selected_first(places: list[dict], selected_place_id: str) -> tuple[li
     return reordered, True
 
 
+def _hard_filter_by_bbox(places: list, bbox: GeoRectangle) -> tuple[list, int]:
+    filtered = [
+        place
+        for place in places
+        if bbox.contains(
+            place.geometry.latitude,
+            place.geometry.longitude,
+        )
+    ]
+    return filtered, max(0, len(places) - len(filtered))
+
+
 async def fetch_places_from_slots(
     state: RoadmapState,
     config: RunnableConfig,
 ) -> RoadmapState:
-    """스켈레톤 슬롯을 기반으로 장소를 검색해 상태에 저장합니다."""
+    """슬롯별 장소 후보를 조회해 상태에 반영합니다."""
     if state.get("error"):
         return state
 
@@ -122,7 +119,7 @@ async def fetch_places_from_slots(
         try:
             places_service = get_google_places_service()
         except Exception as exc:
-            logger.error("PlacesService 초기화 실패: %s", exc)
+            logger.error("PlacesService initialization failed: %s", exc)
             return {**state, "error": "PlacesService가 주입되지 않았습니다."}
 
     raw_request = state.get("course_request") or {}
@@ -130,6 +127,7 @@ async def fetch_places_from_slots(
         budget_range = raw_request.get("budget_range")
     else:
         budget_range = getattr(raw_request, "budget_range", None)
+
     base_price_levels = _map_budget_to_price_levels(budget_range)
     settings = get_settings()
     min_rating = settings.GOOGLE_PLACES_MIN_RATING
@@ -139,42 +137,97 @@ async def fetch_places_from_slots(
 
     fetched_places: dict[str, list] = {}
 
-    tasks: list[tuple[str, str, list[str] | None]] = []
+    tasks: list[tuple[str, str, list[str] | None, Region | str | None]] = []
     for day in skeleton_plan:
         day_number = day.get("day_number", 0)
+        day_region = day.get("region")
         slots = day.get("slots", [])
         for slot_index, slot in enumerate(slots):
             slot_key = build_slot_key(day_number, slot_index)
             query = build_search_query(slot)
             if query:
                 slot_price_levels = _price_levels_for_slot(slot, base_price_levels)
-                tasks.append((slot_key, query, slot_price_levels))
+                tasks.append((slot_key, query, slot_price_levels, day_region))
             else:
                 fetched_places[slot_key] = []
 
-    async def search_for_slot(slot_key: str, query: str, price_levels: list[str] | None) -> tuple[str, list]:
+    async def search_for_slot(
+        slot_key: str,
+        query: str,
+        price_levels: list[str] | None,
+        region: Region | str | None,
+    ) -> tuple[str, list]:
+        geo_filter_scope = "roadmap_region"
+        geo_missing_region_bbox = False
+        geo_filter_fallback_unfiltered = False
+        geo_filtered_out_count = 0
+
+        region_bbox = get_region_bbox(region)
+        if region_bbox is None:
+            geo_missing_region_bbox = True
+
+        location_restriction = region_bbox
+
         try:
-            places = await places_service.search(query, price_levels=price_levels, min_rating=min_rating)
+            places = await places_service.search(
+                query,
+                price_levels=price_levels,
+                min_rating=min_rating,
+                location_restriction=location_restriction,
+            )
+            if region_bbox is not None and places:
+                places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
+                geo_filtered_out_count += filtered_out
+
+            if not places and location_restriction is not None:
+                geo_filter_fallback_unfiltered = True
+                places = await places_service.search(
+                    query,
+                    price_levels=price_levels,
+                    min_rating=min_rating,
+                    location_restriction=None,
+                )
+
             if price_levels and not places:
-                places = await places_service.search(query, price_levels=None, min_rating=min_rating)
-            fallback_to_unfiltered = False
+                places = await places_service.search(
+                    query,
+                    price_levels=None,
+                    min_rating=min_rating,
+                    location_restriction=None,
+                )
+
             if not places:
-                fallback_to_unfiltered = True
-                places = await places_service.search(query, price_levels=None, min_rating=None)
+                places = await places_service.search(
+                    query,
+                    price_levels=None,
+                    min_rating=None,
+                    location_restriction=None,
+                )
 
             logger.info(
-                "Places search result: slot=%s min_rating_applied=%s fallback_to_unfiltered=%s candidate_count=%d",
+                (
+                    "Places search result: slot=%s min_rating_applied=%s candidate_count=%d "
+                    "geo_filter_applied=%s geo_filter_scope=%s "
+                    "geo_filter_fallback_unfiltered=%s geo_filtered_out_count=%d "
+                    "geo_missing_region_bbox=%s"
+                ),
                 slot_key,
                 min_rating is not None,
-                fallback_to_unfiltered,
                 len(places),
+                location_restriction is not None,
+                geo_filter_scope,
+                geo_filter_fallback_unfiltered,
+                geo_filtered_out_count,
+                geo_missing_region_bbox,
             )
             return slot_key, [place.model_dump() for place in places]
         except Exception as exc:
-            logger.warning("슬롯 %s 검색 실패: %s", slot_key, exc)
+            logger.warning("Slot place search failed: slot=%s error=%s", slot_key, exc)
             return slot_key, []
 
-    results = await asyncio.gather(*[search_for_slot(key, query, levels) for key, query, levels in tasks])
+    results = await asyncio.gather(
+        *[search_for_slot(key, query, levels, region) for key, query, levels, region in tasks]
+    )
 
     for slot_key, places in results:
         fetched_places[slot_key] = places
@@ -246,7 +299,7 @@ async def fetch_places_from_slots(
 
         await asyncio.gather(*[rerank_for_day(day) for day in skeleton_plan])
 
-    logger.info("총 %d개 슬롯에서 장소 검색 완료", len(fetched_places))
+    logger.info("Slot place fetch completed: slot_count=%d", len(fetched_places))
 
     return {
         **state,
