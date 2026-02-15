@@ -18,6 +18,4 @@ class Place(BaseModel):
     address: str | None = Field(default=None, description="장소 주소")
     geometry: PlaceGeometry = Field(..., description="장소 좌표 정보")
     url: str | None = Field(default=None, description="구글 맵 URL")
-    rating: float = Field(default=0.0, description="평점 (0.0 ~ 5.0)")
-    user_ratings_total: int = Field(default=0, description="리뷰 수")
     types: list[str] = Field(default_factory=list, description="장소 유형 목록")
