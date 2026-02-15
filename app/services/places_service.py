@@ -16,6 +16,7 @@ class PlacesServiceProtocol(ABC):
         price_levels: list[str] | None = None,
         min_rating: float | None = None,
         location_restriction: GeoRectangle | None = None,
+        location_bias: GeoRectangle | None = None,
     ) -> list[Place]:
         """검색어로 장소를 조회합니다."""
         raise NotImplementedError

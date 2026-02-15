@@ -161,47 +161,78 @@ async def fetch_places_from_slots(
         geo_missing_region_bbox = False
         geo_filter_fallback_unfiltered = False
         geo_filtered_out_count = 0
+        fallback_stage = "restriction"
+        restriction_used = False
+        bias_used = False
+        unfiltered_used = False
 
         region_bbox = get_region_bbox(region)
         if region_bbox is None:
             geo_missing_region_bbox = True
-
-        location_restriction = region_bbox
 
         try:
             places = await places_service.search(
                 query,
                 price_levels=price_levels,
                 min_rating=min_rating,
-                location_restriction=location_restriction,
+                location_restriction=region_bbox,
+                location_bias=None,
             )
+            restriction_used = region_bbox is not None
             if region_bbox is not None and places:
                 places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
                 geo_filtered_out_count += filtered_out
 
-            if not places and location_restriction is not None:
-                geo_filter_fallback_unfiltered = True
+            if not places and region_bbox is not None:
+                fallback_stage = "bias"
+                bias_used = True
                 places = await places_service.search(
                     query,
                     price_levels=price_levels,
                     min_rating=min_rating,
                     location_restriction=None,
+                    location_bias=region_bbox,
                 )
+                if places:
+                    places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
+                    geo_filtered_out_count += filtered_out
 
-            if price_levels and not places:
+            if not places and region_bbox is not None and price_levels:
+                fallback_stage = "bias_without_price_levels"
+                bias_used = True
                 places = await places_service.search(
                     query,
                     price_levels=None,
                     min_rating=min_rating,
                     location_restriction=None,
+                    location_bias=region_bbox,
+                )
+                if places:
+                    places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
+                    geo_filtered_out_count += filtered_out
+
+            if not places:
+                fallback_stage = "unfiltered_with_min_rating"
+                geo_filter_fallback_unfiltered = True
+                unfiltered_used = True
+                places = await places_service.search(
+                    query,
+                    price_levels=None,
+                    min_rating=min_rating,
+                    location_restriction=None,
+                    location_bias=None,
                 )
 
             if not places:
+                fallback_stage = "unfiltered_without_min_rating"
+                geo_filter_fallback_unfiltered = True
+                unfiltered_used = True
                 places = await places_service.search(
                     query,
                     price_levels=None,
                     min_rating=None,
                     location_restriction=None,
+                    location_bias=None,
                 )
 
             logger.info(
@@ -209,16 +240,21 @@ async def fetch_places_from_slots(
                     "Places search result: slot=%s min_rating_applied=%s candidate_count=%d "
                     "geo_filter_applied=%s geo_filter_scope=%s "
                     "geo_filter_fallback_unfiltered=%s geo_filtered_out_count=%d "
-                    "geo_missing_region_bbox=%s"
+                    "geo_missing_region_bbox=%s fallback_stage=%s "
+                    "restriction_used=%s bias_used=%s unfiltered_used=%s"
                 ),
                 slot_key,
                 min_rating is not None,
                 len(places),
-                location_restriction is not None,
+                region_bbox is not None,
                 geo_filter_scope,
                 geo_filter_fallback_unfiltered,
                 geo_filtered_out_count,
                 geo_missing_region_bbox,
+                fallback_stage,
+                restriction_used,
+                bias_used,
+                unfiltered_used,
             )
             return slot_key, [place.model_dump() for place in places]
         except Exception as exc:

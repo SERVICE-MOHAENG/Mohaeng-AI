@@ -77,10 +77,13 @@ class GooglePlacesService(PlacesServiceProtocol):
         price_levels: list[str] | None = None,
         min_rating: float | None = None,
         location_restriction: GeoRectangle | None = None,
+        location_bias: GeoRectangle | None = None,
     ) -> list[Place]:
         """텍스트 쿼리로 장소를 검색합니다."""
         if not query.strip():
             return []
+        if location_restriction is not None and location_bias is not None:
+            raise ValueError("locationRestriction과 locationBias는 동시에 사용할 수 없습니다.")
 
         payload: dict[str, Any] = {"textQuery": query, "pageSize": self._page_size}
         if self._language_code:
@@ -93,6 +96,8 @@ class GooglePlacesService(PlacesServiceProtocol):
                 payload["priceLevels"] = normalized_levels
         if location_restriction is not None:
             payload["locationRestriction"] = location_restriction.to_google_location_restriction_payload()
+        elif location_bias is not None:
+            payload["locationBias"] = location_bias.to_google_location_bias_payload()
 
         data = await self._request(
             method="POST",
@@ -107,11 +112,12 @@ class GooglePlacesService(PlacesServiceProtocol):
         logger.info(
             (
                 "Google Places search completed: min_rating_applied=%s "
-                "geo_filter_applied=%s geo_filter_type=%s candidate_count=%d"
+                "geo_filter_applied=%s geo_filter_type=%s geo_bias_applied=%s candidate_count=%d"
             ),
             min_rating is not None,
             location_restriction is not None,
             "bbox" if location_restriction is not None else "none",
+            location_bias is not None,
             len(places),
         )
         return places

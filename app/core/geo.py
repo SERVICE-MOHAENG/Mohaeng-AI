@@ -56,13 +56,17 @@ class GeoRectangle:
         return self.min_lat <= lat <= self.max_lat and self.min_lng <= lng <= self.max_lng
 
     def to_google_location_restriction_payload(self) -> dict[str, dict[str, float]]:
-        """Google Places `locationRestriction` payload 형식으로 직렬화합니다."""
+        """Google Places `locationRestriction` 페이로드 형식으로 직렬화합니다."""
         return {
             "rectangle": {
                 "low": {"latitude": self.min_lat, "longitude": self.min_lng},
                 "high": {"latitude": self.max_lat, "longitude": self.max_lng},
             }
         }
+
+    def to_google_location_bias_payload(self) -> dict[str, dict[str, float]]:
+        """Google Places `locationBias` 페이로드 형식으로 직렬화합니다."""
+        return self.to_google_location_restriction_payload()
 
     @classmethod
     def from_points_with_margin_km(
