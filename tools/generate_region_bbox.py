@@ -188,7 +188,11 @@ def validate_mapping(mapping: dict[Region, BBoxResult]) -> list[str]:
     return errors
 
 
-def _render_python(mapping: dict[Region, BBoxResult]) -> str:
+def _render_python(
+    mapping: dict[Region, BBoxResult],
+    *,
+    unresolved: dict[Region, str] | None = None,
+) -> str:
     lines: list[str] = []
     lines.append('"""자동 생성된 Region -> GeoRectangle 매핑."""')
     lines.append("")
@@ -197,9 +201,16 @@ def _render_python(mapping: dict[Region, BBoxResult]) -> str:
     lines.append("from app.core.geo import GeoRectangle")
     lines.append("from app.schemas.enums import Region")
     lines.append("")
+    if unresolved:
+        unresolved_regions = ",".join(region.value for region in sorted(unresolved.keys(), key=lambda item: item.value))
+        lines.append("# WARNING: non-strict 모드에서 생성된 부분 결과입니다.")
+        lines.append(f"# unresolved_regions: {unresolved_regions}")
+        lines.append("")
     lines.append("REGION_BBOX_MAP: dict[Region, GeoRectangle] = {")
     for region in Region:
-        result = mapping[region]
+        result = mapping.get(region)
+        if result is None:
+            continue
         lines.append(f"    Region.{region.value}: GeoRectangle(")
         lines.append(f"        min_lat={result.min_lat:.7f},")
         lines.append(f"        min_lng={result.min_lng:.7f},")
@@ -219,7 +230,7 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Exit with non-zero when any region cannot be resolved.",
+        help="미해결 지역이 있으면 non-zero로 종료합니다(기본은 부분 결과를 출력하고 0으로 종료).",
     )
     args = parser.parse_args()
 
@@ -259,13 +270,17 @@ def main() -> int:
         return 1
 
     if unresolved:
-        # Partial output is still useful for manual completion, but we only render fully when complete.
+        print(
+            f"[warning] Proceeding with partial output: unresolved_region_count={len(unresolved)}",
+            file=sys.stderr,
+        )
+        rendered = _render_python(resolved, unresolved=unresolved)
         if args.write:
-            print(
-                f"Skip writing {args.write} because {len(unresolved)} region(s) are unresolved.",
-                file=sys.stderr,
-            )
-        return 1
+            with open(args.write, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(rendered)
+        else:
+            print(rendered)
+        return 0
 
     validation_errors = validate_mapping(resolved)
     for message in validation_errors:
