@@ -227,7 +227,7 @@ async def _apply_visit_time_for_daily_places(
         else VisitTimeOutputMode.SECTION_EN
     )
     policy_config = build_visit_time_policy_config()
-    proposals = await propose_visit_times_for_days(daily_places, stage=Stage.ROADMAP_PLACE_DETAIL)
+    proposals = await propose_visit_times_for_days(daily_places, stage=Stage.CHAT_VISIT_TIME)
     warnings: list[str] = []
 
     for day in daily_places:
@@ -301,7 +301,11 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             format_instructions=parser.get_format_instructions(),
         )
 
-        response = await ainvoke(Stage.ROADMAP_SUMMARY, messages)
+        timeout_seconds = get_timeout_policy().llm_timeout_seconds
+        response = await asyncio.wait_for(
+            ainvoke(Stage.ROADMAP_SUMMARY, messages, timeout_seconds=timeout_seconds),
+            timeout=timeout_seconds,
+        )
         content = strip_code_fence(response.content)
 
         trip_days = state["trip_days"]
