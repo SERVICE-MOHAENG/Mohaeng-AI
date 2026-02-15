@@ -88,7 +88,10 @@ def _prepare_final_context(
             places = fetched_places.get(slot_key, [])
             if places:
                 place = places[0]
-                context_lines.append(f"- {slot['section']}: {place['name']} (키워드: {slot['keyword']})")
+                section = slot.get("section")
+                section_label = section or "UNKNOWN"
+                keyword = slot.get("keyword")
+                context_lines.append(f"- {section_label}: {place['name']} (키워드: {keyword})")
 
                 geometry = place.get("geometry") or {}
                 place_url = place.get("url")
@@ -108,8 +111,8 @@ def _prepare_final_context(
                         "place_url": place_url,
                         "description": f"{place['name']}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
-                        "visit_time": None if planned else slot["section"],
-                        "section": slot.get("section"),
+                        "visit_time": None if planned else section,
+                        "section": section,
                     }
                 )
                 visit_sequence_counter += 1
