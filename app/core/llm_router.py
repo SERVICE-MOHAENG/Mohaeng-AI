@@ -97,7 +97,7 @@ def _get_chat_openai_client(
         model=model,
         temperature=temperature,
         api_key=api_key,
-        request_timeout=timeout_seconds,
+        timeout=timeout_seconds,
     )
 
 
