@@ -14,8 +14,6 @@ from app.schemas.recommend import RecommendRequest
 
 def _set_required_env(monkeypatch, **overrides: str) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("JWT_ACCESS_SECRET", "test-secret")
-    monkeypatch.setenv("JWT_ACCESS_EXPIRY_MINUTES", "30")
     monkeypatch.setenv("SERVICE_SECRET", "test-service-secret")
     monkeypatch.setenv("DOCS_MODE", "disabled")
     for key, value in overrides.items():

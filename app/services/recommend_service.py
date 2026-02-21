@@ -10,9 +10,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-from langchain_openai import ChatOpenAI
-
 from app.core.config import get_settings
+from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 from app.schemas.enums import Region
@@ -176,18 +175,6 @@ def _load_candidates(rng: random.Random) -> list[RegionCandidate]:
     return candidates
 
 
-def _get_recommend_llm() -> ChatOpenAI:
-    """추천 전용 LLM 인스턴스를 생성한다."""
-    settings = get_settings()
-    timeout_policy = get_timeout_policy(settings)
-    return ChatOpenAI(
-        model=settings.LLM_MODEL_NAME,
-        temperature=settings.RECOMMEND_LLM_TEMPERATURE,
-        api_key=settings.OPENAI_API_KEY,
-        request_timeout=timeout_policy.recommend_timeout_seconds,
-    )
-
-
 def _parse_llm_recommendation(raw_content: str) -> dict[str, Any]:
     cleaned = _strip_markdown_fence(raw_content)
     return json.loads(cleaned)
@@ -240,13 +227,20 @@ def _normalize_result(
 
 async def run_recommendation_pipeline(request: RecommendRequest) -> RecommendResultData:
     """추천 작업에 대해 후보 로드와 LLM 선정을 수행한다."""
+    settings = get_settings()
+    timeout_policy = get_timeout_policy(settings)
     survey = request.to_survey()
     rng = _build_request_rng()
     candidates = _load_candidates(rng)
     variation_hint = _pick_variation_hint(rng)
     prompt = _build_recommend_prompt(survey, candidates, variation_hint)
 
-    response = await asyncio.to_thread(_get_recommend_llm().invoke, prompt)
+    response = await ainvoke(
+        Stage.RECOMMEND_SELECTION,
+        prompt,
+        timeout_seconds=timeout_policy.recommend_timeout_seconds,
+        temperature=settings.RECOMMEND_LLM_TEMPERATURE,
+    )
     raw_content = response.content if isinstance(response.content, str) else str(response.content)
     parsed = _parse_llm_recommendation(raw_content)
     return _normalize_result(parsed, candidates)

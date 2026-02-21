@@ -10,8 +10,8 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field, ValidationError
 
+from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
-from app.graph.chat.llm import get_llm
 from app.graph.chat.state import ChatState
 from app.graph.roadmap.utils import strip_code_fence
 from app.schemas.chat import ChatIntent
@@ -48,6 +48,9 @@ CLASSIFIER_SYSTEM_PROMPT = """\
 
 CLASSIFIER_USER_PROMPT = """\
 {history_context}\
+여행자 선호 컨텍스트:
+{request_context}
+
 현재 로드맵 매핑:
 {itinerary_table}
 
@@ -104,6 +107,9 @@ MODIFICATION_SYSTEM_PROMPT = """\
 
 MODIFICATION_USER_PROMPT = """\
 {history_context}\
+여행자 선호 컨텍스트:
+{request_context}
+
 Day별 위치 컨텍스트:
 {day_region_context}
 
@@ -168,6 +174,27 @@ def _build_history_context(session_history: list[dict]) -> str:
         content = msg.get("content", "")
         lines.append(f"[{role}] {content}")
     return "최근 대화 맥락:\n" + "\n".join(lines) + "\n\n"
+
+
+def _build_request_context(request_context: dict) -> str:
+    """요청 기반 선호 정보를 프롬프트 컨텍스트 문자열로 변환합니다."""
+    if not request_context:
+        return "(요청 기반 선호 정보 없음)"
+
+    travel_themes = request_context.get("travel_themes") or []
+    travel_themes_text = ", ".join([str(theme) for theme in travel_themes]) if travel_themes else "없음"
+
+    lines = [
+        f"- companion_type: {request_context.get('companion_type', '없음')}",
+        f"- travel_themes: {travel_themes_text}",
+        f"- pace_preference: {request_context.get('pace_preference', '없음')}",
+        f"- planning_preference: {request_context.get('planning_preference', '없음')}",
+        f"- destination_preference: {request_context.get('destination_preference', '없음')}",
+        f"- activity_preference: {request_context.get('activity_preference', '없음')}",
+        f"- priority_preference: {request_context.get('priority_preference', '없음')}",
+        f"- budget_range: {request_context.get('budget_range', '없음')}",
+    ]
+    return "\n".join(lines)
 
 
 def _contains_hangul(text: str) -> bool:
@@ -408,19 +435,25 @@ def _is_ambiguous_day_item_delete_request(user_query: str) -> bool:
     return has_item_word and not has_item_selector
 
 
-def _classify_intent_route(itinerary_table: str, history_context: str, user_query: str) -> ChatIntentRoute:
+def _classify_intent_route(
+    itinerary_table: str,
+    history_context: str,
+    request_context: str,
+    user_query: str,
+) -> ChatIntentRoute:
     """요청을 라우팅 스키마(GENERAL_CHAT/MODIFICATION + 상세 분류)로 분류합니다."""
     parser = PydanticOutputParser(pydantic_object=ChatIntentRoute)
     prompt = ChatPromptTemplate.from_messages([("system", CLASSIFIER_SYSTEM_PROMPT), ("human", CLASSIFIER_USER_PROMPT)])
     messages = prompt.format_messages(
         itinerary_table=itinerary_table,
         history_context=history_context,
+        request_context=request_context,
         user_query=user_query,
         format_instructions=parser.get_format_instructions(),
     )
 
     try:
-        response = get_llm().invoke(messages)
+        response = invoke(Stage.CHAT_INTENT_ROUTING, messages)
         content = strip_code_fence(response.content)
         return parser.parse(content)
     except Exception as exc:
@@ -477,6 +510,7 @@ def _extract_json_object(text: str) -> dict | None:
 def _parse_modification_intent(
     itinerary_table: str,
     history_context: str,
+    request_context: str,
     day_region_context: str,
     user_query: str,
 ) -> ChatIntentDraft:
@@ -490,11 +524,12 @@ def _parse_modification_intent(
         itinerary_table=itinerary_table,
         format_instructions=parser.get_format_instructions(),
         history_context=history_context,
+        request_context=request_context,
         day_region_context=day_region_context,
         user_query=user_query,
     )
 
-    response = get_llm().invoke(messages)
+    response = invoke(Stage.CHAT_INTENT_STRUCTURING, messages)
     content = strip_code_fence(response.content)
 
     try:
@@ -511,16 +546,18 @@ def analyze_intent(state: ChatState) -> ChatState:
     current_itinerary = state.get("current_itinerary")
     user_query = state.get("user_query")
     session_history = state.get("session_history", [])
+    request_context = state.get("request_context", {})
 
     if not current_itinerary or not user_query:
         return {**state, "error": "의도 분석에는 current_itinerary와 user_query가 필요합니다."}
 
     itinerary_table = _build_itinerary_table(current_itinerary)
     history_context = _build_history_context(session_history)
+    request_context_text = _build_request_context(request_context)
     day_region_hints = _build_day_region_hints(current_itinerary)
     day_region_context = _format_day_region_context(day_region_hints)
 
-    route = _classify_intent_route(itinerary_table, history_context, user_query)
+    route = _classify_intent_route(itinerary_table, history_context, request_context_text, user_query)
     if route.intent_type == "GENERAL_CHAT":
         return {**state, "intent_type": "GENERAL_CHAT"}
 
@@ -552,6 +589,7 @@ def analyze_intent(state: ChatState) -> ChatState:
         intent_draft = _parse_modification_intent(
             itinerary_table=itinerary_table,
             history_context=history_context,
+            request_context=request_context_text,
             day_region_context=day_region_context,
             user_query=user_query,
         )

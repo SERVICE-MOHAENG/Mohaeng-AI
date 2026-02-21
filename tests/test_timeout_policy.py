@@ -7,8 +7,6 @@ from app.core.timeout_policy import build_timeout_policy, to_requests_timeout
 def test_build_timeout_policy_caps_by_request_timeout() -> None:
     settings = Settings(
         OPENAI_API_KEY="test-key",
-        JWT_ACCESS_SECRET="test-secret",
-        JWT_ACCESS_EXPIRY_MINUTES=30,
         SERVICE_SECRET="test-service-secret",
         REQUEST_TIMEOUT_SECONDS=20,
         LLM_TIMEOUT_SECONDS=60,

@@ -24,8 +24,20 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
     if isinstance(current_itinerary, BaseModel):
         current_itinerary = current_itinerary.model_dump(mode="json")
 
+    request_context = {
+        "companion_type": str(request.companion_type),
+        "travel_themes": [str(theme) for theme in request.travel_themes],
+        "pace_preference": str(request.pace_preference),
+        "planning_preference": str(request.planning_preference),
+        "destination_preference": str(request.destination_preference),
+        "activity_preference": str(request.activity_preference),
+        "priority_preference": str(request.priority_preference),
+        "budget_range": str(request.budget_range),
+    }
+
     initial_state = {
         "current_itinerary": current_itinerary,
+        "request_context": request_context,
         "user_query": request.user_query,
         "session_history": [msg.model_dump() for msg in request.session_history],
     }

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Docker image tag to deploy"
+        description: "Docker image tag to deploy (e.g., commit SHA)"
         required: false
         default: "latest"
 
@@ -37,6 +37,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
             if ! [[ "${INPUT_IMAGE_TAG}" =~ ^[a-zA-Z0-9._-]+$ ]]; then
@@ -45,7 +46,11 @@ jobs:
             fi
             echo "image_tag=${INPUT_IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
           else
-            echo "image_tag=latest" >> "${GITHUB_OUTPUT}"
+            if ! [[ "${WORKFLOW_RUN_HEAD_SHA}" =~ ^[a-f0-9]{40}$ ]]; then
+              echo "::error::Invalid workflow_run.head_sha value: ${WORKFLOW_RUN_HEAD_SHA}"
+              exit 1
+            fi
+            echo "image_tag=${WORKFLOW_RUN_HEAD_SHA}" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Deploy on EC2 (pull only)
@@ -58,6 +63,7 @@ jobs:
           script: |
             set -e
             cd '${{ env.DEPLOY_PATH }}'
+            export DOCKERHUB_USERNAME='${{ secrets.DOCKERHUB_USERNAME }}'
             export IMAGE_TAG='${{ steps.vars.outputs.image_tag }}'
             docker compose pull
             docker compose up -d --remove-orphans

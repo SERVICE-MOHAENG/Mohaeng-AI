@@ -1,6 +1,6 @@
 services:
   app:
-    image: ${DOCKERHUB_USERNAME}/mohaeng-ai:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mohaeng-ai:${IMAGE_TAG:-latest}
     container_name: mohaeng-ai
     env_file:
       - .env

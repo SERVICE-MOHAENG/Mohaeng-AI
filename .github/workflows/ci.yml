@@ -6,7 +6,6 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
   push:
     branches: ["main"]
-    tags: ["v*"]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -41,15 +40,13 @@ jobs:
         run: uv run pytest
         env:
           OPENAI_API_KEY: test-key-for-ci
-          JWT_ACCESS_SECRET: test-secret
-          JWT_ACCESS_EXPIRY_MINUTES: "30"
           SERVICE_SECRET: test-service-secret
           LLM_TIMEOUT_SECONDS: "60"
           CALLBACK_TIMEOUT_SECONDS: "10"
           GOOGLE_PLACES_API_KEY: test-google-api-key
 
   publish-image:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -70,18 +67,15 @@ jobs:
 
           repo_name="$(echo "${GITHUB_REPOSITORY##*/}" | tr '[:upper:]' '[:lower:]')"
           image_name="${{ secrets.DOCKERHUB_USERNAME }}/${repo_name}"
-
-          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            tags="${image_name}:latest"
-          elif [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            tags="${image_name}:${GITHUB_REF_NAME}"
-          else
-            echo "Unsupported ref for image publish: ${GITHUB_REF}"
-            exit 1
-          fi
+          sha_tag="${GITHUB_SHA}"
 
           echo "image_name=${image_name}" >> "${GITHUB_OUTPUT}"
-          echo "tags=${tags}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "tags<<EOF"
+            echo "${image_name}:latest"
+            echo "${image_name}:${sha_tag}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3

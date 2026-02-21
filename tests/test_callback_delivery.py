@@ -13,8 +13,6 @@ from app.services.callback_delivery import post_callback_with_retry
 
 def _set_required_env(monkeypatch, **overrides: str) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("JWT_ACCESS_SECRET", "test-secret")
-    monkeypatch.setenv("JWT_ACCESS_EXPIRY_MINUTES", "30")
     monkeypatch.setenv("SERVICE_SECRET", "test-service-secret")
     for key, value in overrides.items():
         monkeypatch.setenv(key, value)
