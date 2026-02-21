@@ -40,8 +40,6 @@ jobs:
         run: uv run pytest
         env:
           OPENAI_API_KEY: test-key-for-ci
-          JWT_ACCESS_SECRET: test-secret
-          JWT_ACCESS_EXPIRY_MINUTES: "30"
           SERVICE_SECRET: test-service-secret
           LLM_TIMEOUT_SECONDS: "60"
           CALLBACK_TIMEOUT_SECONDS: "10"

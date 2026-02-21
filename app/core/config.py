@@ -10,8 +10,6 @@ class Settings(BaseSettings):
     """환경 변수 기반 설정 모델."""
 
     OPENAI_API_KEY: str
-    JWT_ACCESS_SECRET: str
-    JWT_ACCESS_EXPIRY_MINUTES: int
     SERVICE_SECRET: str
     LLM_MODEL_NAME: str = "gpt-4o-mini"
     ENABLE_STAGE_LLM_ROUTING: bool = False
