@@ -11,6 +11,7 @@ from app.graph.roadmap import compiled_roadmap_graph
 from app.schemas.course import CourseRequest, CourseResponse
 from app.schemas.generate import CallbackError, GenerateCallbackFailure, GenerateCallbackSuccess
 from app.services.callback_delivery import post_callback_with_retry
+from app.services.callback_url import build_callback_url
 from app.services.google_places_service import get_google_places_service
 
 logger = get_logger(__name__)
@@ -33,11 +34,6 @@ async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
         raise RuntimeError("final_roadmap 결과가 없습니다.")
 
     return CourseResponse.model_validate(final)
-
-
-def _build_callback_url(base_url: str, job_id: str) -> str:
-    """콜백 URL을 구성합니다."""
-    return f"{base_url.rstrip('/')}/itineraries/{job_id}/result"
 
 
 async def _post_callback(
@@ -80,7 +76,7 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         )
         payload_data = callback.model_dump(mode="json")
 
-    callback_endpoint = _build_callback_url(callback_url, job_id)
+    callback_endpoint = build_callback_url(callback_url, job_id, "itineraries/{job_id}/result")
     await _post_callback(
         callback_url=callback_endpoint,
         payload=payload_data,

@@ -14,6 +14,7 @@ from app.graph.chat import compiled_chat_graph
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.enums import ChatStatus
 from app.services.callback_delivery import post_callback_with_retry
+from app.services.callback_url import build_callback_url
 
 logger = get_logger(__name__)
 
@@ -93,11 +94,6 @@ def _build_callback_payload(result: ChatResponse) -> dict:
     return payload
 
 
-def _build_chat_callback_url(base_url: str, job_id: str) -> str:
-    """NestJS 콜백 엔드포인트를 구성합니다."""
-    return f"{base_url.rstrip('/')}/itineraries/{job_id}/chat-result"
-
-
 async def _post_callback(
     callback_url: str,
     payload: dict,
@@ -139,7 +135,9 @@ async def process_chat_request(request: ChatRequest) -> None:
             "error": {"code": "PIPELINE_ERROR", "message": "대화 처리 중 내부 오류가 발생했습니다."},
         }
 
-    callback_endpoint = _build_chat_callback_url(str(request.callback_url), request.job_id)
+    callback_endpoint = build_callback_url(
+        str(request.callback_url), request.job_id, "itineraries/{job_id}/chat-result"
+    )
     await _post_callback(
         callback_url=callback_endpoint,
         payload=payload,
