@@ -31,6 +31,7 @@ from app.schemas.recommend import (
     Weather,
 )
 from app.services.callback_delivery import post_callback_with_retry
+from app.services.callback_url import build_callback_url
 
 logger = get_logger(__name__)
 DEFAULT_SELECTION_SIZE = 5
@@ -246,20 +247,6 @@ async def run_recommendation_pipeline(request: RecommendRequest) -> RecommendRes
     return _normalize_result(parsed, candidates)
 
 
-def _build_callback_url(base_url: str, job_id: str) -> str:
-    """설정된 콜백 베이스 URL로부터 최종 콜백 엔드포인트를 생성한다."""
-    callback = base_url.rstrip("/")
-    if "{jobId}" in callback:
-        return callback.replace("{jobId}", job_id)
-    if "{job_id}" in callback:
-        return callback.replace("{job_id}", job_id)
-    if callback.endswith(f"/surveys/{job_id}/result"):
-        return callback
-    if callback.endswith("/surveys/callback"):
-        return f"{callback[: -len('/callback')]}/{job_id}/result"
-    return f"{callback}/surveys/{job_id}/result"
-
-
 def _build_pipeline_error_message(exc: Exception, expose_internal_errors: bool) -> str:
     """콜백용 파이프라인 오류 메시지를 구성한다."""
     if expose_internal_errors:
@@ -290,7 +277,12 @@ async def process_recommend_request(request: RecommendRequest) -> None:
     """추천 요청을 처리하고 완료/실패 결과를 NestJS 콜백으로 전달한다."""
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
-    callback_endpoint = _build_callback_url(str(request.callback_url), request.job_id)
+    callback_endpoint = build_callback_url(
+        str(request.callback_url),
+        request.job_id,
+        "surveys/{job_id}/result",
+        alias_endings=[("/surveys/callback", "/surveys/{job_id}/result")],
+    )
 
     try:
         result = await asyncio.wait_for(
