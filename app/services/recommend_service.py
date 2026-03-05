@@ -280,8 +280,7 @@ async def process_recommend_request(request: RecommendRequest) -> None:
     callback_endpoint = build_callback_url(
         str(request.callback_url),
         request.job_id,
-        "surveys/{job_id}/result",
-        alias_endings=[("/surveys/callback", "/surveys/{job_id}/result")],
+        "preferences/jobs/{job_id}/result",
     )
 
     try:
