@@ -114,3 +114,19 @@ def test_recommend_scenario_placeholder_in_url() -> None:
         alias_endings=[("/surveys/callback", "/surveys/{job_id}/result")],
     )
     assert url == "https://api.example.com/surveys/rec-xyz/result"
+
+
+def test_recommend_scenario_fully_resolved_different_prefix() -> None:
+    """여행지 추천: NestJS가 다른 prefix의 완성된 URL을 전달하면 그대로 반환한다.
+
+    재현 케이스: preferences/jobs/{uuid}/result/surveys/{uuid}/result 중복 버그
+    """
+    job_id = "af7aa772-5c04-4435-8f91-9ecbf124bf32"
+    base = f"https://api.mohaeng.kr/api/v1/preferences/jobs/{job_id}/result"
+    url = build_callback_url(
+        base,
+        job_id,
+        "surveys/{job_id}/result",
+        alias_endings=[("/surveys/callback", "/surveys/{job_id}/result")],
+    )
+    assert url == base
