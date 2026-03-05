@@ -15,6 +15,8 @@ def build_callback_url(
     적용 규칙 (우선순위 순):
     1. URL에 {jobId} 또는 {job_id} 포함 → 해당만 job_id로 치환 후 반환
     2. URL이 이미 default_path(job_id 치환본)로 끝남 → 그대로 반환
+    2.5. URL이 이미 /{job_id}/{result_suffix} 형태로 끝남 → 그대로 반환
+         (NestJS가 완성된 콜백 URL을 그대로 전달하는 경우 대응)
     3. alias_endings에 정의된 suffix로 끝남 → 해당 suffix를 치환 path로 교체
     4. 그 외 → base_url 끝 '/' 제거 후 /{default_path}(job_id 치환) 붙여 반환
 
@@ -39,6 +41,10 @@ def build_callback_url(
     resolved_default = default_path.replace("{job_id}", job_id)
 
     if base.endswith("/" + resolved_default):
+        return base
+
+    result_suffix = default_path.split("/")[-1]
+    if base.endswith(f"/{job_id}/{result_suffix}"):
         return base
 
     if alias_endings:
