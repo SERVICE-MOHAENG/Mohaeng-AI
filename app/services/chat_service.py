@@ -26,7 +26,7 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         current_itinerary = current_itinerary.model_dump(mode="json")
 
     request_context = {
-        "companion_type": str(request.companion_type),
+        "companion_type": [str(companion) for companion in request.companion_type],
         "travel_themes": [str(theme) for theme in request.travel_themes],
         "pace_preference": str(request.pace_preference),
         "planning_preference": str(request.planning_preference),

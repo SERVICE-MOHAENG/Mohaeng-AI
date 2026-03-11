@@ -182,10 +182,12 @@ def _build_request_context(request_context: dict) -> str:
         return "(요청 기반 선호 정보 없음)"
 
     travel_themes = request_context.get("travel_themes") or []
+    companion_types = request_context.get("companion_type") or []
+    companion_types_text = ", ".join([str(companion) for companion in companion_types]) if companion_types else "없음"
     travel_themes_text = ", ".join([str(theme) for theme in travel_themes]) if travel_themes else "없음"
 
     lines = [
-        f"- companion_type: {request_context.get('companion_type', '없음')}",
+        f"- companion_type: {companion_types_text}",
         f"- travel_themes: {travel_themes_text}",
         f"- pace_preference: {request_context.get('pace_preference', '없음')}",
         f"- planning_preference: {request_context.get('planning_preference', '없음')}",

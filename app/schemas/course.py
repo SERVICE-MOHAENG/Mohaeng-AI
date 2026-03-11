@@ -42,7 +42,7 @@ class CourseRequest(BaseModel):
         `start_date`: 전체 여행 시작일
         `end_date`: 전체 여행 종료일
         `people_count`: 총 인원 수
-        `companion_type`: 동행자 유형
+        `companion_type`: 동행자 유형 목록
         `travel_themes`: 여행 테마 목록
         `pace_preference`: 일정 밀도 선호
         `planning_preference`: 여행 계획 성향
@@ -57,7 +57,7 @@ class CourseRequest(BaseModel):
     end_date: date = Field(..., description="여행 종료일 (YYYY-MM-DD)")
     regions: List[RegionDateRange] = Field(..., min_length=1, description="지역별 여행 기간")
     people_count: int = Field(..., ge=1, le=20, description="총 인원 수")
-    companion_type: CompanionType = Field(..., description="동행자 유형")
+    companion_type: list[CompanionType] = Field(..., min_length=1, description="동행자 유형 목록")
     travel_themes: list[TravelTheme] = Field(..., min_length=1, description="여행 테마 목록")
     pace_preference: PacePreference = Field(..., description="일정 밀도 선호")
     planning_preference: PlanningPreference = Field(..., description="여행 계획 성향")
