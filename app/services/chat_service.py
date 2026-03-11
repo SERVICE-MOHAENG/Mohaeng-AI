@@ -72,11 +72,17 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
 def _serialize_itinerary(itinerary: Any) -> dict | None:
     if itinerary is None:
         return None
+    serialized: dict | None = None
     if isinstance(itinerary, BaseModel):
-        return itinerary.model_dump(mode="json")
-    if isinstance(itinerary, dict):
-        return itinerary
-    return None
+        serialized = itinerary.model_dump(mode="json")
+    elif isinstance(itinerary, dict):
+        serialized = dict(itinerary)
+
+    if serialized is None:
+        return None
+
+    serialized.pop("planning_preference", None)
+    return serialized
 
 
 def _build_callback_payload(result: ChatResponse) -> dict:
