@@ -12,7 +12,7 @@ def _base_payload() -> dict:
     return {
         "job_id": "chat-job-1",
         "callback_url": "https://example.com/internal",
-        "companion_type": "FAMILY",
+        "companion_type": ["FAMILY"],
         "travel_themes": ["HEALING"],
         "pace_preference": "RELAXED",
         "planning_preference": "PLANNED",
@@ -57,7 +57,7 @@ def _base_payload() -> dict:
 
 def test_chat_request_accepts_context_fields() -> None:
     request = ChatRequest.model_validate(_base_payload())
-    assert request.companion_type == "FAMILY"
+    assert request.companion_type == ["FAMILY"]
     assert request.travel_themes == ["HEALING"]
     assert request.budget_range == "MID"
 

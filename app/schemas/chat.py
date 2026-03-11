@@ -50,7 +50,7 @@ class ChatRequest(BaseModel):
         job_id: NestJS BullMQ job id
         callback_url: NestJS 콜백 URL
         current_itinerary: 현재 세션의 전체 로드맵
-        companion_type: 동행자 유형
+        companion_type: 동행자 유형 목록
         travel_themes: 여행 테마 목록
         pace_preference: 일정 밀도 선호
         planning_preference: 여행 계획 성향
@@ -67,7 +67,7 @@ class ChatRequest(BaseModel):
     job_id: str = Field(..., description="NestJS BullMQ job id")
     callback_url: AnyHttpUrl = Field(..., description="NestJS 콜백 URL")
     current_itinerary: ChatRoadmap = Field(..., description="현재 세션의 전체 로드맵 데이터")
-    companion_type: CompanionType = Field(..., description="동행자 유형")
+    companion_type: list[CompanionType] = Field(..., min_length=1, description="동행자 유형 목록")
     travel_themes: list[TravelTheme] = Field(..., min_length=1, description="여행 테마 목록")
     pace_preference: PacePreference = Field(..., description="일정 밀도 선호")
     planning_preference: PlanningPreference = Field(..., description="여행 계획 성향")
