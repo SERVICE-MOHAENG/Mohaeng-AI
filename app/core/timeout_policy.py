@@ -90,4 +90,4 @@ def to_requests_timeout(total_timeout_seconds: int) -> tuple[float, float]:
 def to_httpx_timeout(total_timeout_seconds: int) -> httpx.Timeout:
     """httpx용 Timeout 객체를 생성합니다 (`to_requests_timeout`과 동일한 분할 규칙)."""
     connect, read = to_requests_timeout(total_timeout_seconds)
-    return httpx.Timeout(connect=connect, read=read)
+    return httpx.Timeout((connect, read))
