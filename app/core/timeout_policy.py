@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import httpx
+
 from app.core.config import Settings, get_settings
 
 _MIN_TIMEOUT_SECONDS = 1
@@ -83,3 +85,9 @@ def to_requests_timeout(total_timeout_seconds: int) -> tuple[float, float]:
     connect_timeout = min(_MAX_CONNECT_TIMEOUT_SECONDS, max(1.0, total * _CONNECT_TIMEOUT_RATIO))
     read_timeout = max(1.0, total - connect_timeout) if total > connect_timeout else max(0.5, total * 0.5)
     return (connect_timeout, read_timeout)
+
+
+def to_httpx_timeout(total_timeout_seconds: int) -> httpx.Timeout:
+    """httpx용 Timeout 객체를 생성합니다 (`to_requests_timeout`과 동일한 분할 규칙)."""
+    connect, read = to_requests_timeout(total_timeout_seconds)
+    return httpx.Timeout((connect, read))
