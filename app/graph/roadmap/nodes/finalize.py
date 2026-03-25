@@ -10,6 +10,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
+from app.core.geo import GeoRectangle
 from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.region_bbox import get_region_bbox
@@ -27,9 +28,11 @@ from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningP
 logger = get_logger(__name__)
 
 
-def _select_place_in_region(places: list[dict], region_bbox: object | None) -> dict:
+def _select_place_in_region(places: list[dict], region_bbox: GeoRectangle | None) -> dict | None:
     """bbox 내 첫 번째 장소를 반환합니다. bbox가 없거나 매칭 장소가 없으면 첫 번째 후보를 반환합니다."""
-    if not region_bbox or not hasattr(region_bbox, "contains"):
+    if not places:
+        return None
+    if not region_bbox:
         return places[0]
     for place in places:
         geometry = place.get("geometry") or {}

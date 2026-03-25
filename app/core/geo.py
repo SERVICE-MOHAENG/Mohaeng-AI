@@ -68,6 +68,11 @@ class GeoRectangle:
         """Google Places `locationBias` 페이로드 형식으로 직렬화합니다."""
         return self.to_google_location_restriction_payload()
 
+    def filter_places(self, places: list) -> tuple[list, int]:
+        """bbox 내부 장소만 필터링하고 (필터 결과, 제거 건수) 를 반환합니다."""
+        filtered = [p for p in places if self.contains(p.geometry.latitude, p.geometry.longitude)]
+        return filtered, max(0, len(places) - len(filtered))
+
     @classmethod
     def from_points_with_margin_km(
         cls,

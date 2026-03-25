@@ -72,8 +72,7 @@ def _reorder_results_by_place_id(results: list, selected_place_id: str) -> list:
 
 
 def _hard_filter_by_bbox(results: list, bbox: GeoRectangle) -> tuple[list, int]:
-    filtered = [p for p in results if bbox.contains(p.geometry.latitude, p.geometry.longitude)]
-    return filtered, max(0, len(results) - len(filtered))
+    return bbox.filter_places(results)
 
 
 async def mutate(state: ChatState) -> ChatState:

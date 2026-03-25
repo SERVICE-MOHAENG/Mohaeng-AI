@@ -91,15 +91,7 @@ def _move_selected_first(places: list[dict], selected_place_id: str) -> tuple[li
 
 
 def _hard_filter_by_bbox(places: list, bbox: GeoRectangle) -> tuple[list, int]:
-    filtered = [
-        place
-        for place in places
-        if bbox.contains(
-            place.geometry.latitude,
-            place.geometry.longitude,
-        )
-    ]
-    return filtered, max(0, len(places) - len(filtered))
+    return bbox.filter_places(places)
 
 
 async def fetch_places_from_slots(
