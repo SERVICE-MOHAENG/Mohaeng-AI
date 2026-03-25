@@ -1,7 +1,7 @@
 """타임아웃 정책 유틸 테스트."""
 
 from app.core.config import Settings
-from app.core.timeout_policy import build_timeout_policy, to_requests_timeout
+from app.core.timeout_policy import build_timeout_policy, to_httpx_timeout, to_requests_timeout
 
 
 def test_build_timeout_policy_caps_by_request_timeout() -> None:
@@ -31,3 +31,10 @@ def test_to_requests_timeout_returns_connect_and_read_timeout() -> None:
 
     assert connect_timeout == 3.0
     assert read_timeout == 7.0
+
+
+def test_to_httpx_timeout_returns_timeout_object() -> None:
+    timeout = to_httpx_timeout(10)
+
+    assert timeout.connect == 3.0
+    assert timeout.read == 7.0

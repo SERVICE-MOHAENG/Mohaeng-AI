@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
+import httpx
 import pytest
-import requests
 
 from app.core.config import get_settings
 from app.services.callback_delivery import post_callback_with_retry
@@ -30,24 +30,21 @@ def test_post_callback_with_retry_succeeds_after_retries(monkeypatch) -> None:
     call_count = {"value": 0}
     sleep_delays: list[float] = []
 
-    def _fake_post(*args, **kwargs):
+    async def _fake_post(self, *args, **kwargs):
         call_count["value"] += 1
         if call_count["value"] < 3:
-            raise requests.ConnectionError("temporary network issue")
+            raise httpx.ConnectError(
+                "temporary network issue",
+                request=httpx.Request("POST", "https://example.com/callback"),
+            )
 
-        class _Response:
-            status_code = 200
-
-            @staticmethod
-            def raise_for_status() -> None:
-                return None
-
-        return _Response()
+        request = httpx.Request("POST", "https://example.com/callback")
+        return httpx.Response(200, request=request)
 
     async def _fake_sleep(delay: float) -> None:
         sleep_delays.append(delay)
 
-    monkeypatch.setattr("app.services.callback_delivery.requests.post", _fake_post)
+    monkeypatch.setattr(httpx.AsyncClient, "post", _fake_post)
     monkeypatch.setattr("app.services.callback_delivery.asyncio.sleep", _fake_sleep)
 
     result = asyncio.run(
@@ -76,24 +73,15 @@ def test_post_callback_with_retry_does_not_retry_non_retryable_4xx(monkeypatch) 
     call_count = {"value": 0}
     sleep_delays: list[float] = []
 
-    def _fake_post(*args, **kwargs):
+    async def _fake_post(self, *args, **kwargs):
         call_count["value"] += 1
-
-        class _Response:
-            status_code = 400
-
-            @staticmethod
-            def raise_for_status() -> None:
-                response = requests.Response()
-                response.status_code = 400
-                raise requests.HTTPError("bad request", response=response)
-
-        return _Response()
+        request = httpx.Request("POST", "https://example.com/callback")
+        return httpx.Response(400, request=request)
 
     async def _fake_sleep(delay: float) -> None:
         sleep_delays.append(delay)
 
-    monkeypatch.setattr("app.services.callback_delivery.requests.post", _fake_post)
+    monkeypatch.setattr(httpx.AsyncClient, "post", _fake_post)
     monkeypatch.setattr("app.services.callback_delivery.asyncio.sleep", _fake_sleep)
 
     result = asyncio.run(
@@ -122,14 +110,14 @@ def test_post_callback_with_retry_does_not_retry_invalid_url(monkeypatch) -> Non
     call_count = {"value": 0}
     sleep_delays: list[float] = []
 
-    def _fake_post(*args, **kwargs):
+    async def _fake_post(self, *args, **kwargs):
         call_count["value"] += 1
-        raise requests.exceptions.InvalidURL("invalid callback url")
+        raise httpx.InvalidURL("invalid callback url")
 
     async def _fake_sleep(delay: float) -> None:
         sleep_delays.append(delay)
 
-    monkeypatch.setattr("app.services.callback_delivery.requests.post", _fake_post)
+    monkeypatch.setattr(httpx.AsyncClient, "post", _fake_post)
     monkeypatch.setattr("app.services.callback_delivery.asyncio.sleep", _fake_sleep)
 
     result = asyncio.run(

@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 from functools import lru_cache
 from typing import Any
 
-import requests
+import httpx
 
 from app.core.config import get_settings
 from app.core.geo import GeoRectangle
 from app.core.logger import get_logger
-from app.core.timeout_policy import get_timeout_policy, to_requests_timeout
+from app.core.timeout_policy import get_timeout_policy, to_httpx_timeout
 from app.schemas.place import Place, PlaceGeometry
 from app.services.places_service import PlacesServiceProtocol
 
@@ -46,16 +45,21 @@ class GooglePlacesService(PlacesServiceProtocol):
         self._timeout_seconds = timeout_seconds
         self._page_size = page_size
         self._language_code = language_code.strip() if language_code else ""
+        self._client = httpx.AsyncClient(timeout=to_httpx_timeout(timeout_seconds))
 
     def close(self) -> None:
-        """리소스를 정리합니다(컨텍스트 매니저 대칭성 유지)."""
+        """동기 호환용 — 싱글톤은 프로세스 수명 동안 클라이언트를 유지합니다."""
         return None
 
-    def __enter__(self) -> GooglePlacesService:
+    async def aclose(self) -> None:
+        """AsyncClient 리소스를 해제합니다."""
+        await self._client.aclose()
+
+    async def __aenter__(self) -> GooglePlacesService:
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
-        self.close()
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        await self.aclose()
 
     @classmethod
     def from_settings(cls) -> GooglePlacesService:
@@ -155,30 +159,24 @@ class GooglePlacesService(PlacesServiceProtocol):
             "X-Goog-Api-Key": self._api_key,
             "X-Goog-FieldMask": field_mask,
         }
-        request_timeout = to_requests_timeout(self._timeout_seconds)
-
-        def _send() -> requests.Response:
-            with requests.Session() as session:
-                return session.request(
-                    method=method,
-                    url=url,
-                    json=payload,
-                    params=params,
-                    headers=headers,
-                    timeout=request_timeout,
-                )
 
         try:
-            response = await asyncio.to_thread(_send)
+            response = await self._client.request(
+                method=method,
+                url=url,
+                json=payload,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
-        except requests.HTTPError as exc:
+        except httpx.HTTPStatusError as exc:
             response = exc.response
             status_code = response.status_code if response else None
             body = (response.text or "")[:200] if response else ""
             logger.error("Google Places API error: status=%s body=%s", status_code, body)
             return None
-        except requests.RequestException as exc:
+        except httpx.HTTPError as exc:
             logger.error("Google Places API request failed: %s", exc)
             return None
         except ValueError as exc:
