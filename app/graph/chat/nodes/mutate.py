@@ -212,6 +212,21 @@ async def _search_place(intent: dict, day: dict) -> tuple:
             results, filtered_out = _hard_filter_by_bbox(results, day_bbox)
             geo_filtered_out_count += filtered_out
 
+        bias_unfiltered: list = []
+        if not results and day_bbox is not None:
+            bias_unfiltered = await service.search(
+                keyword,
+                min_rating=min_rating,
+                location_restriction=None,
+                location_bias=day_bbox,
+            )
+            if bias_unfiltered:
+                results, filtered_out = _hard_filter_by_bbox(bias_unfiltered, day_bbox)
+                geo_filtered_out_count += filtered_out
+
+        if not results and bias_unfiltered:
+            results = bias_unfiltered
+
         if not results and day_bbox is not None:
             geo_filter_fallback_unfiltered = True
             results = await service.search(
