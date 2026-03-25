@@ -58,7 +58,7 @@ def _map_budget_to_price_levels(budget_range: str | BudgetRange | None) -> list[
         BudgetRange.LOW.value: ["PRICE_LEVEL_INEXPENSIVE"],
         BudgetRange.MID.value: ["PRICE_LEVEL_MODERATE"],
         BudgetRange.HIGH.value: ["PRICE_LEVEL_EXPENSIVE"],
-        BudgetRange.LUXURY.value: ["PRICE_LEVEL_VERY_EXPENSIVE"],
+        BudgetRange.LUXURY.value: ["PRICE_LEVEL_EXPENSIVE", "PRICE_LEVEL_VERY_EXPENSIVE"],
     }
     return mapping.get(value)
 
@@ -91,15 +91,7 @@ def _move_selected_first(places: list[dict], selected_place_id: str) -> tuple[li
 
 
 def _hard_filter_by_bbox(places: list, bbox: GeoRectangle) -> tuple[list, int]:
-    filtered = [
-        place
-        for place in places
-        if bbox.contains(
-            place.geometry.latitude,
-            place.geometry.longitude,
-        )
-    ]
-    return filtered, max(0, len(places) - len(filtered))
+    return bbox.filter_places(places)
 
 
 async def fetch_places_from_slots(
@@ -165,10 +157,14 @@ async def fetch_places_from_slots(
         restriction_used = False
         bias_used = False
         unfiltered_used = False
+        bias_unfiltered: list = []
 
         region_bbox = get_region_bbox(region)
         if region_bbox is None:
             geo_missing_region_bbox = True
+
+        region_label = str(region).replace("_", " ").strip() if region else ""
+        geo_anchored_query = f"{region_label} {query}".strip() if region_label else query
 
         try:
             places = await places_service.search(
@@ -200,23 +196,28 @@ async def fetch_places_from_slots(
             if not places and region_bbox is not None and price_levels:
                 fallback_stage = "bias_without_price_levels"
                 bias_used = True
-                places = await places_service.search(
+                bias_unfiltered = await places_service.search(
                     query,
                     price_levels=None,
                     min_rating=min_rating,
                     location_restriction=None,
                     location_bias=region_bbox,
                 )
-                if places:
-                    places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
+                if bias_unfiltered:
+                    places, filtered_out = _hard_filter_by_bbox(bias_unfiltered, region_bbox)
                     geo_filtered_out_count += filtered_out
+
+            if not places and bias_unfiltered:
+                fallback_stage = "bias_without_bbox_filter"
+                bias_used = True
+                places = bias_unfiltered
 
             if not places:
                 fallback_stage = "unfiltered_with_min_rating"
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
                 places = await places_service.search(
-                    query,
+                    geo_anchored_query,
                     price_levels=None,
                     min_rating=min_rating,
                     location_restriction=None,
@@ -228,7 +229,7 @@ async def fetch_places_from_slots(
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
                 places = await places_service.search(
-                    query,
+                    geo_anchored_query,
                     price_levels=None,
                     min_rating=None,
                     location_restriction=None,
