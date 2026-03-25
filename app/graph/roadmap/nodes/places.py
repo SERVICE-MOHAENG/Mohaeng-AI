@@ -58,7 +58,7 @@ def _map_budget_to_price_levels(budget_range: str | BudgetRange | None) -> list[
         BudgetRange.LOW.value: ["PRICE_LEVEL_INEXPENSIVE"],
         BudgetRange.MID.value: ["PRICE_LEVEL_MODERATE"],
         BudgetRange.HIGH.value: ["PRICE_LEVEL_EXPENSIVE"],
-        BudgetRange.LUXURY.value: ["PRICE_LEVEL_VERY_EXPENSIVE"],
+        BudgetRange.LUXURY.value: ["PRICE_LEVEL_EXPENSIVE", "PRICE_LEVEL_VERY_EXPENSIVE"],
     }
     return mapping.get(value)
 
