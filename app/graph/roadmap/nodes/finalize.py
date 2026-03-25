@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
+from app.core.region_bbox import get_region_bbox
 from app.core.timeout_policy import get_timeout_policy
 from app.core.visit_time_llm import propose_visit_times_for_days
 from app.core.visit_time_policy import (
@@ -24,6 +25,19 @@ from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningPreference
 
 logger = get_logger(__name__)
+
+
+def _select_place_in_region(places: list[dict], region_bbox: object | None) -> dict:
+    """bbox 내 첫 번째 장소를 반환합니다. bbox가 없거나 매칭 장소가 없으면 첫 번째 후보를 반환합니다."""
+    if not region_bbox or not hasattr(region_bbox, "contains"):
+        return places[0]
+    for place in places:
+        geometry = place.get("geometry") or {}
+        lat = geometry.get("latitude")
+        lng = geometry.get("longitude")
+        if lat is not None and lng is not None and region_bbox.contains(lat, lng):
+            return place
+    return places[0]
 
 
 class PlaceDetailSlot(BaseModel):
@@ -78,6 +92,8 @@ def _prepare_final_context(
     daily_places_for_schema = []
     for day_plan in skeleton_plan:
         day_number = day_plan["day_number"]
+        day_region = day_plan.get("region")
+        day_region_bbox = get_region_bbox(day_region)
         current_date = course_request.start_date + timedelta(days=day_number - 1)
         context_lines.append(f"\nDay {day_number} ({current_date.strftime('%Y-%m-%d')}):")
 
@@ -87,7 +103,7 @@ def _prepare_final_context(
             slot_key = build_slot_key(day_number, i)
             places = fetched_places.get(slot_key, [])
             if places:
-                place = places[0]
+                place = _select_place_in_region(places, day_region_bbox)
                 section = slot.get("section")
                 section_label = section or "UNKNOWN"
                 keyword = slot.get("keyword")
