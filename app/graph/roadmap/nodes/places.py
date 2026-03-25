@@ -165,6 +165,7 @@ async def fetch_places_from_slots(
         restriction_used = False
         bias_used = False
         unfiltered_used = False
+        bias_unfiltered: list = []
 
         region_bbox = get_region_bbox(region)
         if region_bbox is None:
@@ -200,16 +201,21 @@ async def fetch_places_from_slots(
             if not places and region_bbox is not None and price_levels:
                 fallback_stage = "bias_without_price_levels"
                 bias_used = True
-                places = await places_service.search(
+                bias_unfiltered = await places_service.search(
                     query,
                     price_levels=None,
                     min_rating=min_rating,
                     location_restriction=None,
                     location_bias=region_bbox,
                 )
-                if places:
-                    places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
+                if bias_unfiltered:
+                    places, filtered_out = _hard_filter_by_bbox(bias_unfiltered, region_bbox)
                     geo_filtered_out_count += filtered_out
+
+            if not places and bias_unfiltered:
+                fallback_stage = "bias_without_bbox_filter"
+                bias_used = True
+                places = bias_unfiltered
 
             if not places:
                 fallback_stage = "unfiltered_with_min_rating"
