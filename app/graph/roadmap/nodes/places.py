@@ -171,6 +171,9 @@ async def fetch_places_from_slots(
         if region_bbox is None:
             geo_missing_region_bbox = True
 
+        region_label = str(region).replace("_", " ").strip() if region else ""
+        geo_anchored_query = f"{region_label} {query}".strip() if region_label else query
+
         try:
             places = await places_service.search(
                 query,
@@ -222,7 +225,7 @@ async def fetch_places_from_slots(
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
                 places = await places_service.search(
-                    query,
+                    geo_anchored_query,
                     price_levels=None,
                     min_rating=min_rating,
                     location_restriction=None,
@@ -234,7 +237,7 @@ async def fetch_places_from_slots(
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
                 places = await places_service.search(
-                    query,
+                    geo_anchored_query,
                     price_levels=None,
                     min_rating=None,
                     location_restriction=None,
