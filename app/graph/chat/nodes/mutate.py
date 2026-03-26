@@ -9,6 +9,7 @@ from app.core.geo import GeoRectangle
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
+from app.graph.chat.nodes.analyze_intent import _extract_region_hint_from_address
 from app.graph.chat.state import ChatState
 from app.graph.chat.utils import build_diff_key, reorder_visit_sequence
 from app.schemas.enums import ChatOperation, ChatStatus
@@ -36,6 +37,15 @@ def _day_points(day: dict) -> list[tuple[float, float]]:
 
 def _day_bbox(day: dict) -> GeoRectangle | None:
     return GeoRectangle.from_points_with_margin_km(_day_points(day), margin_km=_BBOX_MARGIN_KM)
+
+
+def _day_region_hint(day: dict) -> str:
+    """day의 첫 번째 장소 주소에서 지역 힌트를 추출합니다."""
+    for place in day.get("places", []):
+        hint = _extract_region_hint_from_address(str(place.get("address") or ""))
+        if hint:
+            return hint
+    return ""
 
 
 def _place_to_course_place(place, visit_sequence: int) -> dict:
@@ -198,6 +208,8 @@ async def _search_place(intent: dict, day: dict) -> tuple:
 
     day_bbox = _day_bbox(day)
     geo_filter_applied = day_bbox is not None
+    region_hint = _day_region_hint(day)
+    geo_anchored_keyword = f"{region_hint} {keyword}".strip() if region_hint else keyword
 
     try:
         service = get_google_places_service()
@@ -229,7 +241,7 @@ async def _search_place(intent: dict, day: dict) -> tuple:
         if not results and day_bbox is not None:
             geo_filter_fallback_unfiltered = True
             results = await service.search(
-                keyword,
+                geo_anchored_keyword,
                 min_rating=min_rating,
                 location_restriction=None,
             )
@@ -238,7 +250,7 @@ async def _search_place(intent: dict, day: dict) -> tuple:
         if not results:
             fallback_to_unfiltered = True
             results = await service.search(
-                keyword,
+                geo_anchored_keyword,
                 min_rating=None,
                 location_restriction=None,
             )
