@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     PROXY_HEADERS_ENABLED: bool = True
     PROXY_TRUSTED_HOSTS: str = "127.0.0.1"
     TRUSTED_HOSTS: str = ""
+    DISCORD_WEBHOOK_URL: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
