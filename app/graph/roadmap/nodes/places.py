@@ -190,6 +190,7 @@ async def fetch_places_from_slots(
                     location_bias=region_bbox,
                 )
                 if places:
+                    bias_unfiltered = list(places)
                     places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
                     geo_filtered_out_count += filtered_out
 

@@ -283,7 +283,7 @@ def _extract_generic_region_hint(address: str) -> str | None:
     return None
 
 
-def _extract_region_hint_from_address(address: str) -> str | None:
+def extract_region_hint_from_address(address: str) -> str | None:
     """주소 문자열에서 지역 힌트를 추출합니다."""
     text = (address or "").strip()
     if not text:
@@ -310,7 +310,7 @@ def _build_day_region_hints(itinerary: dict) -> dict[int, str]:
             continue
 
         for place in day.get("places", []):
-            region_hint = _extract_region_hint_from_address(str(place.get("address") or ""))
+            region_hint = extract_region_hint_from_address(str(place.get("address") or ""))
             if region_hint:
                 hints[day_number] = region_hint
                 break
