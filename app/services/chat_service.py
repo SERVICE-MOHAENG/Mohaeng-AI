@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-import time
 from typing import Any
 
 from pydantic import BaseModel
 
 from app.core.config import get_settings
+from app.core.job_log_context import collect_job_logs, init_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat import compiled_chat_graph
@@ -16,7 +16,7 @@ from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.enums import ChatStatus
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
-from app.services.webhook_notification import notify_timeout
+from app.services.webhook_notification import notify_job_completed, notify_timeout
 
 logger = get_logger(__name__)
 
@@ -124,7 +124,8 @@ async def process_chat_request(request: ChatRequest) -> None:
     """대화 요청을 처리하고 콜백으로 결과를 전달합니다."""
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
-    start_time = time.monotonic()
+    init_job_log(request.job_id)
+    status = "SUCCESS"
 
     try:
         result = await asyncio.wait_for(
@@ -133,7 +134,8 @@ async def process_chat_request(request: ChatRequest) -> None:
         )
         payload = _build_callback_payload(result)
     except asyncio.TimeoutError:
-        elapsed = time.monotonic() - start_time
+        status = "TIMEOUT"
+        _, logs, elapsed = collect_job_logs()
         logger.warning("Chat timeout: job_id=%s elapsed=%.1fs", request.job_id, elapsed)
         await notify_timeout(request.job_id, "chat", elapsed)
         payload = {
@@ -141,11 +143,17 @@ async def process_chat_request(request: ChatRequest) -> None:
             "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
         }
     except Exception:
+        status = "FAILED"
         logger.exception("대화 파이프라인 처리 중 예외 발생")
         payload = {
             "status": ChatStatus.FAILED.value,
             "error": {"code": "PIPELINE_ERROR", "message": "대화 처리 중 내부 오류가 발생했습니다."},
         }
+
+    if status != "TIMEOUT":
+        _, logs, elapsed = collect_job_logs()
+
+    await notify_job_completed(request.job_id, "chat", elapsed, status, logs)
 
     callback_endpoint = build_callback_url(
         str(request.callback_url), request.job_id, "itineraries/{job_id}/chat-result"
