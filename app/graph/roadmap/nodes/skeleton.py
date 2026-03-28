@@ -10,6 +10,7 @@ from typing import Any, Iterable
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.graph.roadmap.state import RoadmapState
@@ -720,6 +721,16 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
             else:
                 plan = repaired_plan
 
+        append_job_log(
+            "skeleton",
+            f"region={segment.region} days={segment_days}",
+            {
+                "generation_attempt": generation_attempt,
+                "repair_used": repair_used,
+                "autofix_used": autofix_used,
+                "validation_error_count": len(validation_errors),
+            },
+        )
         logger.info(
             "Skeleton segment generation completed",
             extra={

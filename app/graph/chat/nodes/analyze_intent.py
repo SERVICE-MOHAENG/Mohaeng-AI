@@ -10,6 +10,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field, ValidationError
 
+from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.graph.chat.state import ChatState
@@ -560,6 +561,10 @@ def analyze_intent(state: ChatState) -> ChatState:
     day_region_context = _format_day_region_context(day_region_hints)
 
     route = _classify_intent_route(itinerary_table, history_context, request_context_text, user_query)
+    append_job_log(
+        "analyze_intent",
+        f"type={route.intent_type} action={route.requested_action} scope={route.target_scope}",
+    )
     if route.intent_type == "GENERAL_CHAT":
         return {**state, "intent_type": "GENERAL_CHAT"}
 

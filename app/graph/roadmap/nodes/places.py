@@ -8,6 +8,7 @@ from langchain_core.runnables import RunnableConfig
 
 from app.core.config import get_settings
 from app.core.geo import GeoRectangle
+from app.core.job_log_context import append_job_log
 from app.core.logger import get_logger
 from app.core.region_bbox import get_region_bbox
 from app.core.timeout_policy import get_timeout_policy
@@ -337,6 +338,7 @@ async def fetch_places_from_slots(
 
         await asyncio.gather(*[rerank_for_day(day) for day in skeleton_plan])
 
+    append_job_log("places_fetch", f"slot_count={len(fetched_places)} rerank={rerank_enabled}")
     logger.info("Slot place fetch completed: slot_count=%d", len(fetched_places))
 
     return {
