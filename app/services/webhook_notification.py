@@ -1,4 +1,4 @@
-"""Discord 웹훅 알림 전송 서비스."""
+"""Discord webhook notification service."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def _timestamp() -> str:
 
 
 async def _send_embed(embed: dict[str, Any]) -> None:
-    """Discord 웹훅으로 embed를 전송한다. 실패해도 예외를 전파하지 않는다."""
+    """Send an embed to Discord webhook. Never propagates exceptions."""
     url = _get_webhook_url()
     if not url:
         return
@@ -45,19 +45,19 @@ async def _send_embed(embed: dict[str, Any]) -> None:
             response = await client.post(url, json={"embeds": [embed]})
             response.raise_for_status()
     except Exception as exc:
-        logger.warning("Discord webhook 전송 실패: %s", exc)
+        logger.warning("Discord webhook send failed: %s", exc)
 
 
 async def notify_server_start() -> None:
     settings = get_settings()
     await _send_embed(
         {
-            "title": "🟢 서버 시작",
+            "title": "🟢 Server Started",
             "color": _COLOR_GREEN,
             "fields": [
-                {"name": "환경", "value": settings.APP_ENV, "inline": True},
+                {"name": "Env", "value": settings.APP_ENV, "inline": True},
                 {"name": "Python", "value": platform.python_version(), "inline": True},
-                {"name": "호스트", "value": platform.node(), "inline": True},
+                {"name": "Host", "value": platform.node(), "inline": True},
             ],
         }
     )
@@ -66,10 +66,10 @@ async def notify_server_start() -> None:
 async def notify_server_shutdown() -> None:
     await _send_embed(
         {
-            "title": "🔴 서버 종료",
+            "title": "🔴 Server Shutdown",
             "color": _COLOR_RED,
             "fields": [
-                {"name": "호스트", "value": platform.node(), "inline": True},
+                {"name": "Host", "value": platform.node(), "inline": True},
             ],
         }
     )
@@ -81,8 +81,8 @@ async def notify_error_500(method: str, path: str, error: str) -> None:
             "title": "🔥 500 Internal Server Error",
             "color": _COLOR_RED,
             "fields": [
-                {"name": "엔드포인트", "value": f"`{method} {path}`", "inline": False},
-                {"name": "에러", "value": f"```{error[:1000]}```", "inline": False},
+                {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
+                {"name": "Error", "value": f"```{error[:1000]}```", "inline": False},
             ],
         }
     )
@@ -91,12 +91,12 @@ async def notify_error_500(method: str, path: str, error: str) -> None:
 async def notify_timeout(job_id: str, job_type: str, elapsed_seconds: float) -> None:
     await _send_embed(
         {
-            "title": "⏱️ Timeout 발생",
+            "title": "⏱️ Pipeline Timeout",
             "color": _COLOR_ORANGE,
             "fields": [
                 {"name": "job_id", "value": f"`{job_id}`", "inline": True},
-                {"name": "타입", "value": job_type, "inline": True},
-                {"name": "소요 시간", "value": f"{elapsed_seconds:.1f}s", "inline": True},
+                {"name": "Type", "value": job_type, "inline": True},
+                {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
             ],
         }
     )
@@ -108,8 +108,8 @@ async def notify_request_timeout(method: str, path: str, elapsed_seconds: float)
             "title": "⏱️ Request Timeout",
             "color": _COLOR_ORANGE,
             "fields": [
-                {"name": "엔드포인트", "value": f"`{method} {path}`", "inline": False},
-                {"name": "소요 시간", "value": f"{elapsed_seconds:.1f}s", "inline": True},
+                {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
+                {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
             ],
         }
     )
@@ -130,7 +130,7 @@ async def notify_job_completed(
         time_str = f" ({elapsed_ms}ms)" if elapsed_ms is not None else ""
         description_lines.append(f"**{stage}** — {message}{time_str}")
 
-    description = "\n".join(description_lines) if description_lines else "로그 없음"
+    description = "\n".join(description_lines) if description_lines else "no logs"
     if len(description) > 4000:
         description = description[:3997] + "..."
 
@@ -138,13 +138,13 @@ async def notify_job_completed(
 
     await _send_embed(
         {
-            "title": f"📋 {job_type} 작업 완료",
+            "title": f"📋 {job_type} Job Completed",
             "color": color,
             "description": description,
             "fields": [
                 {"name": "job_id", "value": f"`{job_id}`", "inline": True},
-                {"name": "상태", "value": status, "inline": True},
-                {"name": "소요 시간", "value": f"{elapsed_seconds:.1f}s", "inline": True},
+                {"name": "Status", "value": status, "inline": True},
+                {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
             ],
         }
     )
@@ -158,13 +158,13 @@ async def notify_callback_failure(
 ) -> None:
     await _send_embed(
         {
-            "title": "🚨 콜백 전달 실패",
+            "title": "🚨 Callback Delivery Failed",
             "color": _COLOR_RED,
             "fields": [
                 {"name": "job_id", "value": f"`{job_id}`", "inline": True},
-                {"name": "타입", "value": callback_type, "inline": True},
+                {"name": "Type", "value": callback_type, "inline": True},
                 {"name": "URL", "value": f"`{callback_url[:200]}`", "inline": False},
-                {"name": "에러", "value": f"```{error[:500]}```", "inline": False},
+                {"name": "Error", "value": f"```{error[:500]}```", "inline": False},
             ],
         }
     )
