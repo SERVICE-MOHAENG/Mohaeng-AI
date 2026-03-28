@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
@@ -13,6 +14,7 @@ from app.schemas.generate import CallbackError, GenerateCallbackFailure, Generat
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
 from app.services.google_places_service import get_google_places_service
+from app.services.webhook_notification import notify_timeout
 
 logger = get_logger(__name__)
 
@@ -57,6 +59,7 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
     """로드맵 생성 후 콜백을 전송합니다."""
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
+    start_time = time.monotonic()
 
     try:
         roadmap = await asyncio.wait_for(
@@ -66,6 +69,9 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         callback = GenerateCallbackSuccess(data=roadmap)
         payload_data = callback.model_dump(mode="json")
     except asyncio.TimeoutError:
+        elapsed = time.monotonic() - start_time
+        logger.warning("Generate timeout: job_id=%s elapsed=%.1fs", job_id, elapsed)
+        await notify_timeout(job_id, "generate", elapsed)
         callback = GenerateCallbackFailure(
             error=CallbackError(code="LLM_TIMEOUT", message="LLM 생성 시간이 초과되었습니다."),
         )
