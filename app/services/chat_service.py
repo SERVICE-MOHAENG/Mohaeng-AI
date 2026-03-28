@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 from pydantic import BaseModel
@@ -15,6 +16,7 @@ from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.enums import ChatStatus
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
+from app.services.webhook_notification import notify_timeout
 
 logger = get_logger(__name__)
 
@@ -122,6 +124,7 @@ async def process_chat_request(request: ChatRequest) -> None:
     """대화 요청을 처리하고 콜백으로 결과를 전달합니다."""
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
+    start_time = time.monotonic()
 
     try:
         result = await asyncio.wait_for(
@@ -130,6 +133,9 @@ async def process_chat_request(request: ChatRequest) -> None:
         )
         payload = _build_callback_payload(result)
     except asyncio.TimeoutError:
+        elapsed = time.monotonic() - start_time
+        logger.warning("Chat timeout: job_id=%s elapsed=%.1fs", request.job_id, elapsed)
+        await notify_timeout(request.job_id, "chat", elapsed)
         payload = {
             "status": ChatStatus.FAILED.value,
             "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
