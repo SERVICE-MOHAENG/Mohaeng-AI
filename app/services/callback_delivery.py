@@ -10,6 +10,7 @@ import httpx
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.core.timeout_policy import to_httpx_timeout
+from app.services.webhook_notification import notify_callback_failure
 
 logger = get_logger(__name__)
 
@@ -80,6 +81,14 @@ async def post_callback_with_retry(
                         is_retryable,
                         exc,
                         callback_context,
+                    )
+                    asyncio.create_task(
+                        notify_callback_failure(
+                            job_id=str(callback_context.get("job_id", "")),
+                            callback_type=str(callback_context.get("callback_type", "")),
+                            callback_url=callback_url,
+                            error=str(exc),
+                        )
                     )
                     return False
 
