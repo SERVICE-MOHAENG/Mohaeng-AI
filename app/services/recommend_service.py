@@ -32,6 +32,7 @@ from app.schemas.recommend import (
 )
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
+from app.services.webhook_notification import notify_timeout
 
 logger = get_logger(__name__)
 DEFAULT_SELECTION_SIZE = 5
@@ -277,6 +278,7 @@ async def process_recommend_request(request: RecommendRequest) -> None:
     """추천 요청을 처리하고 완료/실패 결과를 NestJS 콜백으로 전달한다."""
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
+    start_time = time.monotonic()
     callback_endpoint = build_callback_url(
         str(request.callback_url),
         request.job_id,
@@ -290,6 +292,9 @@ async def process_recommend_request(request: RecommendRequest) -> None:
         )
         callback_payload = RecommendCallbackSuccess(status="SUCCESS", data=result).model_dump(mode="json")
     except asyncio.TimeoutError:
+        elapsed = time.monotonic() - start_time
+        logger.warning("Recommend timeout: job_id=%s elapsed=%.1fs", request.job_id, elapsed)
+        await notify_timeout(request.job_id, "recommend", elapsed)
         callback_payload = RecommendCallbackFailure(
             status="FAILED",
             error=CallbackError(code="LLM_TIMEOUT", message="Analysis took too long to complete."),
