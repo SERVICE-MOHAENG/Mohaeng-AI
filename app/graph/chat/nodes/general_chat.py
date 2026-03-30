@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.graph.chat.state import ChatState
@@ -128,6 +129,7 @@ def general_chat(state: ChatState) -> ChatState:
             "message": "대화 응답 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.",
         }
 
+    append_job_log("general_chat", f"status={ChatStatus.GENERAL_CHAT}")
     return {
         **state,
         "status": ChatStatus.GENERAL_CHAT,

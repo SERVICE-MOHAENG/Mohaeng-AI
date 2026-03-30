@@ -11,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
 from app.core.geo import GeoRectangle
+from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.region_bbox import get_region_bbox
@@ -355,8 +356,10 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "itinerary": daily_places,
         }
 
+        append_job_log("finalize", f"title={final_roadmap.get('title', '')}")
         return {**state, "final_roadmap": final_roadmap}
 
     except Exception as exc:
+        append_job_log("finalize", f"error: {type(exc).__name__} (see server logs)")
         logger.error("최종 로드맵 생성 실패: %s", exc, exc_info=True)
         return {**state, "error": f"최종 로드맵 생성에 실패했습니다: {exc}"}

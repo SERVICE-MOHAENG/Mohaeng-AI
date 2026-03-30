@@ -1,9 +1,13 @@
 """애플리케이션 전역 설정을 관리하는 모듈."""
 
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DISCORD_ALLOWED_HOSTS = {"discord.com", "discordapp.com"}
+_DISCORD_WEBHOOK_PATH_PREFIX = "/api/webhooks/"
 
 
 class Settings(BaseSettings):
@@ -50,6 +54,7 @@ class Settings(BaseSettings):
     PROXY_HEADERS_ENABLED: bool = True
     PROXY_TRUSTED_HOSTS: str = "127.0.0.1"
     TRUSTED_HOSTS: str = ""
+    DISCORD_WEBHOOK_URL: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -57,6 +62,22 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @field_validator("DISCORD_WEBHOOK_URL", mode="before")
+    @classmethod
+    def _validate_discord_webhook_url(cls, value: object) -> str | None:
+        if not value:
+            return None
+        url = str(value).strip()
+        parsed = urlparse(url)
+        if parsed.scheme != "https":
+            raise ValueError("DISCORD_WEBHOOK_URL must use HTTPS.")
+        host = parsed.hostname or ""
+        if not (host in _DISCORD_ALLOWED_HOSTS or host.endswith((".discord.com", ".discordapp.com"))):
+            raise ValueError("DISCORD_WEBHOOK_URL must be a discord.com or discordapp.com URL.")
+        if not parsed.path.startswith(_DISCORD_WEBHOOK_PATH_PREFIX):
+            raise ValueError(f"DISCORD_WEBHOOK_URL path must start with {_DISCORD_WEBHOOK_PATH_PREFIX}.")
+        return url
 
     @field_validator("GOOGLE_PLACES_MIN_RATING", mode="before")
     @classmethod

@@ -6,6 +6,7 @@ import copy
 
 from app.core.config import get_settings
 from app.core.geo import GeoRectangle
+from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
@@ -180,6 +181,7 @@ async def mutate(state: ChatState) -> ChatState:
             diff_keys.append(build_diff_key(dest_day_num, dest_pos + 1))
 
     day["places"] = places
+    append_job_log("mutate", f"op={op} day={target_day_num} index={target_index} results={len(search_results)}")
 
     return {
         **state,

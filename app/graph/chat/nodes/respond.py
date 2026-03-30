@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.graph.chat.state import ChatState
@@ -90,4 +91,5 @@ def respond(state: ChatState) -> ChatState:
 
     final_status = status if status else ChatStatus.SUCCESS
 
+    append_job_log("respond", f"status={final_status}")
     return {**state, "status": final_status, "message": generated}

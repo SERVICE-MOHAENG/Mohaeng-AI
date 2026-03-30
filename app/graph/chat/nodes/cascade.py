@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.core.job_log_context import append_job_log
 from app.core.logger import get_logger
 from app.core.visit_time_policy import (
     VisitTimeOutputMode,
@@ -88,4 +89,5 @@ def cascade(state: ChatState) -> ChatState:
             "warnings": warnings,
         }
 
+    append_job_log("cascade", f"modified_days={sorted(modified_days)} warnings={len(warnings)}")
     return {**state, "modified_itinerary": itinerary, "warnings": warnings}

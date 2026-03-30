@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import time
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
@@ -19,6 +21,12 @@ from app.core.logger import get_logger
 from app.core.logging_config import configure_logging
 from app.core.readiness import collect_readiness_status
 from app.core.timeout_policy import get_timeout_policy
+from app.services.webhook_notification import (
+    notify_error_500,
+    notify_request_timeout,
+    notify_server_shutdown,
+    notify_server_start,
+)
 
 configure_logging()
 logger = get_logger(__name__)
@@ -81,10 +89,20 @@ def _configure_cors(app_: FastAPI) -> None:
 
 docs_mode = _resolve_docs_mode(settings.DOCS_MODE)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """서버 시작/종료 시 Discord 웹훅 알림을 전송한다."""
+    await notify_server_start()
+    yield
+    await notify_server_shutdown()
+
+
 app = FastAPI(
     docs_url="/docs" if docs_mode == "public" else None,
     redoc_url="/redoc" if docs_mode == "public" else None,
     openapi_url="/openapi.json" if docs_mode == "public" else None,
+    lifespan=lifespan,
 )
 
 _configure_proxy_headers(app)
@@ -99,10 +117,13 @@ app.include_router(recommend.router)
 @app.middleware("http")
 async def enforce_request_timeout(request: Request, call_next) -> Response:
     """요청 단위 타임아웃을 적용합니다."""
+    start = time.monotonic()
     try:
         return await asyncio.wait_for(call_next(request), timeout=timeout_policy.request_timeout_seconds)
     except asyncio.TimeoutError:
-        logger.warning("Request timeout: %s %s", request.method, request.url.path)
+        elapsed = time.monotonic() - start
+        logger.warning("Request timeout: %s %s elapsed=%.1fs", request.method, request.url.path, elapsed)
+        asyncio.create_task(notify_request_timeout(request.method, request.url.path, elapsed))
         return JSONResponse(status_code=504, content={"detail": "요청 처리 시간이 초과되었습니다."})
 
 
@@ -127,6 +148,7 @@ async def add_security_headers(request: Request, call_next) -> Response:
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """예상하지 못한 예외를 표준 형식으로 처리합니다."""
     logger.exception("Unhandled exception on %s %s", request.method, request.url.path, exc_info=exc)
+    asyncio.create_task(notify_error_500(request.method, request.url.path, str(exc)))
     message = str(exc) if settings.EXPOSE_INTERNAL_ERRORS else "내부 서버 오류가 발생했습니다."
     return JSONResponse(status_code=500, content={"detail": message})
 
