@@ -2479,4 +2479,3 @@ REGION_BBOX_MAP: dict[Region, GeoRectangle] = {
         max_lng=16.2395548,
     ),
 }
-
