@@ -211,25 +211,35 @@ async def fetch_places_from_slots(
                 fallback_stage = "unfiltered_with_min_rating"
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
-                places = await places_service.search(
+                unfiltered_results = await places_service.search(
                     geo_anchored_query,
                     price_levels=None,
                     min_rating=min_rating,
                     location_restriction=None,
                     location_bias=None,
                 )
+                if unfiltered_results and region_bbox is not None:
+                    places, filtered_out = _hard_filter_by_bbox(unfiltered_results, region_bbox)
+                    geo_filtered_out_count += filtered_out
+                else:
+                    places = unfiltered_results
 
             if not places:
                 fallback_stage = "unfiltered_without_min_rating"
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
-                places = await places_service.search(
+                unfiltered_results = await places_service.search(
                     geo_anchored_query,
                     price_levels=None,
                     min_rating=None,
                     location_restriction=None,
                     location_bias=None,
                 )
+                if unfiltered_results and region_bbox is not None:
+                    places, filtered_out = _hard_filter_by_bbox(unfiltered_results, region_bbox)
+                    geo_filtered_out_count += filtered_out
+                else:
+                    places = unfiltered_results
 
             logger.info(
                 (
