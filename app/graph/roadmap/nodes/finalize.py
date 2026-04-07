@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 
 
 def _select_place_in_region(places: list[dict], region_bbox: GeoRectangle | None) -> dict | None:
-    """bbox 내 첫 번째 장소를 반환합니다. bbox가 없거나 매칭 장소가 없으면 첫 번째 후보를 반환합니다."""
+    """bbox 내 첫 번째 장소를 반환합니다. bbox 내 장소가 없으면 None을 반환합니다."""
     if not places:
         return None
     if not region_bbox:
@@ -41,7 +41,15 @@ def _select_place_in_region(places: list[dict], region_bbox: GeoRectangle | None
         lng = geometry.get("longitude")
         if lat is not None and lng is not None and region_bbox.contains(lat, lng):
             return place
-    return places[0]
+    logger.warning(
+        "No place found within region bbox: candidate_count=%d bbox=(%s,%s)-(%s,%s)",
+        len(places),
+        region_bbox.min_lat,
+        region_bbox.min_lng,
+        region_bbox.max_lat,
+        region_bbox.max_lng,
+    )
+    return None
 
 
 class PlaceDetailSlot(BaseModel):
@@ -108,6 +116,8 @@ def _prepare_final_context(
             places = fetched_places.get(slot_key, [])
             if places:
                 place = _select_place_in_region(places, day_region_bbox)
+                if place is None:
+                    continue
                 section = slot.get("section")
                 section_label = section or "UNKNOWN"
                 keyword = slot.get("keyword")
