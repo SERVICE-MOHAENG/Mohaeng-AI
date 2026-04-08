@@ -18,7 +18,13 @@ def init_job_log(job_id: str) -> None:
     _logs_var.set([])
 
 
-def append_job_log(stage: str, message: str, extra: dict[str, Any] | None = None) -> None:
+def append_job_log(
+    stage: str,
+    message: str,
+    extra: dict[str, Any] | None = None,
+    *,
+    level: str = "info",
+) -> None:
     """현재 job에 로그 항목을 추가한다. init_job_log 호출 전이면 무시한다."""
     logs = _logs_var.get()
     if logs is None:
@@ -27,7 +33,7 @@ def append_job_log(stage: str, message: str, extra: dict[str, Any] | None = None
     start = _start_time_var.get()
     elapsed_ms = round((time.monotonic() - start) * 1000)
 
-    entry: dict[str, Any] = {"stage": stage, "message": message, "elapsed_ms": elapsed_ms}
+    entry: dict[str, Any] = {"stage": stage, "message": message, "elapsed_ms": elapsed_ms, "level": level}
     if extra:
         entry.update(extra)
 
