@@ -219,7 +219,12 @@ def invoke(
                 message="LLM call failed",
                 exc=exc,
             )
-            append_job_log("llm_error", f"stage={stage.value} model={selected_model} err={type(exc).__name__}")
+            append_job_log(
+                "llm_error",
+                f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+                f"fallback=false err={type(exc).__name__}",
+                {"latency_ms": latency},
+            )
             raise
 
         _log_failure(
@@ -233,7 +238,10 @@ def invoke(
             exc=exc,
         )
         append_job_log(
-            "llm_error", f"stage={stage.value} model={selected_model} err={type(exc).__name__} retrying=true"
+            "llm_error",
+            f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=false err={type(exc).__name__} retrying=true",
+            {"latency_ms": latency},
         )
 
     fallback_started = perf_counter()
@@ -274,7 +282,10 @@ def invoke(
             exc=fallback_exc,
         )
         append_job_log(
-            "llm_error", f"stage={stage.value} model={fallback_model} fallback=true err={type(fallback_exc).__name__}"
+            "llm_error",
+            f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=true err={type(fallback_exc).__name__}",
+            {"latency_ms": fb_latency},
         )
         raise
 
@@ -332,7 +343,12 @@ async def ainvoke(
                 message="LLM async call failed",
                 exc=exc,
             )
-            append_job_log("llm_error", f"stage={stage.value} model={selected_model} err={type(exc).__name__}")
+            append_job_log(
+                "llm_error",
+                f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+                f"fallback=false err={type(exc).__name__}",
+                {"latency_ms": latency},
+            )
             raise
 
         _log_failure(
@@ -346,7 +362,10 @@ async def ainvoke(
             exc=exc,
         )
         append_job_log(
-            "llm_error", f"stage={stage.value} model={selected_model} err={type(exc).__name__} retrying=true"
+            "llm_error",
+            f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=false err={type(exc).__name__} retrying=true",
+            {"latency_ms": latency},
         )
 
     fallback_started = perf_counter()
@@ -387,6 +406,9 @@ async def ainvoke(
             exc=fallback_exc,
         )
         append_job_log(
-            "llm_error", f"stage={stage.value} model={fallback_model} fallback=true err={type(fallback_exc).__name__}"
+            "llm_error",
+            f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=true err={type(fallback_exc).__name__}",
+            {"latency_ms": fb_latency},
         )
         raise
