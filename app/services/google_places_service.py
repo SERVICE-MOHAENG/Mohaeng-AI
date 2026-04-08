@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from functools import lru_cache
 from typing import Any
 
@@ -106,9 +107,10 @@ class GooglePlacesService(PlacesServiceProtocol):
 
         geo = "restriction" if location_restriction else ("bias" if location_bias else "none")
         price_tag = ",".join(price_levels) if price_levels else "any"
+        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:8]
         append_job_log(
             "google_places",
-            f"q={query[:50]} geo={geo} price={price_tag} min_rating={min_rating}",
+            f"q_len={len(query)} q_hash={query_hash} geo={geo} price={price_tag} min_rating={min_rating}",
             level="detail",
         )
 

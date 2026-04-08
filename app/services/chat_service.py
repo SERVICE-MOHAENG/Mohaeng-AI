@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from typing import Any
 
 from pydantic import BaseModel
@@ -125,7 +126,10 @@ async def process_chat_request(request: ChatRequest) -> None:
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
     init_job_log(request.job_id)
-    append_job_log("job_start", f"type=chat job_id={request.job_id} query={request.user_query[:60]}")
+    query_hash = hashlib.sha256(request.user_query.encode("utf-8")).hexdigest()[:8]
+    append_job_log(
+        "job_start", f"type=chat job_id={request.job_id} query_len={len(request.user_query)} query_hash={query_hash}"
+    )
     status = "SUCCESS"
 
     try:
