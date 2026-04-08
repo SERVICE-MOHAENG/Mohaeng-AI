@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str
     SERVICE_SECRET: str
-    HMAC_SECRET: str
+    HMAC_SECRET: str | None = None
     LLM_MODEL_NAME: str = "gpt-4o-mini"
     ENABLE_STAGE_LLM_ROUTING: bool = False
     LLM_MODEL_QUALITY: str = "gpt-4o-mini"
