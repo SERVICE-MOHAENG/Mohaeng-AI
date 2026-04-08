@@ -9,6 +9,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.geo import GeoRectangle
+from app.core.job_log_context import append_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy, to_httpx_timeout
 from app.schemas.place import Place, PlaceGeometry
@@ -102,6 +103,14 @@ class GooglePlacesService(PlacesServiceProtocol):
             payload["locationRestriction"] = location_restriction.to_google_location_restriction_payload()
         elif location_bias is not None:
             payload["locationBias"] = location_bias.to_google_location_bias_payload()
+
+        geo = "restriction" if location_restriction else ("bias" if location_bias else "none")
+        price_tag = ",".join(price_levels) if price_levels else "any"
+        append_job_log(
+            "google_places",
+            f"q={query[:50]} geo={geo} price={price_tag} min_rating={min_rating}",
+            level="detail",
+        )
 
         data = await self._request(
             method="POST",
