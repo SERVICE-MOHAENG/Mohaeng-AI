@@ -181,7 +181,8 @@ async def mutate(state: ChatState) -> ChatState:
             diff_keys.append(build_diff_key(dest_day_num, dest_pos + 1))
 
     day["places"] = places
-    append_job_log("mutate", f"op={op} day={target_day_num} index={target_index} results={len(search_results)}")
+    diff_str = ",".join(diff_keys)
+    append_job_log("mutate", f"op={op} day={target_day_num} idx={target_index} n={len(search_results)} diff={diff_str}")
 
     return {
         **state,
@@ -281,6 +282,13 @@ async def _search_place(intent: dict, day: dict) -> tuple:
     except Exception as exc:
         logger.error("Google Places search failed: %s", exc)
         return None, [], {"error": "장소 검색에 실패했습니다."}
+
+    append_job_log(
+        "mutate_search",
+        f"kw={keyword[:40]} bbox={'Y' if day_bbox else 'N'} rerank={rerank_enabled}"
+        f" fb_unfilt={fallback_to_unfiltered} n={len(results)}",
+        level="detail",
+    )
 
     search_results = [r.model_dump() for r in results]
     if not results:

@@ -601,6 +601,13 @@ def analyze_intent(state: ChatState) -> ChatState:
             user_query=user_query,
         )
         intent_draft = _ensure_search_keyword_contains_region(intent_draft, day_region_hints)
+        append_job_log(
+            "intent_parsed",
+            f"op={intent_draft.op} day={intent_draft.target_day} idx={intent_draft.target_index}"
+            f" kw={intent_draft.search_keyword[:30] if intent_draft.search_keyword else 'N/A'}"
+            f" clarify={intent_draft.needs_clarification}",
+            level="detail",
+        )
     except Exception as exc:
         logger.error("의도 분석 LLM 호출 실패: %s", exc)
         return {**state, "error": "수정 의도 분석에 실패했습니다."}

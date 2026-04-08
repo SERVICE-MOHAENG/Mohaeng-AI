@@ -300,10 +300,14 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         itinerary_context, daily_places = _prepare_final_context(state)
         course_request = CourseRequest.model_validate(state["course_request"])
         daily_places = await _fill_place_descriptions_with_llm(daily_places)
+        desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
+        append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
+
         daily_places = await _apply_visit_time_for_daily_places(
             daily_places,
             course_request.planning_preference,
         )
+        append_job_log("finalize_time", f"preference={course_request.planning_preference}")
 
         course_request_payload = course_request.model_dump(mode="json")
         course_request_payload.pop("budget_range", None)
@@ -366,7 +370,8 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             "itinerary": daily_places,
         }
 
-        append_job_log("finalize", f"title={final_roadmap.get('title', '')}")
+        total_places = sum(len(d.get("places", [])) for d in daily_places)
+        append_job_log("finalize", f"title={final_roadmap.get('title', '')} places={total_places}")
         return {**state, "final_roadmap": final_roadmap}
 
     except Exception as exc:

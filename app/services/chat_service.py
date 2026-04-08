@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from typing import Any
 
 from pydantic import BaseModel
 
 from app.core.config import get_settings
-from app.core.job_log_context import collect_job_logs, init_job_log
+from app.core.job_log_context import append_job_log, collect_job_logs, init_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat import compiled_chat_graph
@@ -125,6 +126,16 @@ async def process_chat_request(request: ChatRequest) -> None:
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
     init_job_log(request.job_id)
+    import hmac
+
+    if not settings.HMAC_SECRET:
+        raise ValueError("HMAC_SECRET is not configured")
+    query_hash = hmac.new(
+        settings.HMAC_SECRET.encode("utf-8"), request.user_query.encode("utf-8"), hashlib.sha256
+    ).hexdigest()[:32]
+    append_job_log(
+        "job_start", f"type=chat job_id={request.job_id} query_len={len(request.user_query)} query_hash={query_hash}"
+    )
     status = "SUCCESS"
 
     try:

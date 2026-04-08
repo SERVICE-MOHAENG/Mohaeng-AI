@@ -115,6 +115,43 @@ async def notify_request_timeout(method: str, path: str, elapsed_seconds: float)
     )
 
 
+_MAX_DESC_LEN = 3900
+
+
+def _format_log_line(entry: dict[str, Any]) -> str:
+    stage = entry.get("stage", "")
+    message = entry.get("message", "")
+    elapsed_ms = entry.get("elapsed_ms")
+    time_str = f" ({elapsed_ms}ms)" if elapsed_ms is not None else ""
+    return f"**{stage}** — {message}{time_str}"
+
+
+def _format_log_description(logs: list[dict[str, Any]]) -> str:
+    if not logs:
+        return "no logs"
+
+    lines = [_format_log_line(entry) for entry in logs]
+    description = "\n".join(lines)
+    if len(description) <= _MAX_DESC_LEN:
+        return description
+
+    info_lines: list[str] = []
+    detail_count = 0
+    for entry in logs:
+        if entry.get("level", "info") == "detail":
+            detail_count += 1
+        else:
+            info_lines.append(_format_log_line(entry))
+
+    if detail_count:
+        info_lines.append(f"**detail** — {detail_count} entries collapsed")
+
+    description = "\n".join(info_lines)
+    if len(description) > _MAX_DESC_LEN:
+        description = description[: _MAX_DESC_LEN - 3] + "..."
+    return description
+
+
 async def notify_job_completed(
     job_id: str,
     job_type: str,
@@ -122,18 +159,7 @@ async def notify_job_completed(
     status: str,
     logs: list[dict[str, Any]],
 ) -> None:
-    description_lines: list[str] = []
-    for entry in logs:
-        stage = entry.get("stage", "")
-        message = entry.get("message", "")
-        elapsed_ms = entry.get("elapsed_ms")
-        time_str = f" ({elapsed_ms}ms)" if elapsed_ms is not None else ""
-        description_lines.append(f"**{stage}** — {message}{time_str}")
-
-    description = "\n".join(description_lines) if description_lines else "no logs"
-    if len(description) > 4000:
-        description = description[:3997] + "..."
-
+    description = _format_log_description(logs)
     color = _COLOR_GREEN if status == "SUCCESS" else _COLOR_RED
 
     await _send_embed(

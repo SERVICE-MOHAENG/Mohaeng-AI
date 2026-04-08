@@ -721,15 +721,11 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
             else:
                 plan = repaired_plan
 
+        slot_summary = " ".join(f"D{d.day_number}:{len(d.slots)}s" for d in plan.days) if plan else "empty"
         append_job_log(
             "skeleton",
-            f"region={segment.region} days={segment_days}",
-            {
-                "generation_attempt": generation_attempt,
-                "repair_used": repair_used,
-                "autofix_used": autofix_used,
-                "validation_error_count": len(validation_errors),
-            },
+            f"region={segment.region} days={segment_days} {slot_summary}"
+            f" attempt={generation_attempt} repair={repair_used} autofix={autofix_used}",
         )
         logger.info(
             "Skeleton segment generation completed",
@@ -777,6 +773,12 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
             "skeleton_warnings": _dedupe_ordered(warnings),
             "error": "지역 구간이 전체 일정과 일치하지 않습니다.",
         }
+
+    total_slots = sum(len(d.get("slots", [])) for d in full_days)
+    regions = sorted({str(d.get("region", "")) for d in full_days})
+    region_str = ",".join(regions)
+    warn_count = len(warnings)
+    append_job_log("skeleton_done", f"days={total_days} slots={total_slots} regions={region_str} warnings={warn_count}")
 
     return {
         **state,

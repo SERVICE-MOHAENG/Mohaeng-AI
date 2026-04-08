@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from functools import lru_cache
 from typing import Any
 
@@ -9,6 +10,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.geo import GeoRectangle
+from app.core.job_log_context import append_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy, to_httpx_timeout
 from app.schemas.place import Place, PlaceGeometry
@@ -102,6 +104,25 @@ class GooglePlacesService(PlacesServiceProtocol):
             payload["locationRestriction"] = location_restriction.to_google_location_restriction_payload()
         elif location_bias is not None:
             payload["locationBias"] = location_bias.to_google_location_bias_payload()
+
+        geo = "restriction" if location_restriction else ("bias" if location_bias else "none")
+        price_tag = ",".join(price_levels) if price_levels else "any"
+
+        settings = get_settings()
+        import hmac
+
+        if not settings.HMAC_SECRET:
+            raise ValueError("HMAC_SECRET is not configured")
+
+        query_hash = hmac.new(settings.HMAC_SECRET.encode("utf-8"), query.encode("utf-8"), hashlib.sha256).hexdigest()[
+            :32
+        ]
+
+        append_job_log(
+            "google_places",
+            f"q_len={len(query)} q_hash={query_hash} geo={geo} price={price_tag} min_rating={min_rating}",
+            level="detail",
+        )
 
         data = await self._request(
             method="POST",

@@ -10,6 +10,7 @@ from typing import Any
 from langchain_openai import ChatOpenAI
 
 from app.core.config import Settings, get_settings
+from app.core.job_log_context import append_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 
@@ -189,16 +190,24 @@ def invoke(
             resolved_settings.OPENAI_API_KEY,
         )
         response = client.invoke(payload)
+        latency = round((perf_counter() - started) * 1000)
         _log_success(
             stage=stage,
             tier=tier,
             selected_model=selected_model,
             routing_enabled=routing_enabled,
             fallback_used=False,
-            latency_ms=(perf_counter() - started) * 1000,
+            latency_ms=latency,
+        )
+        append_job_log(
+            "llm",
+            f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} fallback=false",
+            {"latency_ms": latency},
+            level="detail",
         )
         return response
     except Exception as exc:
+        latency = round((perf_counter() - started) * 1000)
         if (not routing_enabled) or selected_model == fallback_model:
             _log_failure(
                 stage=stage,
@@ -206,9 +215,15 @@ def invoke(
                 selected_model=selected_model,
                 routing_enabled=routing_enabled,
                 fallback_used=False,
-                latency_ms=(perf_counter() - started) * 1000,
+                latency_ms=latency,
                 message="LLM call failed",
                 exc=exc,
+            )
+            append_job_log(
+                "llm_error",
+                f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+                f"fallback=false err={type(exc).__name__}",
+                {"latency_ms": latency},
             )
             raise
 
@@ -218,9 +233,15 @@ def invoke(
             selected_model=selected_model,
             routing_enabled=routing_enabled,
             fallback_used=False,
-            latency_ms=(perf_counter() - started) * 1000,
+            latency_ms=latency,
             message="LLM call failed. Retrying with fallback model.",
             exc=exc,
+        )
+        append_job_log(
+            "llm_error",
+            f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=false err={type(exc).__name__} retrying=true",
+            {"latency_ms": latency},
         )
 
     fallback_started = perf_counter()
@@ -232,25 +253,39 @@ def invoke(
     )
     try:
         response = fallback_client.invoke(payload)
+        fb_latency = round((perf_counter() - fallback_started) * 1000)
         _log_success(
             stage=stage,
             tier=tier,
             selected_model=fallback_model,
             routing_enabled=routing_enabled,
             fallback_used=True,
-            latency_ms=(perf_counter() - fallback_started) * 1000,
+            latency_ms=fb_latency,
+        )
+        append_job_log(
+            "llm",
+            f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} fallback=true",
+            {"latency_ms": fb_latency},
+            level="detail",
         )
         return response
     except Exception as fallback_exc:
+        fb_latency = round((perf_counter() - fallback_started) * 1000)
         _log_failure(
             stage=stage,
             tier=tier,
             selected_model=fallback_model,
             routing_enabled=routing_enabled,
             fallback_used=True,
-            latency_ms=(perf_counter() - fallback_started) * 1000,
+            latency_ms=fb_latency,
             message="LLM fallback call failed",
             exc=fallback_exc,
+        )
+        append_job_log(
+            "llm_error",
+            f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=true err={type(fallback_exc).__name__}",
+            {"latency_ms": fb_latency},
         )
         raise
 
@@ -279,16 +314,24 @@ async def ainvoke(
             resolved_settings.OPENAI_API_KEY,
         )
         response = await client.ainvoke(payload)
+        latency = round((perf_counter() - started) * 1000)
         _log_success(
             stage=stage,
             tier=tier,
             selected_model=selected_model,
             routing_enabled=routing_enabled,
             fallback_used=False,
-            latency_ms=(perf_counter() - started) * 1000,
+            latency_ms=latency,
+        )
+        append_job_log(
+            "llm",
+            f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} fallback=false",
+            {"latency_ms": latency},
+            level="detail",
         )
         return response
     except Exception as exc:
+        latency = round((perf_counter() - started) * 1000)
         if (not routing_enabled) or selected_model == fallback_model:
             _log_failure(
                 stage=stage,
@@ -296,9 +339,15 @@ async def ainvoke(
                 selected_model=selected_model,
                 routing_enabled=routing_enabled,
                 fallback_used=False,
-                latency_ms=(perf_counter() - started) * 1000,
+                latency_ms=latency,
                 message="LLM async call failed",
                 exc=exc,
+            )
+            append_job_log(
+                "llm_error",
+                f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+                f"fallback=false err={type(exc).__name__}",
+                {"latency_ms": latency},
             )
             raise
 
@@ -308,9 +357,15 @@ async def ainvoke(
             selected_model=selected_model,
             routing_enabled=routing_enabled,
             fallback_used=False,
-            latency_ms=(perf_counter() - started) * 1000,
+            latency_ms=latency,
             message="LLM async call failed. Retrying with fallback model.",
             exc=exc,
+        )
+        append_job_log(
+            "llm_error",
+            f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=false err={type(exc).__name__} retrying=true",
+            {"latency_ms": latency},
         )
 
     fallback_started = perf_counter()
@@ -322,24 +377,38 @@ async def ainvoke(
     )
     try:
         response = await fallback_client.ainvoke(payload)
+        fb_latency = round((perf_counter() - fallback_started) * 1000)
         _log_success(
             stage=stage,
             tier=tier,
             selected_model=fallback_model,
             routing_enabled=routing_enabled,
             fallback_used=True,
-            latency_ms=(perf_counter() - fallback_started) * 1000,
+            latency_ms=fb_latency,
+        )
+        append_job_log(
+            "llm",
+            f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} fallback=true",
+            {"latency_ms": fb_latency},
+            level="detail",
         )
         return response
     except Exception as fallback_exc:
+        fb_latency = round((perf_counter() - fallback_started) * 1000)
         _log_failure(
             stage=stage,
             tier=tier,
             selected_model=fallback_model,
             routing_enabled=routing_enabled,
             fallback_used=True,
-            latency_ms=(perf_counter() - fallback_started) * 1000,
+            latency_ms=fb_latency,
             message="LLM async fallback call failed",
             exc=fallback_exc,
+        )
+        append_job_log(
+            "llm_error",
+            f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} "
+            f"fallback=true err={type(fallback_exc).__name__}",
+            {"latency_ms": fb_latency},
         )
         raise

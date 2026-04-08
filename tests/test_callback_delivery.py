@@ -14,6 +14,7 @@ from app.services.callback_delivery import post_callback_with_retry
 def _set_required_env(monkeypatch, **overrides: str) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("SERVICE_SECRET", "test-service-secret")
+    monkeypatch.setenv("HMAC_SECRET", "test-hmac-secret")
     for key, value in overrides.items():
         monkeypatch.setenv(key, value)
     get_settings.cache_clear()
@@ -81,8 +82,12 @@ def test_post_callback_with_retry_does_not_retry_non_retryable_4xx(monkeypatch) 
     async def _fake_sleep(delay: float) -> None:
         sleep_delays.append(delay)
 
+    async def _noop_notify(*args, **kwargs) -> None:
+        pass
+
     monkeypatch.setattr(httpx.AsyncClient, "post", _fake_post)
     monkeypatch.setattr("app.services.callback_delivery.asyncio.sleep", _fake_sleep)
+    monkeypatch.setattr("app.services.callback_delivery.notify_callback_failure", _noop_notify)
 
     result = asyncio.run(
         post_callback_with_retry(
@@ -117,8 +122,12 @@ def test_post_callback_with_retry_does_not_retry_invalid_url(monkeypatch) -> Non
     async def _fake_sleep(delay: float) -> None:
         sleep_delays.append(delay)
 
+    async def _noop_notify(*args, **kwargs) -> None:
+        pass
+
     monkeypatch.setattr(httpx.AsyncClient, "post", _fake_post)
     monkeypatch.setattr("app.services.callback_delivery.asyncio.sleep", _fake_sleep)
+    monkeypatch.setattr("app.services.callback_delivery.notify_callback_failure", _noop_notify)
 
     result = asyncio.run(
         post_callback_with_retry(
