@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.core.config import get_settings
-from app.core.job_log_context import collect_job_logs, init_job_log
+from app.core.job_log_context import append_job_log, collect_job_logs, init_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat import compiled_chat_graph
@@ -125,6 +125,7 @@ async def process_chat_request(request: ChatRequest) -> None:
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
     init_job_log(request.job_id)
+    append_job_log("job_start", f"type=chat job_id={request.job_id} query={request.user_query[:60]}")
     status = "SUCCESS"
 
     try:

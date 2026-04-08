@@ -149,7 +149,7 @@ async def fetch_places_from_slots(
         query: str,
         price_levels: list[str] | None,
         region: Region | str | None,
-    ) -> tuple[str, list]:
+    ) -> tuple[str, list, str]:
         geo_filter_scope = "roadmap_region"
         geo_missing_region_bbox = False
         geo_filter_fallback_unfiltered = False
@@ -262,17 +262,28 @@ async def fetch_places_from_slots(
                 bias_used,
                 unfiltered_used,
             )
-            return slot_key, [place.model_dump() for place in places]
+            if fallback_stage != "restriction":
+                append_job_log(
+                    "places_search",
+                    f"slot={slot_key} q={query[:40]} fb={fallback_stage} n={len(places)}",
+                    level="detail",
+                )
+            return slot_key, [place.model_dump() for place in places], fallback_stage
         except Exception as exc:
             logger.warning("Slot place search failed: slot=%s error=%s", slot_key, exc)
-            return slot_key, []
+            return slot_key, [], "error"
 
     results = await asyncio.gather(
         *[search_for_slot(key, query, levels, region) for key, query, levels, region in tasks]
     )
 
-    for slot_key, places in results:
+    empty_count = 0
+    fb_stats: dict[str, int] = {}
+    for slot_key, places, fb_stage in results:
         fetched_places[slot_key] = places
+        if not places:
+            empty_count += 1
+        fb_stats[fb_stage] = fb_stats.get(fb_stage, 0) + 1
 
     if rerank_enabled:
 
@@ -341,7 +352,11 @@ async def fetch_places_from_slots(
 
         await asyncio.gather(*[rerank_for_day(day) for day in skeleton_plan])
 
-    append_job_log("places_fetch", f"slot_count={len(fetched_places)} rerank={rerank_enabled}")
+    fb_summary = " ".join(f"{k}={v}" for k, v in sorted(fb_stats.items()))
+    append_job_log(
+        "places_fetch",
+        f"slots={len(fetched_places)} rerank={rerank_enabled} empty={empty_count} {fb_summary}",
+    )
     logger.info("Slot place fetch completed: slot_count=%d", len(fetched_places))
 
     return {

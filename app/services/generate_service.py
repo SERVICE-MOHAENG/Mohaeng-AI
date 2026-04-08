@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 
 from app.core.config import get_settings
-from app.core.job_log_context import collect_job_logs, init_job_log
+from app.core.job_log_context import append_job_log, collect_job_logs, init_job_log
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap import compiled_roadmap_graph
@@ -60,6 +60,7 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
     settings = get_settings()
     timeout_policy = get_timeout_policy(settings)
     init_job_log(job_id)
+    append_job_log("job_start", f"type=generate job_id={job_id}")
     status = "SUCCESS"
 
     try:
