@@ -107,7 +107,17 @@ class GooglePlacesService(PlacesServiceProtocol):
 
         geo = "restriction" if location_restriction else ("bias" if location_bias else "none")
         price_tag = ",".join(price_levels) if price_levels else "any"
-        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:8]
+
+        settings = get_settings()
+        import hmac
+
+        if not settings.HMAC_SECRET:
+            raise ValueError("HMAC_SECRET is not configured")
+
+        query_hash = hmac.new(settings.HMAC_SECRET.encode("utf-8"), query.encode("utf-8"), hashlib.sha256).hexdigest()[
+            :32
+        ]
+
         append_job_log(
             "google_places",
             f"q_len={len(query)} q_hash={query_hash} geo={geo} price={price_tag} min_rating={min_rating}",

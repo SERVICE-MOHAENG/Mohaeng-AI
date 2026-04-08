@@ -8,6 +8,7 @@ def test_build_timeout_policy_caps_by_request_timeout() -> None:
     settings = Settings(
         OPENAI_API_KEY="test-key",
         SERVICE_SECRET="test-service-secret",
+        HMAC_SECRET="test-hmac-secret",
         REQUEST_TIMEOUT_SECONDS=20,
         LLM_TIMEOUT_SECONDS=60,
         RECOMMEND_TIMEOUT_SECONDS=45,
