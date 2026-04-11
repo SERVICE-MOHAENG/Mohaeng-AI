@@ -25,6 +25,7 @@ from app.core.visit_time_policy import (
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningPreference
+from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
 
@@ -302,12 +303,30 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         daily_places = await _fill_place_descriptions_with_llm(daily_places)
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
         append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
+        await notify_pipeline_event(
+            event_type="roadmap_finalize_desc",
+            severity="success",
+            stage="roadmap.finalize",
+            status="SUCCESS",
+            title="🧩 Finalize Description Completed",
+            message="장소 설명 보강이 완료되었습니다.",
+            extra_fields=[{"name": "Descriptions", "value": str(desc_count), "inline": True}],
+        )
 
         daily_places = await _apply_visit_time_for_daily_places(
             daily_places,
             course_request.planning_preference,
         )
         append_job_log("finalize_time", f"preference={course_request.planning_preference}")
+        await notify_pipeline_event(
+            event_type="roadmap_finalize_time",
+            severity="success",
+            stage="roadmap.finalize",
+            status="SUCCESS",
+            title="⏰ Finalize Time Completed",
+            message="visit time 보정이 완료되었습니다.",
+            extra_fields=[{"name": "Preference", "value": str(course_request.planning_preference), "inline": True}],
+        )
 
         course_request_payload = course_request.model_dump(mode="json")
         course_request_payload.pop("budget_range", None)
@@ -372,9 +391,30 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
 
         total_places = sum(len(d.get("places", [])) for d in daily_places)
         append_job_log("finalize", f"title={final_roadmap.get('title', '')} places={total_places}")
+        await notify_pipeline_event(
+            event_type="roadmap_finalize_completed",
+            severity="success",
+            stage="roadmap.finalize",
+            status="SUCCESS",
+            title="✅ Finalize Stage Completed",
+            message="최종 로드맵 생성이 완료되었습니다.",
+            extra_fields=[
+                {"name": "Title", "value": final_roadmap.get("title", ""), "inline": False},
+                {"name": "Places", "value": str(total_places), "inline": True},
+            ],
+        )
         return {**state, "final_roadmap": final_roadmap}
 
     except Exception as exc:
         append_job_log("finalize", f"error: {type(exc).__name__} (see server logs)")
         logger.error("최종 로드맵 생성 실패: %s", exc, exc_info=True)
+        await notify_pipeline_event(
+            event_type="roadmap_finalize_failed",
+            severity="error",
+            stage="roadmap.finalize",
+            status="FAILED",
+            title="❌ Finalize Stage Failed",
+            message="최종 로드맵 생성 중 오류가 발생했습니다.",
+            error=type(exc).__name__,
+        )
         return {**state, "error": f"최종 로드맵 생성에 실패했습니다: {exc}"}

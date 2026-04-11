@@ -14,7 +14,7 @@ from app.schemas.generate import CallbackError, GenerateCallbackFailure, Generat
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
 from app.services.google_places_service import get_google_places_service
-from app.services.webhook_notification import notify_job_completed, notify_timeout
+from app.services.webhook_notification import notify_job_completed, notify_pipeline_event, notify_timeout
 
 logger = get_logger(__name__)
 
@@ -61,6 +61,15 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
     timeout_policy = get_timeout_policy(settings)
     init_job_log(job_id)
     append_job_log("job_start", f"type=generate job_id={job_id}")
+    await notify_pipeline_event(
+        event_type="generate_started",
+        severity="info",
+        stage="generate",
+        status="STARTED",
+        title="🚀 Generate Job Started",
+        message="로드맵 생성 작업이 시작되었습니다.",
+        job_id=job_id,
+    )
     status = "SUCCESS"
 
     try:
@@ -90,6 +99,16 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         _, logs, elapsed = collect_job_logs()
 
     await notify_job_completed(job_id, "generate", elapsed, status, logs)
+    await notify_pipeline_event(
+        event_type="generate_completed",
+        severity="success" if status == "SUCCESS" else "error",
+        stage="generate",
+        status=status,
+        title="✅ Generate Job Finished",
+        message="로드맵 생성 작업이 종료되었습니다.",
+        job_id=job_id,
+        elapsed_ms=round(elapsed * 1000),
+    )
 
     callback_endpoint = build_callback_url(callback_url, job_id, "itineraries/{job_id}/result")
     await _post_callback(
