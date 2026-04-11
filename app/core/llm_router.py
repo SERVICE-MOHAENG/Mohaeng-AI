@@ -164,7 +164,7 @@ def _log_failure(
             "latency_ms": latency_ms,
         },
         exc_info=exc,
-        )
+    )
 
 
 def _queue_llm_event(
