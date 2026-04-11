@@ -68,6 +68,14 @@ def _course_response() -> CourseResponse:
     )
 
 
+def _event_types(payloads: list[dict]) -> list[str]:
+    event_types: list[str] = []
+    for payload in payloads:
+        event_type = next(field["value"] for field in payload["fields"] if field["name"] == "event_type")
+        event_types.append(event_type)
+    return event_types
+
+
 def test_generate_service_emits_start_and_completion_webhooks(monkeypatch) -> None:
     _set_required_env(monkeypatch)
     import app.services.generate_service as generate_service
@@ -145,8 +153,4 @@ def test_analyze_intent_emits_routing_and_parse_webhooks(monkeypatch) -> None:
     result = analyze_intent.analyze_intent(state)
 
     assert result["intent_type"] == "MODIFICATION"
-    event_types = [
-        next(field["value"] for field in payload["fields"] if field["name"] == "event_type")
-        for payload in payloads
-    ]
-    assert event_types == ["chat_intent_routed", "chat_intent_parsed"]
+    assert _event_types(payloads) == ["chat_intent_routed", "chat_intent_parsed"]
