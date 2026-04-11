@@ -22,7 +22,10 @@ def _set_required_env(monkeypatch, **overrides: str) -> None:
 
 
 def _event_names(payloads: list[dict]) -> list[str]:
-    return [next(field["value"] for field in payload["fields"] if field["name"] == "event_type") for payload in payloads]
+    return [
+        next(field["value"] for field in payload["fields"] if field["name"] == "event_type")
+        for payload in payloads
+    ]
 
 
 def test_invoke_emits_success_webhook(monkeypatch) -> None:

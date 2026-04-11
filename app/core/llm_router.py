@@ -10,8 +10,7 @@ from typing import Any
 from langchain_openai import ChatOpenAI
 
 from app.core.config import Settings, get_settings
-from app.core.job_log_context import append_job_log
-from app.core.job_log_context import get_current_job_id
+from app.core.job_log_context import append_job_log, get_current_job_id
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
 from app.services.webhook_notification import notify_pipeline_event, schedule_webhook

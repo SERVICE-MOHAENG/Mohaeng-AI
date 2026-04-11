@@ -117,7 +117,11 @@ def test_analyze_intent_emits_routing_and_parse_webhooks(monkeypatch) -> None:
     monkeypatch.setattr(
         analyze_intent,
         "_classify_intent_route",
-        lambda *args, **kwargs: SimpleNamespace(intent_type="MODIFICATION", requested_action="ADD", target_scope="ITEM"),
+        lambda *args, **kwargs: SimpleNamespace(
+            intent_type="MODIFICATION",
+            requested_action="ADD",
+            target_scope="ITEM",
+        ),
     )
     monkeypatch.setattr(
         analyze_intent,
@@ -132,9 +136,17 @@ def test_analyze_intent_emits_routing_and_parse_webhooks(monkeypatch) -> None:
         ),
     )
 
-    state: ChatState = {"current_itinerary": {}, "user_query": "새 장소 추가해줘", "session_history": [], "request_context": {}}
+    state: ChatState = {
+        "current_itinerary": {},
+        "user_query": "새 장소 추가해줘",
+        "session_history": [],
+        "request_context": {},
+    }
     result = analyze_intent.analyze_intent(state)
 
     assert result["intent_type"] == "MODIFICATION"
-    event_types = [next(field["value"] for field in payload["fields"] if field["name"] == "event_type") for payload in payloads]
+    event_types = [
+        next(field["value"] for field in payload["fields"] if field["name"] == "event_type")
+        for payload in payloads
+    ]
     assert event_types == ["chat_intent_routed", "chat_intent_parsed"]
