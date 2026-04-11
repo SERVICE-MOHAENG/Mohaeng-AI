@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 from datetime import date
 from types import SimpleNamespace
 
@@ -107,8 +108,8 @@ def test_generate_service_emits_start_and_completion_webhooks(monkeypatch) -> No
 
 def test_analyze_intent_emits_routing_and_parse_webhooks(monkeypatch) -> None:
     _set_required_env(monkeypatch)
-    import app.graph.chat.nodes.analyze_intent as analyze_intent
     import app.services.webhook_notification as webhook
+    analyze_intent = importlib.import_module("app.graph.chat.nodes.analyze_intent")
 
     payloads: list[dict] = []
 
