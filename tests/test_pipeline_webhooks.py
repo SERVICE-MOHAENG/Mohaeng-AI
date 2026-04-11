@@ -61,10 +61,10 @@ def _course_response() -> CourseResponse:
         nights=0,
         people_count=1,
         tags=[],
-        title="테스트",
-        summary="테스트",
+        title="Test title",
+        summary="Test summary",
         itinerary=[],
-        llm_commentary="테스트",
+        llm_commentary="Test commentary",
         next_action_suggestion=[],
     )
 
@@ -75,6 +75,25 @@ def _event_types(payloads: list[dict]) -> list[str]:
         event_type = next(field["value"] for field in payload["fields"] if field["name"] == "event_type")
         event_types.append(event_type)
     return event_types
+
+
+def _fake_classify_intent_route(*args, **kwargs) -> SimpleNamespace:
+    return SimpleNamespace(intent_type="MODIFICATION", requested_action="ADD", target_scope="ITEM")
+
+
+def _fake_parse_modification_intent(*args, **kwargs) -> SimpleNamespace:
+    return SimpleNamespace(
+        op="ADD",
+        target_day=1,
+        target_index=2,
+        search_keyword="cafe",
+        needs_clarification=False,
+        model_dump=lambda: {"op": "ADD", "target_day": 1, "target_index": 2, "reasoning": "test"},
+    )
+
+
+def _run_coroutine(coro) -> None:
+    asyncio.run(coro)
 
 
 def test_generate_service_emits_start_and_completion_webhooks(monkeypatch) -> None:
@@ -109,45 +128,26 @@ def test_generate_service_emits_start_and_completion_webhooks(monkeypatch) -> No
 def test_analyze_intent_emits_routing_and_parse_webhooks(monkeypatch) -> None:
     _set_required_env(monkeypatch)
     import app.services.webhook_notification as webhook
-    analyze_intent = importlib.import_module("app.graph.chat.nodes.analyze_intent")
 
+    analyze_intent = importlib.import_module("app.graph.chat.nodes.analyze_intent")
     payloads: list[dict] = []
 
     async def _fake_send(embed: dict) -> None:
         payloads.append(embed)
 
     monkeypatch.setattr(webhook, "_send_embed", _fake_send)
-    monkeypatch.setattr(analyze_intent, "schedule_webhook", lambda coro: asyncio.run(coro))
+    monkeypatch.setattr(analyze_intent, "schedule_webhook", _run_coroutine)
     monkeypatch.setattr(analyze_intent, "_build_itinerary_table", lambda itinerary: "table")
     monkeypatch.setattr(analyze_intent, "_build_history_context", lambda history: "history")
     monkeypatch.setattr(analyze_intent, "_build_request_context", lambda request_context: "request")
     monkeypatch.setattr(analyze_intent, "_build_day_region_hints", lambda itinerary: {})
     monkeypatch.setattr(analyze_intent, "_format_day_region_context", lambda hints: "regions")
-    monkeypatch.setattr(
-        analyze_intent,
-        "_classify_intent_route",
-        lambda *args, **kwargs: SimpleNamespace(
-            intent_type="MODIFICATION",
-            requested_action="ADD",
-            target_scope="ITEM",
-        ),
-    )
-    monkeypatch.setattr(
-        analyze_intent,
-        "_parse_modification_intent",
-        lambda *args, **kwargs: SimpleNamespace(
-            op="ADD",
-            target_day=1,
-            target_index=2,
-            search_keyword="카페",
-            needs_clarification=False,
-            model_dump=lambda: {"op": "ADD", "target_day": 1, "target_index": 2, "reasoning": "테스트"},
-        ),
-    )
+    monkeypatch.setattr(analyze_intent, "_classify_intent_route", _fake_classify_intent_route)
+    monkeypatch.setattr(analyze_intent, "_parse_modification_intent", _fake_parse_modification_intent)
 
     state: ChatState = {
         "current_itinerary": {},
-        "user_query": "새 장소 추가해줘",
+        "user_query": "Add a cafe to day 1",
         "session_history": [],
         "request_context": {},
     }
