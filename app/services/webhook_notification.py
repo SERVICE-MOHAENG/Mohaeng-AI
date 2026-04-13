@@ -122,7 +122,7 @@ async def notify_pipeline_event(
     error: str | None = None,
     extra_fields: list[dict[str, Any]] | None = None,
 ) -> None:
-    """?⑤벏????ｍ???源?紐? Discord ?諭곸뜏??곗쨮 ?袁⑸꽊??뺣뼄."""
+    """표준 파이프라인 이벤트를 Discord 웹훅 payload로 전송한다."""
     fields: list[dict[str, Any]] = []
     _append_field(fields, "event_type", event_type)
     _append_field(fields, "severity", severity)
@@ -155,8 +155,8 @@ async def notify_server_start() -> None:
         severity="success",
         stage="server",
         status="READY",
-        title="???Server Started",
-        message="FastAPI ?醫뤿탣?귐???곷????뽰삂??뤿???щ빍??",
+        title="🟢 Server Started",
+        message="FastAPI 애플리케이션이 시작되었습니다.",
         extra_fields=[
             {"name": "Env", "value": settings.APP_ENV, "inline": True},
             {"name": "Python", "value": platform.python_version(), "inline": True},
@@ -171,8 +171,8 @@ async def notify_server_shutdown() -> None:
         severity="error",
         stage="server",
         status="STOPPED",
-        title="?逾?Server Shutdown",
-        message="FastAPI ?醫뤿탣?귐???곷???ル굝利??뤿???щ빍??",
+        title="🔴 Server Shutdown",
+        message="FastAPI 애플리케이션이 종료되었습니다.",
         extra_fields=[{"name": "Host", "value": platform.node(), "inline": True}],
     )
 
@@ -183,8 +183,8 @@ async def notify_error_500(method: str, path: str, error: str) -> None:
         severity="error",
         stage="http",
         status="FAILED",
-        title="?逾?500 Internal Server Error",
-        message="筌ｌ꼶???? ??? ??됱뇚揶쎛 ?袁⑸열 ??됱뇚 筌ｌ꼶?곫묾怨쀫퓠 ?袁⑤뼎??됰뮸??덈뼄.",
+        title="🔥 500 Internal Server Error",
+        message="처리되지 않은 예외가 전역 예외 처리기에 도달했습니다.",
         extra_fields=[
             {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
             {"name": "Error", "value": f"```{error[:1000]}```", "inline": False},
@@ -198,8 +198,8 @@ async def notify_timeout(job_id: str, job_type: str, elapsed_seconds: float) -> 
         severity="warning",
         stage=job_type,
         status="TIMEOUT",
-        title="?源랁닔 Pipeline Timeout",
-        message=f"{job_type} ?臾믩씜????쀫립 ??볦퍢???λ뜃???됰뮸??덈뼄.",
+        title="⏱️ Pipeline Timeout",
+        message=f"{job_type} 작업이 제한 시간을 초과했습니다.",
         job_id=job_id,
         extra_fields=[
             {"name": "Type", "value": job_type, "inline": True},
@@ -214,8 +214,8 @@ async def notify_request_timeout(method: str, path: str, elapsed_seconds: float)
         severity="warning",
         stage="http",
         status="TIMEOUT",
-        title="?源랁닔 Request Timeout",
-        message="HTTP ?遺욧퍕????쇱젟?????袁⑸툡?猿뗭뱽 ?λ뜃???됰뮸??덈뼄.",
+        title="⏱️ Request Timeout",
+        message="HTTP 요청이 설정된 타임아웃을 초과했습니다.",
         extra_fields=[
             {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
             {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
@@ -231,7 +231,7 @@ def _format_log_line(entry: dict[str, Any]) -> str:
     message = entry.get("message", "")
     elapsed_ms = entry.get("elapsed_ms")
     time_str = f" ({elapsed_ms}ms)" if elapsed_ms is not None else ""
-    return f"**{stage}** ??{message}{time_str}"
+    return f"**{stage}** - {message}{time_str}"
 
 
 def _format_log_description(logs: list[dict[str, Any]]) -> str:
@@ -252,7 +252,7 @@ def _format_log_description(logs: list[dict[str, Any]]) -> str:
             info_lines.append(_format_log_line(entry))
 
     if detail_count:
-        info_lines.append(f"**detail** ??{detail_count} entries collapsed")
+        info_lines.append(f"**detail** - {detail_count} entries collapsed")
 
     description = "\n".join(info_lines)
     if len(description) > _MAX_DESC_LEN:
@@ -275,7 +275,7 @@ async def notify_job_completed(
         severity=severity,
         stage=job_type,
         status=status,
-        title=f"\U0001f4cb {job_type} Job Completed",
+        title=f"📋 {job_type} Job Completed",
         message="수집된 작업 로그를 요약해서 전송합니다.",
         description=description,
         job_id=job_id,

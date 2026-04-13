@@ -67,7 +67,7 @@ def test_notify_job_completed_includes_log_description(monkeypatch) -> None:
     )
 
     fields = {field["name"]: field["value"] for field in captured["fields"]}
-    assert captured["title"] == "\U0001f4cb generate Job Completed"
+    assert captured["title"] == "📋 generate Job Completed"
     assert "**skeleton**" in captured["description"]
     assert "done" in captured["description"]
     assert fields["job_id"] == "`job-2`"
