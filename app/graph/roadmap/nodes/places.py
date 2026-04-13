@@ -18,6 +18,7 @@ from app.schemas.enums import BudgetRange, Region
 from app.services.google_places_service import get_google_places_service
 from app.services.place_rerank_service import select_place_ids_for_day
 from app.services.places_service import PlacesServiceProtocol
+from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
 
@@ -356,6 +357,20 @@ async def fetch_places_from_slots(
     append_job_log(
         "places_fetch",
         f"slots={len(fetched_places)} rerank={rerank_enabled} empty={empty_count} {fb_summary}",
+    )
+    await notify_pipeline_event(
+        event_type="roadmap_places_completed",
+        severity="success",
+        stage="roadmap.places",
+        status="SUCCESS",
+        title="📍 Places Fetch Completed",
+        message="슬롯별 장소 후보 수집이 완료되었습니다.",
+        extra_fields=[
+            {"name": "Slots", "value": str(len(fetched_places)), "inline": True},
+            {"name": "Rerank", "value": str(rerank_enabled), "inline": True},
+            {"name": "Empty", "value": str(empty_count), "inline": True},
+            {"name": "Fallbacks", "value": fb_summary or "none", "inline": False},
+        ],
     )
     logger.info("Slot place fetch completed: slot_count=%d", len(fetched_places))
 

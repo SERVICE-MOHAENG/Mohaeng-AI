@@ -16,6 +16,7 @@ from app.graph.chat.utils import build_diff_key, reorder_visit_sequence
 from app.schemas.enums import ChatOperation, ChatStatus
 from app.services.google_places_service import get_google_places_service
 from app.services.place_rerank_service import select_place_id_for_chat
+from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
 
@@ -183,6 +184,20 @@ async def mutate(state: ChatState) -> ChatState:
     day["places"] = places
     diff_str = ",".join(diff_keys)
     append_job_log("mutate", f"op={op} day={target_day_num} idx={target_index} n={len(search_results)} diff={diff_str}")
+    await notify_pipeline_event(
+        event_type="chat_mutate_completed",
+        severity="success",
+        stage="chat.mutate",
+        status=str(state.get("status") or ChatStatus.SUCCESS),
+        title="🛠️ Mutate Stage Completed",
+        message="수정 작업이 적용되었습니다.",
+        extra_fields=[
+            {"name": "Op", "value": str(op), "inline": True},
+            {"name": "Day", "value": str(target_day_num), "inline": True},
+            {"name": "Index", "value": str(target_index), "inline": True},
+            {"name": "Diff", "value": diff_str or "none", "inline": False},
+        ],
+    )
 
     return {
         **state,

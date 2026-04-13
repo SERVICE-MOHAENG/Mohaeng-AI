@@ -10,9 +10,10 @@ from typing import Any
 from langchain_openai import ChatOpenAI
 
 from app.core.config import Settings, get_settings
-from app.core.job_log_context import append_job_log
+from app.core.job_log_context import append_job_log, get_current_job_id
 from app.core.logger import get_logger
 from app.core.timeout_policy import get_timeout_policy
+from app.services.webhook_notification import notify_pipeline_event, schedule_webhook
 
 logger = get_logger(__name__)
 
@@ -166,6 +167,64 @@ def _log_failure(
     )
 
 
+def _queue_llm_event(
+    *,
+    event_type: str,
+    severity: str,
+    stage: Stage,
+    status: str,
+    title: str,
+    message: str,
+    elapsed_ms: int,
+    model: str,
+    fallback_used: bool,
+    error: str | None = None,
+) -> None:
+    schedule_webhook(
+        notify_pipeline_event(
+            event_type=event_type,
+            severity=severity,
+            stage=stage.value,
+            status=status,
+            title=title,
+            message=message,
+            job_id=get_current_job_id(),
+            elapsed_ms=elapsed_ms,
+            model=model,
+            fallback_used=fallback_used,
+            error=error,
+        )
+    )
+
+
+async def _send_llm_event(
+    *,
+    event_type: str,
+    severity: str,
+    stage: Stage,
+    status: str,
+    title: str,
+    message: str,
+    elapsed_ms: int,
+    model: str,
+    fallback_used: bool,
+    error: str | None = None,
+) -> None:
+    await notify_pipeline_event(
+        event_type=event_type,
+        severity=severity,
+        stage=stage.value,
+        status=status,
+        title=title,
+        message=message,
+        job_id=get_current_job_id(),
+        elapsed_ms=elapsed_ms,
+        model=model,
+        fallback_used=fallback_used,
+        error=error,
+    )
+
+
 def invoke(
     stage: Stage,
     payload: Any,
@@ -199,6 +258,17 @@ def invoke(
             fallback_used=False,
             latency_ms=latency,
         )
+        _queue_llm_event(
+            event_type="llm_call_success",
+            severity="success",
+            stage=stage,
+            status="SUCCESS",
+            title="🤖 LLM Call Succeeded",
+            message="LLM 호출이 정상적으로 완료되었습니다.",
+            elapsed_ms=latency,
+            model=selected_model,
+            fallback_used=False,
+        )
         append_job_log(
             "llm",
             f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} fallback=false",
@@ -225,6 +295,18 @@ def invoke(
                 f"fallback=false err={type(exc).__name__}",
                 {"latency_ms": latency},
             )
+            _queue_llm_event(
+                event_type="llm_call_failed",
+                severity="error",
+                stage=stage,
+                status="FAILED",
+                title="🤖 LLM Call Failed",
+                message="LLM 호출이 실패했습니다.",
+                elapsed_ms=latency,
+                model=selected_model,
+                fallback_used=False,
+                error=type(exc).__name__,
+            )
             raise
 
         _log_failure(
@@ -242,6 +324,18 @@ def invoke(
             f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
             f"fallback=false err={type(exc).__name__} retrying=true",
             {"latency_ms": latency},
+        )
+        _queue_llm_event(
+            event_type="llm_call_retry",
+            severity="warning",
+            stage=stage,
+            status="RETRYING",
+            title="🔁 LLM Call Retrying",
+            message="1차 LLM 호출이 실패해 fallback 모델로 재시도합니다.",
+            elapsed_ms=latency,
+            model=selected_model,
+            fallback_used=False,
+            error=type(exc).__name__,
         )
 
     fallback_started = perf_counter()
@@ -261,6 +355,17 @@ def invoke(
             routing_enabled=routing_enabled,
             fallback_used=True,
             latency_ms=fb_latency,
+        )
+        _queue_llm_event(
+            event_type="llm_fallback_success",
+            severity="warning",
+            stage=stage,
+            status="SUCCESS",
+            title="🔁 LLM Fallback Succeeded",
+            message="fallback 모델 호출이 성공했습니다.",
+            elapsed_ms=fb_latency,
+            model=fallback_model,
+            fallback_used=True,
         )
         append_job_log(
             "llm",
@@ -286,6 +391,18 @@ def invoke(
             f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} "
             f"fallback=true err={type(fallback_exc).__name__}",
             {"latency_ms": fb_latency},
+        )
+        _queue_llm_event(
+            event_type="llm_fallback_failed",
+            severity="error",
+            stage=stage,
+            status="FAILED",
+            title="🔁 LLM Fallback Failed",
+            message="fallback 모델 호출도 실패했습니다.",
+            elapsed_ms=fb_latency,
+            model=fallback_model,
+            fallback_used=True,
+            error=type(fallback_exc).__name__,
         )
         raise
 
@@ -323,6 +440,17 @@ async def ainvoke(
             fallback_used=False,
             latency_ms=latency,
         )
+        await _send_llm_event(
+            event_type="llm_call_success",
+            severity="success",
+            stage=stage,
+            status="SUCCESS",
+            title="🤖 LLM Call Succeeded",
+            message="LLM 호출이 정상적으로 완료되었습니다.",
+            elapsed_ms=latency,
+            model=selected_model,
+            fallback_used=False,
+        )
         append_job_log(
             "llm",
             f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} fallback=false",
@@ -349,6 +477,18 @@ async def ainvoke(
                 f"fallback=false err={type(exc).__name__}",
                 {"latency_ms": latency},
             )
+            await _send_llm_event(
+                event_type="llm_call_failed",
+                severity="error",
+                stage=stage,
+                status="FAILED",
+                title="🤖 LLM Call Failed",
+                message="LLM 호출이 실패했습니다.",
+                elapsed_ms=latency,
+                model=selected_model,
+                fallback_used=False,
+                error=type(exc).__name__,
+            )
             raise
 
         _log_failure(
@@ -366,6 +506,18 @@ async def ainvoke(
             f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} "
             f"fallback=false err={type(exc).__name__} retrying=true",
             {"latency_ms": latency},
+        )
+        await _send_llm_event(
+            event_type="llm_call_retry",
+            severity="warning",
+            stage=stage,
+            status="RETRYING",
+            title="🔁 LLM Call Retrying",
+            message="1차 LLM 호출이 실패해 fallback 모델로 재시도합니다.",
+            elapsed_ms=latency,
+            model=selected_model,
+            fallback_used=False,
+            error=type(exc).__name__,
         )
 
     fallback_started = perf_counter()
@@ -385,6 +537,17 @@ async def ainvoke(
             routing_enabled=routing_enabled,
             fallback_used=True,
             latency_ms=fb_latency,
+        )
+        await _send_llm_event(
+            event_type="llm_fallback_success",
+            severity="warning",
+            stage=stage,
+            status="SUCCESS",
+            title="🔁 LLM Fallback Succeeded",
+            message="fallback 모델 호출이 성공했습니다.",
+            elapsed_ms=fb_latency,
+            model=fallback_model,
+            fallback_used=True,
         )
         append_job_log(
             "llm",
@@ -410,5 +573,17 @@ async def ainvoke(
             f"stage={stage.value} model={fallback_model} tier={tier.value if tier else 'N/A'} "
             f"fallback=true err={type(fallback_exc).__name__}",
             {"latency_ms": fb_latency},
+        )
+        await _send_llm_event(
+            event_type="llm_fallback_failed",
+            severity="error",
+            stage=stage,
+            status="FAILED",
+            title="🔁 LLM Fallback Failed",
+            message="fallback 모델 호출도 실패했습니다.",
+            elapsed_ms=fb_latency,
+            model=fallback_model,
+            fallback_used=True,
+            error=type(fallback_exc).__name__,
         )
         raise

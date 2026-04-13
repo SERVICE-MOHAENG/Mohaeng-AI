@@ -18,6 +18,11 @@ def init_job_log(job_id: str) -> None:
     _logs_var.set([])
 
 
+def get_current_job_id() -> str | None:
+    """현재 job id를 반환한다."""
+    return _job_id_var.get()
+
+
 def append_job_log(
     stage: str,
     message: str,

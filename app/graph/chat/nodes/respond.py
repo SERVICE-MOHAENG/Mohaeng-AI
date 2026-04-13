@@ -9,6 +9,7 @@ from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
 from app.graph.chat.state import ChatState
 from app.schemas.enums import ChatStatus
+from app.services.webhook_notification import notify_pipeline_event, schedule_webhook
 
 logger = get_logger(__name__)
 
@@ -92,4 +93,15 @@ def respond(state: ChatState) -> ChatState:
     final_status = status if status else ChatStatus.SUCCESS
 
     append_job_log("respond", f"status={final_status}")
+    schedule_webhook(
+        notify_pipeline_event(
+            event_type="chat_response_completed",
+            severity="success" if str(final_status) == ChatStatus.SUCCESS.value else "warning",
+            stage="chat.respond",
+            status=str(final_status),
+            title="💬 Respond Stage Completed",
+            message="최종 응답 생성을 완료했습니다.",
+            extra_fields=[{"name": "Status", "value": str(final_status), "inline": True}],
+        )
+    )
     return {**state, "status": final_status, "message": generated}
