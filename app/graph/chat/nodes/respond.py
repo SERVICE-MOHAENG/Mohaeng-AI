@@ -90,18 +90,21 @@ def respond(state: ChatState) -> ChatState:
         logger.error("응답 생성 LLM 호출 실패: %s", exc)
         generated = change_summary or "수정 처리 중 오류가 발생했습니다."
 
-    final_status = status if status else ChatStatus.SUCCESS
+    try:
+        final_status = status if isinstance(status, ChatStatus) else ChatStatus(status)
+    except Exception:
+        final_status = ChatStatus.SUCCESS
 
     append_job_log("respond", f"status={final_status}")
     schedule_webhook(
         notify_pipeline_event(
             event_type="chat_response_completed",
-            severity="success" if str(final_status) == ChatStatus.SUCCESS.value else "warning",
+            severity="success" if final_status == ChatStatus.SUCCESS else "warning",
             stage="chat.respond",
-            status=str(final_status),
+            status=final_status.value,
             title="💬 Respond Stage Completed",
             message="최종 응답 생성을 완료했습니다.",
-            extra_fields=[{"name": "Status", "value": str(final_status), "inline": True}],
+            extra_fields=[{"name": "Status", "value": final_status.value, "inline": True}],
         )
     )
     return {**state, "status": final_status, "message": generated}

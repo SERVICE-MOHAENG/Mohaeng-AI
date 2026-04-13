@@ -212,19 +212,28 @@ async def _send_llm_event(
     fallback_used: bool,
     error: str | None = None,
 ) -> None:
-    await notify_pipeline_event(
-        event_type=event_type,
-        severity=severity,
-        stage=stage.value,
-        status=status,
-        title=title,
-        message=message,
-        job_id=get_current_job_id(),
-        elapsed_ms=elapsed_ms,
-        model=model,
-        fallback_used=fallback_used,
-        error=error,
-    )
+    try:
+        await notify_pipeline_event(
+            event_type=event_type,
+            severity=severity,
+            stage=stage.value,
+            status=status,
+            title=title,
+            message=message,
+            job_id=get_current_job_id(),
+            elapsed_ms=elapsed_ms,
+            model=model,
+            fallback_used=fallback_used,
+            error=error,
+        )
+    except Exception as exc:
+        logger.warning(
+            "LLM webhook event failed: event_type=%s stage=%s model=%s error=%s",
+            event_type,
+            stage.value,
+            model,
+            exc,
+        )
 
 
 def invoke(

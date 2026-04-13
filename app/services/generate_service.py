@@ -19,6 +19,20 @@ from app.services.webhook_notification import notify_job_completed, notify_pipel
 logger = get_logger(__name__)
 
 
+async def _notify_pipeline_event_best_effort(**kwargs) -> None:
+    """Discord 웹훅 알림은 실패해도 주 흐름을 막지 않습니다."""
+    try:
+        await notify_pipeline_event(**kwargs)
+    except Exception as exc:
+        logger.warning(
+            "Generate pipeline webhook failed: event_type=%s stage=%s status=%s error=%s",
+            kwargs.get("event_type"),
+            kwargs.get("stage"),
+            kwargs.get("status"),
+            exc,
+        )
+
+
 async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
     """로드맵 그래프를 실행하고 결과를 반환합니다."""
     initial_state = {"course_request": request.model_dump(mode="json")}
@@ -61,7 +75,7 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
     timeout_policy = get_timeout_policy(settings)
     init_job_log(job_id)
     append_job_log("job_start", f"type=generate job_id={job_id}")
-    await notify_pipeline_event(
+    await _notify_pipeline_event_best_effort(
         event_type="generate_started",
         severity="info",
         stage="generate",
@@ -83,7 +97,10 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         status = "TIMEOUT"
         _, logs, elapsed = collect_job_logs()
         logger.warning("Generate timeout: job_id=%s elapsed=%.1fs", job_id, elapsed)
-        await notify_timeout(job_id, "generate", elapsed)
+        try:
+            await notify_timeout(job_id, "generate", elapsed)
+        except Exception as exc:
+            logger.warning("Generate timeout webhook failed: job_id=%s error=%s", job_id, exc)
         callback = GenerateCallbackFailure(
             error=CallbackError(code="LLM_TIMEOUT", message="LLM 생성 시간이 초과되었습니다."),
         )
@@ -98,8 +115,11 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
     if status != "TIMEOUT":
         _, logs, elapsed = collect_job_logs()
 
-    await notify_job_completed(job_id, "generate", elapsed, status, logs)
-    await notify_pipeline_event(
+    try:
+        await notify_job_completed(job_id, "generate", elapsed, status, logs)
+    except Exception as exc:
+        logger.warning("Generate job_completed webhook failed: job_id=%s error=%s", job_id, exc)
+    await _notify_pipeline_event_best_effort(
         event_type="generate_completed",
         severity="success" if status == "SUCCESS" else "error",
         stage="generate",

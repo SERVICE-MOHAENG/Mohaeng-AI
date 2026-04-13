@@ -141,11 +141,12 @@ async def _translate_place_names(records: list[dict]) -> dict[str, str]:
         logger.exception("Roadmap place translation parse failed")
         return {}
 
+    candidate_ids = {record["place_id"] for record in records}
     display_names: dict[str, str] = {}
     for item in parsed.items:
         place_id = item.place_id.strip()
         display_name = item.display_name.strip()
-        if not place_id or not display_name:
+        if not place_id or not display_name or place_id not in candidate_ids:
             continue
         display_names[place_id] = display_name
 

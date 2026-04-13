@@ -24,13 +24,29 @@ _COLOR_GRAY = 0x95A5A6
 
 
 def schedule_webhook(coro: Awaitable[Any]) -> None:
-    """현재 이벤트 루프에 웹훅 전송 작업을 예약한다."""
+    """현재 이벤트 루프에 웹훅 전송 작업을 예약한다.
+
+    실행 중인 이벤트 루프가 있으면 백그라운드 태스크로 예약하고,
+    없으면 asyncio.run()으로 현재 스레드에서 동기 실행한다.
+    진짜 fire-and-forget이 필요하면 호출 측에서 실행 중인 이벤트 루프를 보장하거나
+    별도 백그라운드 실행 전략을 사용해야 한다.
+    """
+
+    async def _run_safely() -> None:
+        try:
+            await coro
+        except Exception as exc:
+            logger.warning("Discord webhook task failed: %s", exc)
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        asyncio.run(coro)
+        try:
+            asyncio.run(_run_safely())
+        except Exception as exc:
+            logger.warning("Discord webhook task failed outside event loop: %s", exc)
         return
-    loop.create_task(coro)
+    loop.create_task(_run_safely())
 
 
 def _get_webhook_url() -> str | None:
