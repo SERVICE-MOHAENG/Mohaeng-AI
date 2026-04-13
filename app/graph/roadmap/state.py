@@ -32,6 +32,7 @@ class RoadmapState(TypedDict, total=False):
         skeleton_plan: 스켈레톤 플랜
         skeleton_warnings: 스켈레톤 경고 목록
         fetched_places: 슬롯 키별 장소 목록
+        display_name: fetched_places의 각 place에 추가될 수 있는 한국어 표시명
         final_roadmap: 최종 로드맵 응답
         error: 오류 메시지
     """

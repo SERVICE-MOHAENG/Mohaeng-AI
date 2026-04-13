@@ -122,25 +122,27 @@ def _prepare_final_context(
                 section = slot.get("section")
                 section_label = section or "UNKNOWN"
                 keyword = slot.get("keyword")
-                context_lines.append(f"- {section_label}: {place['name']} (키워드: {keyword})")
+                display_name = place.get("display_name") or place["name"]
+                context_lines.append(f"- {section_label}: {display_name} (키워드: {keyword})")
 
                 geometry = place.get("geometry") or {}
                 place_url = place.get("url")
                 if not place_url and place.get("place_id"):
                     place_url = (
                         "https://www.google.com/maps/search/?api=1&query="
-                        f"{place['name']}&query_place_id={place.get('place_id')}"
+                        f"{display_name}&query_place_id={place.get('place_id')}"
                     )
 
                 day_places.append(
                     {
-                        "place_name": place["name"],
+                        "place_name": display_name,
+                        "original_place_name": place.get("name"),
                         "place_id": place.get("place_id"),
                         "address": place.get("address"),
                         "latitude": geometry.get("latitude"),
                         "longitude": geometry.get("longitude"),
                         "place_url": place_url,
-                        "description": f"{place['name']}에서 즐기는 대표 활동입니다.",
+                        "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
                         "visit_time": None if planned else section,
                         "section": section,
