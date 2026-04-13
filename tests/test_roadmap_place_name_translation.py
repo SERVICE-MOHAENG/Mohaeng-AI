@@ -90,6 +90,7 @@ def test_normalize_place_names_sets_korean_display_names(monkeypatch) -> None:
 
 def test_normalize_place_names_falls_back_to_original_when_llm_fails(monkeypatch) -> None:
     _set_required_env(monkeypatch)
+
     async def _failing_ainvoke(stage, messages, timeout_seconds=None):
         raise RuntimeError("translation failed")
 
