@@ -30,6 +30,20 @@ from app.services.webhook_notification import notify_pipeline_event
 logger = get_logger(__name__)
 
 
+async def _notify_pipeline_event_best_effort(**kwargs) -> None:
+    """Discord 웹훅 알림은 실패해도 로드맵 합성 흐름을 막지 않습니다."""
+    try:
+        await notify_pipeline_event(**kwargs)
+    except Exception as exc:
+        logger.warning(
+            "Roadmap finalize webhook failed: event_type=%s stage=%s status=%s error=%s",
+            kwargs.get("event_type"),
+            kwargs.get("stage"),
+            kwargs.get("status"),
+            exc,
+        )
+
+
 def _select_place_in_region(places: list[dict], region_bbox: GeoRectangle | None) -> dict | None:
     """bbox 내 첫 번째 장소를 반환합니다. bbox 내 장소가 없으면 None을 반환합니다."""
     if not places:
@@ -122,25 +136,27 @@ def _prepare_final_context(
                 section = slot.get("section")
                 section_label = section or "UNKNOWN"
                 keyword = slot.get("keyword")
-                context_lines.append(f"- {section_label}: {place['name']} (키워드: {keyword})")
+                display_name = place.get("display_name") or place["name"]
+                context_lines.append(f"- {section_label}: {display_name} (키워드: {keyword})")
 
                 geometry = place.get("geometry") or {}
                 place_url = place.get("url")
                 if not place_url and place.get("place_id"):
                     place_url = (
                         "https://www.google.com/maps/search/?api=1&query="
-                        f"{place['name']}&query_place_id={place.get('place_id')}"
+                        f"{display_name}&query_place_id={place.get('place_id')}"
                     )
 
                 day_places.append(
                     {
-                        "place_name": place["name"],
+                        "place_name": display_name,
+                        "original_place_name": place.get("name"),
                         "place_id": place.get("place_id"),
                         "address": place.get("address"),
                         "latitude": geometry.get("latitude"),
                         "longitude": geometry.get("longitude"),
                         "place_url": place_url,
-                        "description": f"{place['name']}에서 즐기는 대표 활동입니다.",
+                        "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
                         "visit_time": None if planned else section,
                         "section": section,
@@ -303,7 +319,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         daily_places = await _fill_place_descriptions_with_llm(daily_places)
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
         append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
-        await notify_pipeline_event(
+        await _notify_pipeline_event_best_effort(
             event_type="roadmap_finalize_desc",
             severity="success",
             stage="roadmap.finalize",
@@ -318,7 +334,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
             course_request.planning_preference,
         )
         append_job_log("finalize_time", f"preference={course_request.planning_preference}")
-        await notify_pipeline_event(
+        await _notify_pipeline_event_best_effort(
             event_type="roadmap_finalize_time",
             severity="success",
             stage="roadmap.finalize",
@@ -391,7 +407,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
 
         total_places = sum(len(d.get("places", [])) for d in daily_places)
         append_job_log("finalize", f"title={final_roadmap.get('title', '')} places={total_places}")
-        await notify_pipeline_event(
+        await _notify_pipeline_event_best_effort(
             event_type="roadmap_finalize_completed",
             severity="success",
             stage="roadmap.finalize",
@@ -408,7 +424,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
     except Exception as exc:
         append_job_log("finalize", f"error: {type(exc).__name__} (see server logs)")
         logger.error("최종 로드맵 생성 실패: %s", exc, exc_info=True)
-        await notify_pipeline_event(
+        await _notify_pipeline_event_best_effort(
             event_type="roadmap_finalize_failed",
             severity="error",
             stage="roadmap.finalize",

@@ -22,6 +22,20 @@ from app.services.webhook_notification import notify_job_completed, notify_pipel
 logger = get_logger(__name__)
 
 
+async def _notify_pipeline_event_best_effort(**kwargs) -> None:
+    """Discord 웹훅 알림은 실패해도 주 흐름을 막지 않습니다."""
+    try:
+        await notify_pipeline_event(**kwargs)
+    except Exception as exc:
+        logger.warning(
+            "Chat pipeline webhook failed: event_type=%s stage=%s status=%s error=%s",
+            kwargs.get("event_type"),
+            kwargs.get("stage"),
+            kwargs.get("status"),
+            exc,
+        )
+
+
 async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
     """로드맵 대화 그래프를 실행하고 결과를 반환합니다."""
     current_itinerary = request.current_itinerary
@@ -136,7 +150,7 @@ async def process_chat_request(request: ChatRequest) -> None:
     append_job_log(
         "job_start", f"type=chat job_id={request.job_id} query_len={len(request.user_query)} query_hash={query_hash}"
     )
-    await notify_pipeline_event(
+    await _notify_pipeline_event_best_effort(
         event_type="chat_started",
         severity="info",
         stage="chat",
@@ -157,7 +171,10 @@ async def process_chat_request(request: ChatRequest) -> None:
         status = "TIMEOUT"
         _, logs, elapsed = collect_job_logs()
         logger.warning("Chat timeout: job_id=%s elapsed=%.1fs", request.job_id, elapsed)
-        await notify_timeout(request.job_id, "chat", elapsed)
+        try:
+            await notify_timeout(request.job_id, "chat", elapsed)
+        except Exception as exc:
+            logger.warning("Chat timeout webhook failed: job_id=%s error=%s", request.job_id, exc)
         payload = {
             "status": ChatStatus.FAILED.value,
             "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
@@ -173,8 +190,11 @@ async def process_chat_request(request: ChatRequest) -> None:
     if status != "TIMEOUT":
         _, logs, elapsed = collect_job_logs()
 
-    await notify_job_completed(request.job_id, "chat", elapsed, status, logs)
-    await notify_pipeline_event(
+    try:
+        await notify_job_completed(request.job_id, "chat", elapsed, status, logs)
+    except Exception as exc:
+        logger.warning("Chat job_completed webhook failed: job_id=%s error=%s", request.job_id, exc)
+    await _notify_pipeline_event_best_effort(
         event_type="chat_completed",
         severity="success" if status == "SUCCESS" else "error",
         stage="chat",

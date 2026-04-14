@@ -31,7 +31,7 @@ class RoadmapState(TypedDict, total=False):
         slot_max: 슬롯 최대 개수
         skeleton_plan: 스켈레톤 플랜
         skeleton_warnings: 스켈레톤 경고 목록
-        fetched_places: 슬롯 키별 장소 목록
+        fetched_places: 슬롯 키별 장소 목록 (각 place dict에 display_name 한국어 표시명 포함 가능)
         final_roadmap: 최종 로드맵 응답
         error: 오류 메시지
     """

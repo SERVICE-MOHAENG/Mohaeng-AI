@@ -37,6 +37,7 @@ class Stage(StrEnum):
     CHAT_VISIT_TIME = "CHAT_VISIT_TIME"
     ROADMAP_SKELETON = "ROADMAP_SKELETON"
     ROADMAP_PLACE_RERANK = "ROADMAP_PLACE_RERANK"
+    ROADMAP_PLACE_TRANSLATE = "ROADMAP_PLACE_TRANSLATE"
     ROADMAP_PLACE_DETAIL = "ROADMAP_PLACE_DETAIL"
     ROADMAP_SUMMARY = "ROADMAP_SUMMARY"
     RECOMMEND_SELECTION = "RECOMMEND_SELECTION"
@@ -51,6 +52,7 @@ _STAGE_TIER_MAP: dict[Stage, Tier] = {
     Stage.CHAT_VISIT_TIME: Tier.SPEED,
     Stage.ROADMAP_SKELETON: Tier.QUALITY,
     Stage.ROADMAP_PLACE_RERANK: Tier.COST,
+    Stage.ROADMAP_PLACE_TRANSLATE: Tier.SPEED,
     Stage.ROADMAP_PLACE_DETAIL: Tier.SPEED,
     Stage.ROADMAP_SUMMARY: Tier.QUALITY,
     Stage.RECOMMEND_SELECTION: Tier.COST,
@@ -210,19 +212,28 @@ async def _send_llm_event(
     fallback_used: bool,
     error: str | None = None,
 ) -> None:
-    await notify_pipeline_event(
-        event_type=event_type,
-        severity=severity,
-        stage=stage.value,
-        status=status,
-        title=title,
-        message=message,
-        job_id=get_current_job_id(),
-        elapsed_ms=elapsed_ms,
-        model=model,
-        fallback_used=fallback_used,
-        error=error,
-    )
+    try:
+        await notify_pipeline_event(
+            event_type=event_type,
+            severity=severity,
+            stage=stage.value,
+            status=status,
+            title=title,
+            message=message,
+            job_id=get_current_job_id(),
+            elapsed_ms=elapsed_ms,
+            model=model,
+            fallback_used=fallback_used,
+            error=error,
+        )
+    except Exception as exc:
+        logger.warning(
+            "LLM webhook event failed: event_type=%s stage=%s model=%s error=%s",
+            event_type,
+            stage.value,
+            model,
+            exc,
+        )
 
 
 def invoke(

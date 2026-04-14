@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import platform
+import threading
 from datetime import datetime, timezone
 from typing import Any, Awaitable
 
@@ -24,13 +25,33 @@ _COLOR_GRAY = 0x95A5A6
 
 
 def schedule_webhook(coro: Awaitable[Any]) -> None:
-    """현재 이벤트 루프에 웹훅 전송 작업을 예약한다."""
+    """현재 이벤트 루프에 웹훅 전송 작업을 예약한다.
+
+    실행 중인 이벤트 루프가 있으면 백그라운드 태스크로 예약하고,
+    없으면 별도 데몬 스레드에서 asyncio.run()으로 실행한다.
+    진짜 fire-and-forget이 필요하면 호출 측에서 실행 중인 이벤트 루프를 보장하거나
+    별도 백그라운드 실행 전략을 사용해야 한다.
+    """
+
+    async def _run_safely() -> None:
+        try:
+            await coro
+        except Exception as exc:
+            logger.warning("Discord webhook task failed: %s", exc)
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        asyncio.run(coro)
+
+        def _runner() -> None:
+            try:
+                asyncio.run(_run_safely())
+            except Exception as exc:
+                logger.warning("Discord webhook task failed outside event loop: %s", exc)
+
+        threading.Thread(target=_runner, name="discord-webhook", daemon=True).start()
         return
-    loop.create_task(coro)
+    loop.create_task(_run_safely())
 
 
 def _get_webhook_url() -> str | None:
@@ -101,7 +122,7 @@ async def notify_pipeline_event(
     error: str | None = None,
     extra_fields: list[dict[str, Any]] | None = None,
 ) -> None:
-    """공통 단계 이벤트를 Discord 웹훅으로 전송한다."""
+    """표준 파이프라인 이벤트를 Discord 웹훅 payload로 전송한다."""
     fields: list[dict[str, Any]] = []
     _append_field(fields, "event_type", event_type)
     _append_field(fields, "severity", severity)
@@ -210,7 +231,7 @@ def _format_log_line(entry: dict[str, Any]) -> str:
     message = entry.get("message", "")
     elapsed_ms = entry.get("elapsed_ms")
     time_str = f" ({elapsed_ms}ms)" if elapsed_ms is not None else ""
-    return f"**{stage}** — {message}{time_str}"
+    return f"**{stage}** - {message}{time_str}"
 
 
 def _format_log_description(logs: list[dict[str, Any]]) -> str:
@@ -231,7 +252,7 @@ def _format_log_description(logs: list[dict[str, Any]]) -> str:
             info_lines.append(_format_log_line(entry))
 
     if detail_count:
-        info_lines.append(f"**detail** — {detail_count} entries collapsed")
+        info_lines.append(f"**detail** - {detail_count} entries collapsed")
 
     description = "\n".join(info_lines)
     if len(description) > _MAX_DESC_LEN:
