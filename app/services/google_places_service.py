@@ -93,8 +93,10 @@ class GooglePlacesService(PlacesServiceProtocol):
         payload: dict[str, Any] = {"textQuery": query, "pageSize": self._page_size}
         if self._language_code:
             payload["languageCode"] = self._language_code
+        applied_min_rating: float | None = None
         if min_rating is not None:
-            payload["minRating"] = min(5.0, max(0.0, float(min_rating)))
+            applied_min_rating = min(5.0, max(0.0, float(min_rating)))
+            payload["minRating"] = applied_min_rating
         if location_restriction is not None:
             payload["locationRestriction"] = location_restriction.to_google_location_restriction_payload()
         elif location_bias is not None:
@@ -114,7 +116,7 @@ class GooglePlacesService(PlacesServiceProtocol):
 
         append_job_log(
             "google_places",
-            f"q_len={len(query)} q_hash={query_hash} geo={geo} min_rating={min_rating}",
+            f"q_len={len(query)} q_hash={query_hash} geo={geo} min_rating={applied_min_rating}",
             level="detail",
         )
 
