@@ -13,7 +13,6 @@ class PlacesServiceProtocol(ABC):
     async def search(
         self,
         query: str,
-        price_levels: list[str] | None = None,
         min_rating: float | None = None,
         location_restriction: GeoRectangle | None = None,
         location_bias: GeoRectangle | None = None,
