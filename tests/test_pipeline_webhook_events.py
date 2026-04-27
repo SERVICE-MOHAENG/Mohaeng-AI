@@ -84,7 +84,10 @@ def test_chat_pipeline_emits_started_and_failed_webhooks(monkeypatch) -> None:
     asyncio.run(chat_service.process_chat_request(_chat_request()))
 
     assert captured_payload["status"] == "FAILED"
-    assert [event["event_type"] for event in captured_events] == ["chat_started", "chat_completed"]
+    assert [event["event_type"] for event in captured_events] == [
+        "chat_started",
+        "chat_completed",
+    ]
     assert captured_events[1]["status"] == "FAILED"
 
 
@@ -117,5 +120,8 @@ def test_generate_pipeline_emits_started_and_failed_webhooks(monkeypatch) -> Non
     )
 
     assert captured_payload["status"] == "FAILED"
-    assert [event["event_type"] for event in captured_events] == ["generate_started", "generate_completed"]
+    assert [event["event_type"] for event in captured_events] == [
+        "generate_started",
+        "generate_completed",
+    ]
     assert captured_events[1]["status"] == "FAILED"
