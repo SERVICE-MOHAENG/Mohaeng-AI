@@ -125,6 +125,12 @@ Mohaeng-AI는 추천 결과를 직접 저장하지 않고 NestJS 콜백으로 �
 }
 ```
 
+# 관련 문서
+
+- [설문 기반 여행지 추천 기능](../specs/recommend-destinations.md)
+- [여행지 추천 서버 간 통신 구조](../architecture/recommend-server-communication.md)
+- [시장 문제와 타겟 사용자](../context/market-and-target-users.md)
+
 # TODO
 
 - 추천 결과에 추천 사유가 추가되면 callback schema를 함께 갱신합니다.

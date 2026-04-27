@@ -200,6 +200,12 @@ REPLACE/ADD 검색어에는 현재 일자의 주소에서 추출한 지역 힌�
 > 현재 구현은 Google Places 검색과 bbox 기반 필터링, LLM rerank, visit time policy를 중심으로 동작하며 영업시간 검증은 명시적으로 구현되어 있지 않습니다.
 > 따라서 이 문서는 현재 코드에서 확인되는 동작만 기준으로 작성합니다.
 
+# 관련 문서
+
+- [모행 프로젝트 개요](../context/project-overview.md)
+- [로드맵 채팅 API](../api/chat-api.md)
+- [로드맵 채팅 수정 서버 간 통신 구조](../architecture/roadmap-chat-server-communication.md)
+
 # TODO
 
 - 일자 간 MOVE를 정책적으로 완전히 금지할지, 실제 지원 기능으로 확장할지 코드와 명세를 정렬합니다.

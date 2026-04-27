@@ -99,6 +99,11 @@ refactor ♻️: API 호출 로직 공통 컴포넌트화 (#8)
 - 에러 핸들링 로직 추가
 ```
 
+# 관련 문서
+
+- [Mohaeng-AI 문서 맵](../index.md)
+- [AI 개발팀 협업 가이드](collaboration-guide.md)
+
 # TODO
 
 - 커밋 메시지 검증 도구를 도입할 경우 허용 Type과 Gitmoji 목록을 이 문서와 동기화합니다.

@@ -97,6 +97,11 @@ Mohaeng-AI는 프로세스 생존 확인을 위한 `/livez`와 외부 의존성 
 | `openai` | 필수 | `OPENAI_API_KEY` 설정과 `api.openai.com:443` TCP 연결 가능 여부 |
 | `google_places` | 선택 | `GOOGLE_PLACES_API_KEY`가 있을 때 `places.googleapis.com:443` TCP 연결 가능 여부 |
 
+# 관련 문서
+
+- [기술 스택](../architecture/technology-stack.md)
+- [AI 개발팀 협업 가이드](../guides/collaboration-guide.md)
+
 # TODO
 
 - 배포 플랫폼의 liveness/readiness probe 설정이 확정되면 권장 probe 주기를 문서화합니다.

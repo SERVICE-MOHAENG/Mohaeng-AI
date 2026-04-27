@@ -147,6 +147,12 @@ graph TD
 장점은 실제 서비스에 가까운 상태 관리와 부분 수정 가능성을 확보할 수 있다는 점입니다.
 단점은 LangGraph 상태 관리, 장소 검색, 시간 정책, 수정 연산을 함께 다뤄야 하므로 구현 난이도가 높다는 점입니다.
 
+# 관련 문서
+
+- [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](roadmap-generation-ai-pipeline.md)
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [기술 스택](../architecture/technology-stack.md)
+
 # TODO
 
 - E안의 세부 구성요소 중 현재 구현되지 않은 TSP, 클러스터링, Vector DB 도입 여부는 후속 ADR에서 별도로 판단합니다.

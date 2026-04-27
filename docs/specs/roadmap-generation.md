@@ -177,6 +177,13 @@ Google Places 결과의 장소명을 한국어 표시 품질에 맞게 정규화
 > 현재 코드의 `CourseRequest`에는 `budget_range`가 없고, 실제 이동 시간은 공용 visit time policy와 LLM 제안을 조합해 처리합니다.
 > 이 문서는 현재 구현된 필드와 파이프라인을 기준으로 작성합니다.
 
+# 관련 문서
+
+- [모행 프로젝트 개요](../context/project-overview.md)
+- [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](../decisions/roadmap-generation-ai-pipeline.md)
+- [로드맵 생성 API](../api/generate-api.md)
+- [로드맵 생성 서버 간 통신 구조](../architecture/roadmap-generation-server-communication.md)
+
 # TODO
 
 - 예산 기반 장소 필터링이 필요하면 `CourseRequest` 스키마와 Google Places 검색 정책을 함께 확장합니다.

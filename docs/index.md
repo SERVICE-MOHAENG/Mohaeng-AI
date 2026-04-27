@@ -57,8 +57,23 @@ ai_action: "reference-only"
 
 ## 빠른 이동
 
-- 프로젝트 배경: `docs/context/`
-- 기능 명세: `docs/specs/`
-- 설계 문서: `docs/architecture/`
-- 작업 가이드: `docs/guides/`
-- 결정 기록: `docs/decisions/`
+### 문서 영역
+
+- 프로젝트 개요: [모행 프로젝트 개요](context/project-overview.md)
+- 시장 문제와 타겟 사용자: [시장 문제와 타겟 사용자](context/market-and-target-users.md)
+- 기술 스택: [기술 스택](architecture/technology-stack.md)
+- 협업 가이드: [AI 개발팀 협업 가이드](guides/collaboration-guide.md)
+- Git 커밋 컨벤션: [Git 커밋 컨벤션](guides/git-commit-convention.md)
+
+### 기능별 문서 흐름
+
+| 기능 | 맥락/결정 | 기능 명세 | API | 서버 통신 |
+| --- | --- | --- | --- | --- |
+| 여행지 추천 | [시장 문제와 타겟 사용자](context/market-and-target-users.md) | [설문 기반 여행지 추천 기능](specs/recommend-destinations.md) | [여행지 추천 API](api/recommend-api.md) | [여행지 추천 서버 간 통신 구조](architecture/recommend-server-communication.md) |
+| 로드맵 생성 | [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](decisions/roadmap-generation-ai-pipeline.md) | [로드맵 생성 기능](specs/roadmap-generation.md) | [로드맵 생성 API](api/generate-api.md) | [로드맵 생성 서버 간 통신 구조](architecture/roadmap-generation-server-communication.md) |
+| 로드맵 채팅 수정 | [모행 프로젝트 개요](context/project-overview.md) | [로드맵 채팅 수정 기능](specs/roadmap-chat-modification.md) | [로드맵 채팅 API](api/chat-api.md) | [로드맵 채팅 수정 서버 간 통신 구조](architecture/roadmap-chat-server-communication.md) |
+
+### API와 운영
+
+- [헬스체크 API](api/health-api.md)
+- [로드맵 AI 파이프라인 대안 목록](decisions/roadmap-generation-ai-pipeline-alternatives.md)

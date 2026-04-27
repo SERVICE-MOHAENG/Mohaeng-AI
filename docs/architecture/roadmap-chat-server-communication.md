@@ -191,6 +191,12 @@ sequenceDiagram
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.
 
+# 관련 문서
+
+- [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)
+- [로드맵 채팅 API](../api/chat-api.md)
+- [모행 프로젝트 개요](../context/project-overview.md)
+
 # TODO
 
 - NestJS의 채팅 상태 조회와 대화 이력 저장 정책이 확정되면 Client -> NestJS 구간을 보강합니다.

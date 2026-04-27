@@ -139,6 +139,12 @@ ai_action: "editable"
 }
 ```
 
+# 관련 문서
+
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [로드맵 생성 서버 간 통신 구조](../architecture/roadmap-generation-server-communication.md)
+- [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](../decisions/roadmap-generation-ai-pipeline.md)
+
 # TODO
 
 - NestJS 콜백 수신 API의 최종 응답 코드 정책이 확정되면 콜백 섹션을 보강합니다.

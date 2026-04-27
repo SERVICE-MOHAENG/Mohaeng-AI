@@ -105,6 +105,14 @@ Google Places API는 장소명, 주소, 좌표, Google Maps URL 등 사용자에
 - LangGraph와 LLM 호출이 결합되어 구현 복잡도가 높습니다. 노드 단위 책임을 분리하고 Pydantic 검증으로 안정성을 확보합니다.
 - 원본 ADR의 수학적 최적화 요소가 아직 구현되지 않았습니다. 필요한 경우 별도 ADR에서 도입 여부를 다시 결정합니다.
 
+# 관련 문서
+
+- [로드맵 AI 파이프라인 대안 목록](roadmap-generation-ai-pipeline-alternatives.md)
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [로드맵 생성 API](../api/generate-api.md)
+- [로드맵 생성 서버 간 통신 구조](../architecture/roadmap-generation-server-communication.md)
+- [기술 스택](../architecture/technology-stack.md)
+
 # TODO
 
 - TSP, 클러스터링, 숙소 anchor 전략을 실제 제품 요구사항에 따라 도입할지 결정합니다.

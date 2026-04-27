@@ -68,11 +68,26 @@ Mohaeng-AI 레포가 담당하는 기능은 다음 세 가지입니다.
 
 ## 문서 연결
 
-- 기술 스택: [기술 스택](../architecture/technology-stack.md)
-- 로드맵 생성 기능: [로드맵 생성 기능](../specs/roadmap-generation.md)
-- 로드맵 채팅 수정 기능: [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)
-- 설문 기반 여행지 추천 기능: [설문 기반 여행지 추천 기능](../specs/recommend-destinations.md)
-- 로드맵 생성 ADR: [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](../decisions/roadmap-generation-ai-pipeline.md)
+### 제품과 시장
+
+- [시장 문제와 타겟 사용자](market-and-target-users.md)
+
+### 기능 흐름
+
+- [설문 기반 여행지 추천 기능](../specs/recommend-destinations.md)
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)
+
+### 설계와 결정
+
+- [기술 스택](../architecture/technology-stack.md)
+- [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](../decisions/roadmap-generation-ai-pipeline.md)
+
+### API
+
+- [여행지 추천 API](../api/recommend-api.md)
+- [로드맵 생성 API](../api/generate-api.md)
+- [로드맵 채팅 API](../api/chat-api.md)
 
 # TODO
 

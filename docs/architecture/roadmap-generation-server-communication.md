@@ -169,6 +169,12 @@ sequenceDiagram
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.
 
+# 관련 문서
+
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [로드맵 생성 API](../api/generate-api.md)
+- [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](../decisions/roadmap-generation-ai-pipeline.md)
+
 # TODO
 
 - NestJS의 상태 조회 API와 최종 로드맵 조회 API가 확정되면 Client -> NestJS 구간을 보강합니다.

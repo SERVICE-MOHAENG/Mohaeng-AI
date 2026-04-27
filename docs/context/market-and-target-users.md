@@ -170,6 +170,13 @@ ai_action: "editable"
 - 계획 소요 시간, 스트레스, AI 수용성, 커뮤니티 활용 의향을 설문으로 확인합니다.
 - 일정 생성, 저장, 편집, 공유 흐름의 이탈 지점을 로그로 확인합니다.
 
+# 관련 문서
+
+- [모행 프로젝트 개요](project-overview.md)
+- [설문 기반 여행지 추천 기능](../specs/recommend-destinations.md)
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)
+
 # TODO
 
 - 외부 기사와 리포트의 수치 인용이 필요한 경우 원문 기준으로 별도 검증하고 정확한 문장과 날짜를 보강합니다.

@@ -163,6 +163,11 @@ Mohaeng-AI는 최신 로드맵과 사용자 발화를 받아 의도를 분석하
 | `REJECTED` | 정책상 처리 불가 |
 | `FAILED` | 타임아웃 또는 내부 오류 |
 
+# 관련 문서
+
+- [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)
+- [로드맵 채팅 수정 서버 간 통신 구조](../architecture/roadmap-chat-server-communication.md)
+
 # TODO
 
 - 프론트엔드가 사용하는 `diff_keys` 렌더링 규칙이 확정되면 예시를 보강합니다.

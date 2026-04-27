@@ -117,6 +117,13 @@ LLM 응답이 시스템 규격과 맞지 않을 때 조기에 오류를 확인�
 - 경로 최적화가 단순 정렬보다 사용자 경험을 의미 있게 개선하는지 확인합니다.
 - 의존성 추가 시 Python 3.12 호환성, 실행 시간, 테스트 전략을 함께 검토합니다.
 
+# 관련 문서
+
+- [모행 프로젝트 개요](../context/project-overview.md)
+- [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](../decisions/roadmap-generation-ai-pipeline.md)
+- [로드맵 생성 기능](../specs/roadmap-generation.md)
+- [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)
+
 # TODO
 
 - Scikit-learn 또는 OR-Tools 도입 여부는 실제 일정 분할/동선 최적화 요구사항이 확정된 뒤 결정합니다.

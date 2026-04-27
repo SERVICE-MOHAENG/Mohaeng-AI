@@ -126,6 +126,12 @@ sequenceDiagram
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.
 
+# 관련 문서
+
+- [설문 기반 여행지 추천 기능](../specs/recommend-destinations.md)
+- [여행지 추천 API](../api/recommend-api.md)
+- [시장 문제와 타겟 사용자](../context/market-and-target-users.md)
+
 # TODO
 
 - NestJS의 클라이언트-facing 설문 endpoint와 상태 조회 endpoint가 확정되면 연결 문서를 보강합니다.

@@ -121,6 +121,12 @@ ai_action: "editable"
 }
 ```
 
+# 관련 문서
+
+- [시장 문제와 타겟 사용자](../context/market-and-target-users.md)
+- [여행지 추천 API](../api/recommend-api.md)
+- [여행지 추천 서버 간 통신 구조](../architecture/recommend-server-communication.md)
+
 # TODO
 
 - 도시 설명 수집, 임베딩, pgvector 기반 추천을 도입할지 별도 아키텍처 문서에서 결정합니다.
