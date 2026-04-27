@@ -5,10 +5,13 @@ from __future__ import annotations
 import asyncio
 import threading
 
+import pytest
+
 from app.services import webhook_notification as webhook
 
 
-def test_notify_pipeline_event_builds_standard_fields(monkeypatch) -> None:
+@pytest.mark.parametrize("event_type", sorted(webhook.ALLOWED_WEBHOOK_EVENTS))
+def test_notify_pipeline_event_allows_production_events(monkeypatch, event_type: str) -> None:
     captured: dict = {}
 
     async def _fake_send(embed: dict) -> None:
@@ -18,7 +21,7 @@ def test_notify_pipeline_event_builds_standard_fields(monkeypatch) -> None:
 
     asyncio.run(
         webhook.notify_pipeline_event(
-            event_type="demo_event",
+            event_type=event_type,
             severity="warning",
             stage="demo.stage",
             status="RUNNING",
@@ -35,7 +38,7 @@ def test_notify_pipeline_event_builds_standard_fields(monkeypatch) -> None:
 
     fields = {field["name"]: field["value"] for field in captured["fields"]}
     assert captured["title"] == "Demo Event"
-    assert fields["event_type"] == "demo_event"
+    assert fields["event_type"] == event_type
     assert fields["severity"] == "warning"
     assert fields["stage"] == "demo.stage"
     assert fields["status"] == "RUNNING"
@@ -48,31 +51,26 @@ def test_notify_pipeline_event_builds_standard_fields(monkeypatch) -> None:
     assert fields["Custom"] == "value"
 
 
-def test_notify_job_completed_includes_log_description(monkeypatch) -> None:
-    captured: dict = {}
+def test_notify_pipeline_event_skips_non_production_events(monkeypatch) -> None:
+    sent = {"value": False}
 
     async def _fake_send(embed: dict) -> None:
-        captured.update(embed)
+        sent["value"] = True
 
     monkeypatch.setattr(webhook, "_send_embed", _fake_send)
 
     asyncio.run(
-        webhook.notify_job_completed(
-            "job-2",
-            "generate",
-            12.3,
-            "SUCCESS",
-            [{"stage": "skeleton", "message": "done", "elapsed_ms": 42}],
+        webhook.notify_pipeline_event(
+            event_type="llm_call_success",
+            severity="success",
+            stage="llm",
+            status="SUCCESS",
+            title="Skipped",
+            message="not a production event",
         )
     )
 
-    fields = {field["name"]: field["value"] for field in captured["fields"]}
-    assert captured["title"] == "📋 generate Job Completed"
-    assert "**skeleton**" in captured["description"]
-    assert "done" in captured["description"]
-    assert fields["job_id"] == "`job-2`"
-    assert fields["Status"] == "SUCCESS"
-    assert fields["Elapsed"] == "12.3s"
+    assert sent["value"] is False
 
 
 def test_schedule_webhook_uses_daemon_thread_without_running_loop(monkeypatch) -> None:

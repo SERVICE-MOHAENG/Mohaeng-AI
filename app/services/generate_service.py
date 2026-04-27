@@ -14,7 +14,7 @@ from app.schemas.generate import CallbackError, GenerateCallbackFailure, Generat
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
 from app.services.google_places_service import get_google_places_service
-from app.services.webhook_notification import notify_job_completed, notify_pipeline_event, notify_timeout
+from app.services.webhook_notification import notify_pipeline_event, notify_timeout
 
 logger = get_logger(__name__)
 
@@ -95,7 +95,7 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         payload_data = callback.model_dump(mode="json")
     except asyncio.TimeoutError:
         status = "TIMEOUT"
-        _, logs, elapsed = collect_job_logs()
+        _, _, elapsed = collect_job_logs()
         logger.warning("Generate timeout: job_id=%s elapsed=%.1fs", job_id, elapsed)
         try:
             await notify_timeout(job_id, "generate", elapsed)
@@ -113,22 +113,20 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         payload_data = callback.model_dump(mode="json")
 
     if status != "TIMEOUT":
-        _, logs, elapsed = collect_job_logs()
+        _, _, elapsed = collect_job_logs()
 
-    try:
-        await notify_job_completed(job_id, "generate", elapsed, status, logs)
-    except Exception as exc:
-        logger.warning("Generate job_completed webhook failed: job_id=%s error=%s", job_id, exc)
-    await _notify_pipeline_event_best_effort(
-        event_type="generate_completed",
-        severity="success" if status == "SUCCESS" else "error",
-        stage="generate",
-        status=status,
-        title="✅ Generate Job Finished",
-        message="로드맵 생성 작업이 종료되었습니다.",
-        job_id=job_id,
-        elapsed_ms=round(elapsed * 1000),
-    )
+    if status == "FAILED":
+        await _notify_pipeline_event_best_effort(
+            event_type="generate_completed",
+            severity="error",
+            stage="generate",
+            status=status,
+            title="❌ Generate Job Failed",
+            message="로드맵 생성 작업이 실패했습니다.",
+            job_id=job_id,
+            elapsed_ms=round(elapsed * 1000),
+            error=payload_data.get("error", {}).get("message"),
+        )
 
     callback_endpoint = build_callback_url(callback_url, job_id, "itineraries/{job_id}/result")
     await _post_callback(

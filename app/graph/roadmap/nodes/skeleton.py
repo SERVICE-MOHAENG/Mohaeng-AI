@@ -17,7 +17,6 @@ from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import strip_code_fence
 from app.schemas.course import CourseRequest, PacePreference, RegionDateRange
 from app.schemas.skeleton import SkeletonPlan
-from app.services.webhook_notification import notify_pipeline_event, schedule_webhook
 
 logger = get_logger(__name__)
 
@@ -780,22 +779,6 @@ def generate_skeleton(state: RoadmapState) -> RoadmapState:
     region_str = ",".join(regions)
     warn_count = len(warnings)
     append_job_log("skeleton_done", f"days={total_days} slots={total_slots} regions={region_str} warnings={warn_count}")
-    schedule_webhook(
-        notify_pipeline_event(
-            event_type="roadmap_skeleton_completed",
-            severity="success",
-            stage="roadmap.skeleton",
-            status="SUCCESS",
-            title="🧱 Skeleton Stage Completed",
-            message="로드맵 스켈레톤 생성이 완료되었습니다.",
-            extra_fields=[
-                {"name": "Days", "value": str(total_days), "inline": True},
-                {"name": "Slots", "value": str(total_slots), "inline": True},
-                {"name": "Regions", "value": region_str, "inline": False},
-                {"name": "Warnings", "value": str(warn_count), "inline": True},
-            ],
-        )
-    )
 
     return {
         **state,

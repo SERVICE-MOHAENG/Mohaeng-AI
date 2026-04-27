@@ -29,7 +29,7 @@ def _event_names(payloads: list[dict]) -> list[str]:
     return event_names
 
 
-def test_invoke_emits_success_webhook(monkeypatch) -> None:
+def test_invoke_does_not_emit_success_webhook(monkeypatch) -> None:
     _set_required_env(monkeypatch, ENABLE_STAGE_LLM_ROUTING="false", LLM_MODEL_NAME="fallback-model")
     import app.core.llm_router as llm_router
 
@@ -49,10 +49,10 @@ def test_invoke_emits_success_webhook(monkeypatch) -> None:
     response = llm_router.invoke(Stage.CHAT_RESPONSE, "prompt")
 
     assert response.content == "ok"
-    assert _event_names(payloads) == ["llm_call_success"]
+    assert _event_names(payloads) == []
 
 
-def test_ainvoke_emits_retry_and_fallback_success(monkeypatch) -> None:
+def test_ainvoke_does_not_emit_retry_or_fallback_success_webhooks(monkeypatch) -> None:
     _set_required_env(
         monkeypatch,
         ENABLE_STAGE_LLM_ROUTING="true",
@@ -81,7 +81,29 @@ def test_ainvoke_emits_retry_and_fallback_success(monkeypatch) -> None:
     response = asyncio.run(llm_router.ainvoke(Stage.ROADMAP_SKELETON, "prompt"))
 
     assert response.content == "fallback-ok"
-    assert _event_names(payloads) == ["llm_call_retry", "llm_fallback_success"]
+    assert _event_names(payloads) == []
+
+
+def test_ainvoke_emits_primary_failure_without_routing(monkeypatch) -> None:
+    _set_required_env(monkeypatch, ENABLE_STAGE_LLM_ROUTING="false", LLM_MODEL_NAME="fallback-model")
+    import app.core.llm_router as llm_router
+
+    payloads: list[dict] = []
+
+    async def _fake_send(embed: dict) -> None:
+        payloads.append(embed)
+
+    class _Client:
+        async def ainvoke(self, payload):
+            raise RuntimeError("primary-fail")
+
+    monkeypatch.setattr("app.services.webhook_notification._send_embed", _fake_send)
+    monkeypatch.setattr(llm_router, "_get_chat_openai_client", lambda *args, **kwargs: _Client())
+
+    with pytest.raises(RuntimeError, match="primary-fail"):
+        asyncio.run(llm_router.ainvoke(Stage.CHAT_RESPONSE, "prompt"))
+
+    assert _event_names(payloads) == ["llm_call_failed"]
 
 
 def test_ainvoke_emits_fallback_failure(monkeypatch) -> None:
@@ -111,4 +133,4 @@ def test_ainvoke_emits_fallback_failure(monkeypatch) -> None:
     with pytest.raises(RuntimeError, match="fallback-model-fail"):
         asyncio.run(llm_router.ainvoke(Stage.ROADMAP_SKELETON, "prompt"))
 
-    assert _event_names(payloads) == ["llm_call_retry", "llm_fallback_failed"]
+    assert _event_names(payloads) == ["llm_fallback_failed"]

@@ -17,7 +17,7 @@ from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.enums import ChatStatus
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
-from app.services.webhook_notification import notify_job_completed, notify_pipeline_event, notify_timeout
+from app.services.webhook_notification import notify_pipeline_event, notify_timeout
 
 logger = get_logger(__name__)
 
@@ -168,7 +168,7 @@ async def process_chat_request(request: ChatRequest) -> None:
         payload = _build_callback_payload(result)
     except asyncio.TimeoutError:
         status = "TIMEOUT"
-        _, logs, elapsed = collect_job_logs()
+        _, _, elapsed = collect_job_logs()
         logger.warning("Chat timeout: job_id=%s elapsed=%.1fs", request.job_id, elapsed)
         try:
             await notify_timeout(request.job_id, "chat", elapsed)
@@ -187,22 +187,20 @@ async def process_chat_request(request: ChatRequest) -> None:
         }
 
     if status != "TIMEOUT":
-        _, logs, elapsed = collect_job_logs()
+        _, _, elapsed = collect_job_logs()
 
-    try:
-        await notify_job_completed(request.job_id, "chat", elapsed, status, logs)
-    except Exception as exc:
-        logger.warning("Chat job_completed webhook failed: job_id=%s error=%s", request.job_id, exc)
-    await _notify_pipeline_event_best_effort(
-        event_type="chat_completed",
-        severity="success" if status == "SUCCESS" else "error",
-        stage="chat",
-        status=status,
-        title="✅ Chat Job Finished",
-        message="로드맵 수정 작업이 종료되었습니다.",
-        job_id=request.job_id,
-        elapsed_ms=round(elapsed * 1000),
-    )
+    if status == "FAILED":
+        await _notify_pipeline_event_best_effort(
+            event_type="chat_completed",
+            severity="error",
+            stage="chat",
+            status=status,
+            title="❌ Chat Job Failed",
+            message="로드맵 수정 작업이 실패했습니다.",
+            job_id=request.job_id,
+            elapsed_ms=round(elapsed * 1000),
+            error=payload.get("error", {}).get("message"),
+        )
 
     callback_endpoint = build_callback_url(
         str(request.callback_url), request.job_id, "itineraries/{job_id}/chat-result"

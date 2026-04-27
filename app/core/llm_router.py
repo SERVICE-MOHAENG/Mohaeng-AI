@@ -269,17 +269,6 @@ def invoke(
             fallback_used=False,
             latency_ms=latency,
         )
-        _queue_llm_event(
-            event_type="llm_call_success",
-            severity="success",
-            stage=stage,
-            status="SUCCESS",
-            title="🤖 LLM Call Succeeded",
-            message="LLM 호출이 정상적으로 완료되었습니다.",
-            elapsed_ms=latency,
-            model=selected_model,
-            fallback_used=False,
-        )
         append_job_log(
             "llm",
             f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} fallback=false",
@@ -336,18 +325,6 @@ def invoke(
             f"fallback=false err={type(exc).__name__} retrying=true",
             {"latency_ms": latency},
         )
-        _queue_llm_event(
-            event_type="llm_call_retry",
-            severity="warning",
-            stage=stage,
-            status="RETRYING",
-            title="🔁 LLM Call Retrying",
-            message="1차 LLM 호출이 실패해 fallback 모델로 재시도합니다.",
-            elapsed_ms=latency,
-            model=selected_model,
-            fallback_used=False,
-            error=type(exc).__name__,
-        )
 
     fallback_started = perf_counter()
     fallback_client = _get_chat_openai_client(
@@ -366,17 +343,6 @@ def invoke(
             routing_enabled=routing_enabled,
             fallback_used=True,
             latency_ms=fb_latency,
-        )
-        _queue_llm_event(
-            event_type="llm_fallback_success",
-            severity="warning",
-            stage=stage,
-            status="SUCCESS",
-            title="🔁 LLM Fallback Succeeded",
-            message="fallback 모델 호출이 성공했습니다.",
-            elapsed_ms=fb_latency,
-            model=fallback_model,
-            fallback_used=True,
         )
         append_job_log(
             "llm",
@@ -451,17 +417,6 @@ async def ainvoke(
             fallback_used=False,
             latency_ms=latency,
         )
-        await _send_llm_event(
-            event_type="llm_call_success",
-            severity="success",
-            stage=stage,
-            status="SUCCESS",
-            title="🤖 LLM Call Succeeded",
-            message="LLM 호출이 정상적으로 완료되었습니다.",
-            elapsed_ms=latency,
-            model=selected_model,
-            fallback_used=False,
-        )
         append_job_log(
             "llm",
             f"stage={stage.value} model={selected_model} tier={tier.value if tier else 'N/A'} fallback=false",
@@ -518,18 +473,6 @@ async def ainvoke(
             f"fallback=false err={type(exc).__name__} retrying=true",
             {"latency_ms": latency},
         )
-        await _send_llm_event(
-            event_type="llm_call_retry",
-            severity="warning",
-            stage=stage,
-            status="RETRYING",
-            title="🔁 LLM Call Retrying",
-            message="1차 LLM 호출이 실패해 fallback 모델로 재시도합니다.",
-            elapsed_ms=latency,
-            model=selected_model,
-            fallback_used=False,
-            error=type(exc).__name__,
-        )
 
     fallback_started = perf_counter()
     fallback_client = _get_chat_openai_client(
@@ -548,17 +491,6 @@ async def ainvoke(
             routing_enabled=routing_enabled,
             fallback_used=True,
             latency_ms=fb_latency,
-        )
-        await _send_llm_event(
-            event_type="llm_fallback_success",
-            severity="warning",
-            stage=stage,
-            status="SUCCESS",
-            title="🔁 LLM Fallback Succeeded",
-            message="fallback 모델 호출이 성공했습니다.",
-            elapsed_ms=fb_latency,
-            model=fallback_model,
-            fallback_used=True,
         )
         append_job_log(
             "llm",

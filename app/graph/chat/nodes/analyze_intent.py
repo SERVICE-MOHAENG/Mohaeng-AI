@@ -580,16 +580,6 @@ def analyze_intent(state: ChatState) -> ChatState:
         f"type={route.intent_type} action={route.requested_action} scope={route.target_scope}",
     )
     if route.intent_type == "GENERAL_CHAT":
-        _emit_intent_event(
-            "chat_intent_routed",
-            "info",
-            "GENERAL_CHAT",
-            "일반 대화로 분류되었습니다.",
-            [
-                {"name": "Action", "value": route.requested_action or "N/A", "inline": True},
-                {"name": "Scope", "value": route.target_scope or "N/A", "inline": True},
-            ],
-        )
         return {**state, "intent_type": "GENERAL_CHAT"}
 
     if route.requested_action == "DELETE" and route.target_scope == "DAY_LEVEL":
@@ -608,13 +598,6 @@ def analyze_intent(state: ChatState) -> ChatState:
         }
 
     if route.requested_action == "DELETE" and route.target_scope == "UNKNOWN":
-        _emit_intent_event(
-            "chat_intent_clarification",
-            "warning",
-            "ASK_CLARIFICATION",
-            "삭제 대상이 모호해 확인이 필요합니다.",
-            [{"name": "Reason", "value": "삭제할 일차와 장소 순서가 모두 필요합니다.", "inline": False}],
-        )
         return {
             **state,
             "intent_type": "MODIFICATION",
@@ -653,17 +636,6 @@ def analyze_intent(state: ChatState) -> ChatState:
             f" clarify={intent_draft.needs_clarification}",
             level="detail",
         )
-        _emit_intent_event(
-            "chat_intent_parsed",
-            "info",
-            "MODIFICATION",
-            "수정 의도가 파싱되었습니다.",
-            [
-                {"name": "Op", "value": str(intent_draft.op), "inline": True},
-                {"name": "Day", "value": str(intent_draft.target_day), "inline": True},
-                {"name": "Index", "value": str(intent_draft.target_index), "inline": True},
-            ],
-        )
     except Exception as exc:
         logger.error("의도 분석 LLM 호출 실패: %s", exc)
         _emit_intent_event(
@@ -676,13 +648,6 @@ def analyze_intent(state: ChatState) -> ChatState:
         return {**state, "error": "수정 의도 분석에 실패했습니다."}
 
     if intent_draft.needs_clarification:
-        _emit_intent_event(
-            "chat_intent_clarification",
-            "warning",
-            "ASK_CLARIFICATION",
-            "추가 확인이 필요한 수정 요청입니다.",
-            [{"name": "Keyword", "value": intent_draft.search_keyword or "N/A", "inline": False}],
-        )
         return {
             **state,
             "intent_type": "MODIFICATION",

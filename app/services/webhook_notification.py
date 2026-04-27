@@ -21,7 +21,28 @@ _COLOR_GREEN = 0x2ECC71
 _COLOR_RED = 0xE74C3C
 _COLOR_ORANGE = 0xE67E22
 _COLOR_BLUE = 0x3498DB
-_COLOR_GRAY = 0x95A5A6
+
+ALLOWED_WEBHOOK_EVENTS = frozenset(
+    {
+        "server_start",
+        "server_shutdown",
+        "http_500",
+        "request_timeout",
+        "pipeline_timeout",
+        "callback_delivery_failed",
+        "chat_started",
+        "generate_started",
+        "recommend_request_received",
+        "chat_intent_rejected",
+        "chat_intent_failed",
+        "chat_completed",
+        "generate_completed",
+        "recommend_completed",
+        "llm_call_failed",
+        "llm_fallback_failed",
+        "roadmap_finalize_failed",
+    }
+)
 
 
 def schedule_webhook(coro: Awaitable[Any]) -> None:
@@ -123,6 +144,10 @@ async def notify_pipeline_event(
     extra_fields: list[dict[str, Any]] | None = None,
 ) -> None:
     """표준 파이프라인 이벤트를 Discord 웹훅 payload로 전송한다."""
+    if event_type not in ALLOWED_WEBHOOK_EVENTS:
+        logger.debug("Skipping non-production webhook event: %s", event_type)
+        return
+
     fields: list[dict[str, Any]] = []
     _append_field(fields, "event_type", event_type)
     _append_field(fields, "severity", severity)
@@ -218,70 +243,6 @@ async def notify_request_timeout(method: str, path: str, elapsed_seconds: float)
         message="HTTP 요청이 설정된 타임아웃을 초과했습니다.",
         extra_fields=[
             {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
-            {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
-        ],
-    )
-
-
-_MAX_DESC_LEN = 3900
-
-
-def _format_log_line(entry: dict[str, Any]) -> str:
-    stage = entry.get("stage", "")
-    message = entry.get("message", "")
-    elapsed_ms = entry.get("elapsed_ms")
-    time_str = f" ({elapsed_ms}ms)" if elapsed_ms is not None else ""
-    return f"**{stage}** - {message}{time_str}"
-
-
-def _format_log_description(logs: list[dict[str, Any]]) -> str:
-    if not logs:
-        return "no logs"
-
-    lines = [_format_log_line(entry) for entry in logs]
-    description = "\n".join(lines)
-    if len(description) <= _MAX_DESC_LEN:
-        return description
-
-    info_lines: list[str] = []
-    detail_count = 0
-    for entry in logs:
-        if entry.get("level", "info") == "detail":
-            detail_count += 1
-        else:
-            info_lines.append(_format_log_line(entry))
-
-    if detail_count:
-        info_lines.append(f"**detail** - {detail_count} entries collapsed")
-
-    description = "\n".join(info_lines)
-    if len(description) > _MAX_DESC_LEN:
-        description = description[: _MAX_DESC_LEN - 3] + "..."
-    return description
-
-
-async def notify_job_completed(
-    job_id: str,
-    job_type: str,
-    elapsed_seconds: float,
-    status: str,
-    logs: list[dict[str, Any]],
-) -> None:
-    description = _format_log_description(logs)
-    severity = "success" if status == "SUCCESS" else "error"
-
-    await notify_pipeline_event(
-        event_type=f"{job_type}_job_completed",
-        severity=severity,
-        stage=job_type,
-        status=status,
-        title=f"📋 {job_type} Job Completed",
-        message="수집된 작업 로그를 요약해서 전송합니다.",
-        description=description,
-        job_id=job_id,
-        elapsed_ms=round(elapsed_seconds * 1000),
-        extra_fields=[
-            {"name": "Status", "value": status, "inline": True},
             {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
         ],
     )

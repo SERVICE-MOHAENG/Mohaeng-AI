@@ -32,7 +32,7 @@ from app.schemas.recommend import (
 )
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
-from app.services.webhook_notification import notify_timeout
+from app.services.webhook_notification import notify_pipeline_event, notify_timeout
 
 logger = get_logger(__name__)
 DEFAULT_SELECTION_SIZE = 5
@@ -257,6 +257,20 @@ def _build_pipeline_error_message(exc: Exception, expose_internal_errors: bool) 
     return "추천 처리 중 내부 오류가 발생했습니다."
 
 
+async def _notify_pipeline_event_best_effort(**kwargs) -> None:
+    """Discord 웹훅 알림은 실패해도 주 흐름을 막지 않습니다."""
+    try:
+        await notify_pipeline_event(**kwargs)
+    except Exception as exc:
+        logger.warning(
+            "Recommend pipeline webhook failed: event_type=%s stage=%s status=%s error=%s",
+            kwargs.get("event_type"),
+            kwargs.get("stage"),
+            kwargs.get("status"),
+            exc,
+        )
+
+
 async def _post_callback(
     callback_url: str,
     payload: dict,
@@ -284,6 +298,15 @@ async def process_recommend_request(request: RecommendRequest) -> None:
         request.job_id,
         "preferences/jobs/{job_id}/result",
     )
+    await _notify_pipeline_event_best_effort(
+        event_type="recommend_request_received",
+        severity="info",
+        stage="recommend",
+        status="STARTED",
+        title="Recommend Request Received",
+        message="여행지 추천 요청이 접수되었습니다.",
+        job_id=request.job_id,
+    )
 
     try:
         result = await asyncio.wait_for(
@@ -306,6 +329,17 @@ async def process_recommend_request(request: RecommendRequest) -> None:
             status="FAILED",
             error=CallbackError(code="PIPELINE_ERROR", message=error_message),
         ).model_dump(mode="json")
+        await _notify_pipeline_event_best_effort(
+            event_type="recommend_completed",
+            severity="error",
+            stage="recommend",
+            status="FAILED",
+            title="Recommend Job Failed",
+            message="여행지 추천 작업이 실패했습니다.",
+            job_id=request.job_id,
+            elapsed_ms=round((time.monotonic() - start_time) * 1000),
+            error=error_message,
+        )
 
     await _post_callback(
         callback_url=callback_endpoint,
