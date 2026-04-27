@@ -82,6 +82,7 @@ ai_action: "reference-only"
 ### 문서 영역
 
 - 프로젝트 개요: [모행 프로젝트 개요](context/project-overview.md)
+- 웹훅 이벤트 목록: [Mohaeng-AI 웹훅 이벤트 목록](context/webhook-events.md)
 - 시장 문제와 타겟 사용자: [시장 문제와 타겟 사용자](context/market-and-target-users.md)
 - 기술 스택: [기술 스택](architecture/technology-stack.md)
 - 협업 가이드: [AI 개발팀 협업 가이드](guides/collaboration-guide.md)
