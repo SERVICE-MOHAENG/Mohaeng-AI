@@ -47,3 +47,6 @@ Dockerfile
 
 # Ruff
 .ruff_cache/
+
+# Docs
+docs/
