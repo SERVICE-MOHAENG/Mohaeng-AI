@@ -110,3 +110,4 @@ Desktop.ini
 # AI artifacts
 ############################
 .prompts/
+.agents/
