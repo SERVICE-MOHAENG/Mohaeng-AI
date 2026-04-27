@@ -50,7 +50,6 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         "destination_preference": str(request.destination_preference),
         "activity_preference": str(request.activity_preference),
         "priority_preference": str(request.priority_preference),
-        "budget_range": str(request.budget_range),
     }
 
     initial_state = {

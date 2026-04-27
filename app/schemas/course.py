@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.enums import (
     ActivityPreference,
-    BudgetRange,
     CompanionType,
     DestinationPreference,
     PacePreference,
@@ -49,7 +48,6 @@ class CourseRequest(BaseModel):
         `destination_preference`: 여행지 선호
         `activity_preference`: 활동 선호
         `priority_preference`: 우선 가치 선호
-        `budget_range`: 예산 범위
         `notes`: 추가 요청 사항
     """
 
@@ -64,7 +62,6 @@ class CourseRequest(BaseModel):
     destination_preference: DestinationPreference = Field(..., description="여행지 선호")
     activity_preference: ActivityPreference = Field(..., description="활동 선호")
     priority_preference: PriorityPreference = Field(..., description="우선 가치 선호")
-    budget_range: BudgetRange = Field(..., description="예산 범위")
     notes: str | None = Field(default=None, description="추가 요청 사항")
 
     @field_validator("end_date")

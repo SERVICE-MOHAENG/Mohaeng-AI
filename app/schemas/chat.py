@@ -7,7 +7,6 @@ from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 from app.schemas.course import DailyItinerary
 from app.schemas.enums import (
     ActivityPreference,
-    BudgetRange,
     ChatOperation,
     ChatStatus,
     CompanionType,
@@ -57,7 +56,6 @@ class ChatRequest(BaseModel):
         destination_preference: 여행지 선호
         activity_preference: 활동 선호
         priority_preference: 우선 가치 선호
-        budget_range: 예산 범위
         user_query: 사용자 수정 요청 발화
         session_history: 최근 3~5건 대화 맥락 (지시어 해소용)
     """
@@ -74,7 +72,6 @@ class ChatRequest(BaseModel):
     destination_preference: DestinationPreference = Field(..., description="여행지 선호")
     activity_preference: ActivityPreference = Field(..., description="활동 선호")
     priority_preference: PriorityPreference = Field(..., description="우선 가치 선호")
-    budget_range: BudgetRange = Field(..., description="예산 범위")
     user_query: str = Field(..., min_length=1, description="사용자 수정 요청 발화")
     session_history: list[Message] = Field(default_factory=list, description="최근 대화 맥락")
 

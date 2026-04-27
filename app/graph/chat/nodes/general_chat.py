@@ -89,7 +89,6 @@ def _build_request_context(request_context: dict) -> str:
         f"- 목적지 성향: {request_context.get('destination_preference', '없음')}",
         f"- 활동 성향: {request_context.get('activity_preference', '없음')}",
         f"- 우선 가치: {request_context.get('priority_preference', '없음')}",
-        f"- 예산: {request_context.get('budget_range', '없음')}",
     ]
     return "\n".join(lines)
 
