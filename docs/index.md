@@ -55,6 +55,28 @@ ai_action: "reference-only"
 - 문서 수정 후에는 관련 코드, 테스트, 설정과의 일치 여부를 점검합니다.
 - 승인되지 않은 문서는 추측으로 완성하지 말고, 부족한 정보는 `TODO`로 명시합니다.
 
+## AI Agent 작업 시작 가이드
+
+배경 컨텍스트가 없는 에이전트는 다음 순서로 작업을 시작합니다.
+
+1. 이 문서를 읽고 문서 구조와 작업 규칙을 확인합니다.
+2. 작업 대상 기능의 `specs` 문서를 읽어 기능 동작과 제약을 파악합니다.
+3. 외부 계약이 바뀌는 작업이면 `api` 문서를 함께 확인합니다.
+4. 서버 간 흐름, callback, 비동기 처리에 영향이 있으면 `architecture` 문서를 확인합니다.
+5. 코드 변경 전에는 관련 코드 진입점과 테스트 파일을 확인합니다.
+6. 문서와 코드가 충돌하면 코드를 우선 확인하고, 문서를 현재 구현에 맞게 갱신합니다.
+
+### 기능별 작업 맵
+
+| 작업 대상 | 먼저 읽을 문서 | 주요 코드 진입점 | 관련 테스트 |
+| --- | --- | --- | --- |
+| 여행지 추천 | [설문 기반 여행지 추천 기능](specs/recommend-destinations.md), [여행지 추천 API](api/recommend-api.md), [여행지 추천 서버 간 통신 구조](architecture/recommend-server-communication.md) | `app/api/recommend.py`, `app/services/recommend_service.py`, `app/schemas/recommend.py`, `app/schemas/enums.py` | `tests/test_recommend_service.py` |
+| 로드맵 생성 | [로드맵 생성 기능](specs/roadmap-generation.md), [로드맵 생성 API](api/generate-api.md), [로드맵 생성 서버 간 통신 구조](architecture/roadmap-generation-server-communication.md), [로드맵 생성 ADR](decisions/roadmap-generation-ai-pipeline.md) | `app/api/generate.py`, `app/services/generate_service.py`, `app/graph/roadmap/`, `app/services/google_places_service.py`, `app/services/places_service.py`, `app/schemas/generate.py`, `app/schemas/course.py` | `tests/test_roadmap_place_name_translation.py` |
+| 로드맵 채팅 수정 | [로드맵 채팅 수정 기능](specs/roadmap-chat-modification.md), [로드맵 채팅 API](api/chat-api.md), [로드맵 채팅 수정 서버 간 통신 구조](architecture/roadmap-chat-server-communication.md) | `app/api/chat.py`, `app/services/chat_service.py`, `app/graph/chat/`, `app/schemas/chat.py`, `app/schemas/course.py` | `tests/test_chat_schema.py` |
+| callback 전송 | 각 기능 API 문서, 각 서버 간 통신 구조 문서 | `app/services/callback_delivery.py`, `app/services/callback_url.py` | `tests/test_callback_delivery.py`, `tests/test_callback_url.py` |
+| readiness / healthcheck | [헬스체크 API](api/health-api.md), [기술 스택](architecture/technology-stack.md) | `app/main.py`, `app/core/readiness.py`, `app/core/config.py` | `tests/test_main.py`, `tests/test_readiness.py` |
+| LLM 모델 라우팅과 알림 | [기술 스택](architecture/technology-stack.md), [AI 개발팀 협업 가이드](guides/collaboration-guide.md) | `app/core/llm_router.py`, `app/services/webhook_notification.py` | `tests/test_llm_router_webhooks.py`, `tests/test_webhook_notification.py` |
+
 ## 빠른 이동
 
 ### 문서 영역

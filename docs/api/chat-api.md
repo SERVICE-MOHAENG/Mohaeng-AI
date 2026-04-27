@@ -163,6 +163,16 @@ Mohaeng-AI는 최신 로드맵과 사용자 발화를 받아 의도를 분석하
 | `REJECTED` | 정책상 처리 불가 |
 | `FAILED` | 타임아웃 또는 내부 오류 |
 
+## 구현 위치
+
+| 구분 | 위치 |
+| --- | --- |
+| FastAPI 라우터 | `app/api/chat.py` |
+| 요청/ACK/callback 스키마 | `app/schemas/chat.py` |
+| 로드맵 상태 스키마 | `app/schemas/course.py` |
+| 채팅 서비스 | `app/services/chat_service.py` |
+| callback 전송 | `app/services/callback_delivery.py`, `app/services/callback_url.py` |
+
 # 관련 문서
 
 - [로드맵 채팅 수정 기능](../specs/roadmap-chat-modification.md)

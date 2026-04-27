@@ -177,6 +177,19 @@ Google Places 결과의 장소명을 한국어 표시 품질에 맞게 정규화
 > 현재 코드의 `CourseRequest`에는 `budget_range`가 없고, 실제 이동 시간은 공용 visit time policy와 LLM 제안을 조합해 처리합니다.
 > 이 문서는 현재 구현된 필드와 파이프라인을 기준으로 작성합니다.
 
+## 코드 진입점과 검증
+
+| 구분 | 위치 | 확인 내용 |
+| --- | --- | --- |
+| API 라우터 | `app/api/generate.py` | `/api/v1/generate` 요청 수락, 인증 의존성, 비동기 작업 시작 |
+| 서비스 | `app/services/generate_service.py` | 생성 그래프 실행, timeout 처리, callback payload 생성 |
+| 그래프 정의 | `app/graph/roadmap/workflow.py` | LangGraph 노드 연결과 실행 순서 |
+| 그래프 노드 | `app/graph/roadmap/nodes/` | 스켈레톤 생성, 장소 검색, 장소명 정규화, 최종 합성 |
+| 장소 검색 | `app/services/google_places_service.py`, `app/services/places_service.py`, `app/services/place_rerank_service.py` | Google Places 호출, fallback, rerank 정책 |
+| 요청/응답 스키마 | `app/schemas/generate.py`, `app/schemas/course.py`, `app/schemas/skeleton.py`, `app/schemas/place.py` | 생성 요청, 최종 로드맵, 중간 스켈레톤, 장소 모델 |
+| 공통 정책 | `app/core/visit_time_policy.py`, `app/core/visit_time_llm.py`, `app/core/timeout_policy.py` | 방문 시간 확정, LLM 시간 제안, timeout 분류 |
+| 테스트 | `tests/test_roadmap_place_name_translation.py`, `tests/test_timeout_policy.py` | 장소명 정규화, timeout 정책 |
+
 # 관련 문서
 
 - [모행 프로젝트 개요](../context/project-overview.md)

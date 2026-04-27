@@ -125,6 +125,16 @@ Mohaeng-AI는 추천 결과를 직접 저장하지 않고 NestJS 콜백으로 �
 }
 ```
 
+## 구현 위치
+
+| 구분 | 위치 |
+| --- | --- |
+| FastAPI 라우터 | `app/api/recommend.py` |
+| 요청/ACK/callback 스키마 | `app/schemas/recommend.py` |
+| 설문/지역 Enum | `app/schemas/enums.py` |
+| 추천 서비스 | `app/services/recommend_service.py` |
+| callback 전송 | `app/services/callback_delivery.py`, `app/services/callback_url.py` |
+
 # 관련 문서
 
 - [설문 기반 여행지 추천 기능](../specs/recommend-destinations.md)

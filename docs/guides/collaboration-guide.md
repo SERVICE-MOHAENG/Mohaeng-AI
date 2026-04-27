@@ -102,6 +102,24 @@ uv run pre-commit run --all-files
 - Ruff lint 자동 수정
 - Ruff format
 
+## 기능별 검증 체크리스트
+
+변경 범위가 작더라도 관련 테스트를 우선 실행하고, 공통 영향이 있으면 전체 테스트를 실행합니다.
+
+| 변경 영역 | 우선 실행할 테스트 |
+| --- | --- |
+| API 라우터, 인증, 앱 부팅 | `uv run pytest tests/test_main.py` |
+| readiness, 환경변수 설정 | `uv run pytest tests/test_readiness.py` |
+| callback URL 조립과 전송 | `uv run pytest tests/test_callback_url.py tests/test_callback_delivery.py` |
+| 여행지 추천 | `uv run pytest tests/test_recommend_service.py` |
+| 로드맵 채팅 스키마 | `uv run pytest tests/test_chat_schema.py` |
+| 로드맵 장소명 정규화 | `uv run pytest tests/test_roadmap_place_name_translation.py` |
+| timeout 정책 | `uv run pytest tests/test_timeout_policy.py` |
+| LLM 라우터와 Discord 알림 | `uv run pytest tests/test_llm_router_webhooks.py tests/test_webhook_notification.py` |
+| 넓은 코드 변경 | `uv run pytest` |
+
+문서만 수정한 경우에도 링크, 경로, 코드 위치가 실제 파일과 맞는지 확인합니다.
+
 ## Pull Request와 코드 리뷰
 
 PR에는 관련 이슈, 작업 내용, AI 활용 여부, 검증 방법을 명시합니다.

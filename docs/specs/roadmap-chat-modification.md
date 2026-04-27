@@ -200,6 +200,19 @@ REPLACE/ADD 검색어에는 현재 일자의 주소에서 추출한 지역 힌�
 > 현재 구현은 Google Places 검색과 bbox 기반 필터링, LLM rerank, visit time policy를 중심으로 동작하며 영업시간 검증은 명시적으로 구현되어 있지 않습니다.
 > 따라서 이 문서는 현재 코드에서 확인되는 동작만 기준으로 작성합니다.
 
+## 코드 진입점과 검증
+
+| 구분 | 위치 | 확인 내용 |
+| --- | --- | --- |
+| API 라우터 | `app/api/chat.py` | `/api/v1/chat` 요청 수락, 인증 의존성, 비동기 작업 시작 |
+| 서비스 | `app/services/chat_service.py` | 채팅 그래프 실행, timeout 처리, callback payload 생성 |
+| 그래프 정의 | `app/graph/chat/workflow.py` | 의도 분석 이후 분기와 노드 연결 |
+| 그래프 노드 | `app/graph/chat/nodes/` | 의도 분석, 일반 답변, JSON 변경, 시간 제안, cascade, 응답 생성 |
+| LLM/유틸 | `app/graph/chat/llm.py`, `app/graph/chat/utils.py` | 의도 분석 프롬프트, fallback, 응답 구성 보조 |
+| 요청/응답 스키마 | `app/schemas/chat.py`, `app/schemas/course.py` | 채팅 요청, 로드맵 상태, 수정 응답 모델 |
+| 장소 검색 | `app/services/google_places_service.py`, `app/services/places_service.py`, `app/services/place_rerank_service.py` | 교체/추가 장소 검색과 rerank 정책 |
+| 테스트 | `tests/test_chat_schema.py`, `tests/test_timeout_policy.py` | 채팅 스키마 직렬화, timeout 정책 |
+
 # 관련 문서
 
 - [모행 프로젝트 개요](../context/project-overview.md)

@@ -139,6 +139,16 @@ ai_action: "editable"
 }
 ```
 
+## 구현 위치
+
+| 구분 | 위치 |
+| --- | --- |
+| FastAPI 라우터 | `app/api/generate.py` |
+| 요청/ACK 스키마 | `app/schemas/generate.py` |
+| 로드맵 payload 스키마 | `app/schemas/course.py` |
+| 생성 서비스 | `app/services/generate_service.py` |
+| callback 전송 | `app/services/callback_delivery.py`, `app/services/callback_url.py` |
+
 # 관련 문서
 
 - [로드맵 생성 기능](../specs/roadmap-generation.md)

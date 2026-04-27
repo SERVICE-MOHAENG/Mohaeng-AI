@@ -121,6 +121,16 @@ ai_action: "editable"
 }
 ```
 
+## 코드 진입점과 검증
+
+| 구분 | 위치 | 확인 내용 |
+| --- | --- | --- |
+| API 라우터 | `app/api/recommend.py` | `/api/v1/recommend` 요청 수락, 인증 의존성, 비동기 작업 시작 |
+| 서비스 | `app/services/recommend_service.py` | 설문 변환, 후보 지역 정규화, LLM 호출, callback payload 생성 |
+| 요청/응답 스키마 | `app/schemas/recommend.py` | `RecommendRequest`, `RecommendAckResponse`, callback payload 모델 |
+| Enum | `app/schemas/enums.py` | 설문 선택지와 `Region` 후보 목록 |
+| 테스트 | `tests/test_recommend_service.py` | 추천 결과 정규화, fallback, 실패 처리 |
+
 # 관련 문서
 
 - [시장 문제와 타겟 사용자](../context/market-and-target-users.md)
