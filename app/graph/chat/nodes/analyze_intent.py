@@ -196,7 +196,6 @@ def _build_request_context(request_context: dict) -> str:
         f"- destination_preference: {request_context.get('destination_preference', '없음')}",
         f"- activity_preference: {request_context.get('activity_preference', '없음')}",
         f"- priority_preference: {request_context.get('priority_preference', '없음')}",
-        f"- budget_range: {request_context.get('budget_range', '없음')}",
     ]
     return "\n".join(lines)
 

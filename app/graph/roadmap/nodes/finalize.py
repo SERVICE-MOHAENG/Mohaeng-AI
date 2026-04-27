@@ -345,7 +345,6 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         )
 
         course_request_payload = course_request.model_dump(mode="json")
-        course_request_payload.pop("budget_range", None)
 
         parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
 

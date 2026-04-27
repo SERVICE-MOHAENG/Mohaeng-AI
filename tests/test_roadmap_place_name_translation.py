@@ -30,7 +30,6 @@ def _base_course_request() -> dict:
         "destination_preference": "TOURIST_SPOTS",
         "activity_preference": "REST_FOCUSED",
         "priority_preference": "EFFICIENCY",
-        "budget_range": "MID",
     }
 
 

@@ -80,7 +80,6 @@ class GooglePlacesService(PlacesServiceProtocol):
     async def search(
         self,
         query: str,
-        price_levels: list[str] | None = None,
         min_rating: float | None = None,
         location_restriction: GeoRectangle | None = None,
         location_bias: GeoRectangle | None = None,
@@ -94,19 +93,16 @@ class GooglePlacesService(PlacesServiceProtocol):
         payload: dict[str, Any] = {"textQuery": query, "pageSize": self._page_size}
         if self._language_code:
             payload["languageCode"] = self._language_code
+        applied_min_rating: float | None = None
         if min_rating is not None:
-            payload["minRating"] = min(5.0, max(0.0, float(min_rating)))
-        if price_levels:
-            normalized_levels = [str(level).strip() for level in price_levels if str(level).strip()]
-            if normalized_levels:
-                payload["priceLevels"] = normalized_levels
+            applied_min_rating = min(5.0, max(0.0, float(min_rating)))
+            payload["minRating"] = applied_min_rating
         if location_restriction is not None:
             payload["locationRestriction"] = location_restriction.to_google_location_restriction_payload()
         elif location_bias is not None:
             payload["locationBias"] = location_bias.to_google_location_bias_payload()
 
         geo = "restriction" if location_restriction else ("bias" if location_bias else "none")
-        price_tag = ",".join(price_levels) if price_levels else "any"
 
         settings = get_settings()
         import hmac
@@ -120,7 +116,7 @@ class GooglePlacesService(PlacesServiceProtocol):
 
         append_job_log(
             "google_places",
-            f"q_len={len(query)} q_hash={query_hash} geo={geo} price={price_tag} min_rating={min_rating}",
+            f"q_len={len(query)} q_hash={query_hash} geo={geo} min_rating={applied_min_rating}",
             level="detail",
         )
 

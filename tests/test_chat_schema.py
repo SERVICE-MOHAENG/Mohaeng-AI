@@ -19,7 +19,6 @@ def _base_payload() -> dict:
         "destination_preference": "TOURIST_SPOTS",
         "activity_preference": "REST_FOCUSED",
         "priority_preference": "EFFICIENCY",
-        "budget_range": "MID",
         "user_query": "1일차 2번째 장소 바꿔줘",
         "session_history": [],
         "current_itinerary": {
@@ -59,7 +58,6 @@ def test_chat_request_accepts_context_fields() -> None:
     request = ChatRequest.model_validate(_base_payload())
     assert request.companion_type == ["FAMILY"]
     assert request.travel_themes == ["HEALING"]
-    assert request.budget_range == "MID"
 
 
 def test_chat_request_requires_context_fields() -> None:

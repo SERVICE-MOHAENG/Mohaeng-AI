@@ -14,71 +14,13 @@ from app.core.region_bbox import get_region_bbox
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_search_query, build_slot_key
-from app.schemas.enums import BudgetRange, Region
+from app.schemas.enums import Region
 from app.services.google_places_service import get_google_places_service
 from app.services.place_rerank_service import select_place_ids_for_day
 from app.services.places_service import PlacesServiceProtocol
 from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
-
-
-_FOOD_KEYWORD_HINTS = (
-    "맛집",
-    "식당",
-    "레스토랑",
-    "한식",
-    "양식",
-    "중식",
-    "일식",
-    "분식",
-    "뷔페",
-    "카페",
-    "커피",
-    "베이커리",
-    "브런치",
-    "디저트",
-    "bar",
-    "pub",
-    "izakaya",
-    "bbq",
-    "bistro",
-    "restaurant",
-    "cafe",
-    "coffee",
-    "bakery",
-    "dessert",
-    "brunch",
-)
-
-
-def _map_budget_to_price_levels(budget_range: str | BudgetRange | None) -> list[str] | None:
-    if not budget_range:
-        return None
-    value = budget_range.value if isinstance(budget_range, BudgetRange) else str(budget_range)
-    mapping = {
-        BudgetRange.LOW.value: ["PRICE_LEVEL_INEXPENSIVE"],
-        BudgetRange.MID.value: ["PRICE_LEVEL_MODERATE"],
-        BudgetRange.HIGH.value: ["PRICE_LEVEL_EXPENSIVE"],
-        BudgetRange.LUXURY.value: ["PRICE_LEVEL_EXPENSIVE", "PRICE_LEVEL_VERY_EXPENSIVE"],
-    }
-    return mapping.get(value)
-
-
-def _is_food_keyword(keyword: str) -> bool:
-    normalized = (keyword or "").strip().lower()
-    if not normalized:
-        return False
-    return any(hint in normalized for hint in _FOOD_KEYWORD_HINTS)
-
-
-def _price_levels_for_slot(slot: dict, base_price_levels: list[str] | None) -> list[str] | None:
-    if not base_price_levels:
-        return None
-    keyword = str(slot.get("keyword") or "").strip()
-    if not _is_food_keyword(keyword):
-        return None
-    return base_price_levels
 
 
 def _move_selected_first(places: list[dict], selected_place_id: str) -> tuple[list[dict], bool]:
@@ -116,13 +58,6 @@ async def fetch_places_from_slots(
             logger.error("PlacesService initialization failed: %s", exc)
             return {**state, "error": "PlacesService가 주입되지 않았습니다."}
 
-    raw_request = state.get("course_request") or {}
-    if isinstance(raw_request, dict):
-        budget_range = raw_request.get("budget_range")
-    else:
-        budget_range = getattr(raw_request, "budget_range", None)
-
-    base_price_levels = _map_budget_to_price_levels(budget_range)
     settings = get_settings()
     min_rating = settings.GOOGLE_PLACES_MIN_RATING
     rerank_enabled = settings.GOOGLE_PLACES_LLM_RERANK_ENABLED
@@ -131,7 +66,7 @@ async def fetch_places_from_slots(
 
     fetched_places: dict[str, list] = {}
 
-    tasks: list[tuple[str, str, list[str] | None, Region | str | None]] = []
+    tasks: list[tuple[str, str, Region | str | None]] = []
     for day in skeleton_plan:
         day_number = day.get("day_number", 0)
         day_region = day.get("region")
@@ -140,15 +75,13 @@ async def fetch_places_from_slots(
             slot_key = build_slot_key(day_number, slot_index)
             query = build_search_query(slot)
             if query:
-                slot_price_levels = _price_levels_for_slot(slot, base_price_levels)
-                tasks.append((slot_key, query, slot_price_levels, day_region))
+                tasks.append((slot_key, query, day_region))
             else:
                 fetched_places[slot_key] = []
 
     async def search_for_slot(
         slot_key: str,
         query: str,
-        price_levels: list[str] | None,
         region: Region | str | None,
     ) -> tuple[str, list, str]:
         geo_filter_scope = "roadmap_region"
@@ -170,10 +103,8 @@ async def fetch_places_from_slots(
         try:
             places = await places_service.search(
                 query,
-                price_levels=price_levels,
                 min_rating=min_rating,
                 location_restriction=region_bbox,
-                location_bias=None,
             )
             restriction_used = region_bbox is not None
             if region_bbox is not None and places:
@@ -185,7 +116,6 @@ async def fetch_places_from_slots(
                 bias_used = True
                 places = await places_service.search(
                     query,
-                    price_levels=price_levels,
                     min_rating=min_rating,
                     location_restriction=None,
                     location_bias=region_bbox,
@@ -194,30 +124,13 @@ async def fetch_places_from_slots(
                     places, filtered_out = _hard_filter_by_bbox(places, region_bbox)
                     geo_filtered_out_count += filtered_out
 
-            if not places and region_bbox is not None and price_levels:
-                fallback_stage = "bias_without_price_levels"
-                bias_used = True
-                bias_no_price = await places_service.search(
-                    query,
-                    price_levels=None,
-                    min_rating=min_rating,
-                    location_restriction=None,
-                    location_bias=region_bbox,
-                )
-                if bias_no_price:
-                    places, filtered_out = _hard_filter_by_bbox(bias_no_price, region_bbox)
-                    geo_filtered_out_count += filtered_out
-
             if not places:
                 fallback_stage = "unfiltered_with_min_rating"
                 geo_filter_fallback_unfiltered = True
                 unfiltered_used = True
                 unfiltered_results = await places_service.search(
                     geo_anchored_query,
-                    price_levels=None,
                     min_rating=min_rating,
-                    location_restriction=None,
-                    location_bias=None,
                 )
                 if unfiltered_results and region_bbox is not None:
                     places, filtered_out = _hard_filter_by_bbox(unfiltered_results, region_bbox)
@@ -231,10 +144,7 @@ async def fetch_places_from_slots(
                 unfiltered_used = True
                 unfiltered_results = await places_service.search(
                     geo_anchored_query,
-                    price_levels=None,
                     min_rating=None,
-                    location_restriction=None,
-                    location_bias=None,
                 )
                 if unfiltered_results and region_bbox is not None:
                     places, filtered_out = _hard_filter_by_bbox(unfiltered_results, region_bbox)
@@ -274,9 +184,7 @@ async def fetch_places_from_slots(
             logger.warning("Slot place search failed: slot=%s error=%s", slot_key, exc)
             return slot_key, [], "error"
 
-    results = await asyncio.gather(
-        *[search_for_slot(key, query, levels, region) for key, query, levels, region in tasks]
-    )
+    results = await asyncio.gather(*[search_for_slot(key, query, region) for key, query, region in tasks])
 
     empty_count = 0
     fb_stats: dict[str, int] = {}
