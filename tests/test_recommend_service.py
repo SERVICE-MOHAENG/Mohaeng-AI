@@ -47,6 +47,9 @@ def test_process_recommend_request_hides_internal_error_by_default(monkeypatch) 
         "recommend_request_received",
         "recommend_completed",
     ]
+    assert captured_events[0]["title"] == "여행지 추천 접수"
+    assert any(field["name"] == "설문 요청" for field in captured_events[0]["extra_fields"])
+    assert any(field["name"] == "오류 상세" for field in captured_events[1]["extra_fields"])
     assert captured_events[1]["status"] == "FAILED"
 
 
@@ -80,4 +83,5 @@ def test_process_recommend_request_exposes_internal_error_when_enabled(monkeypat
         "recommend_request_received",
         "recommend_completed",
     ]
+    assert captured_events[0]["title"] == "여행지 추천 접수"
     assert captured_events[1]["error"] == "sensitive: internal detail"

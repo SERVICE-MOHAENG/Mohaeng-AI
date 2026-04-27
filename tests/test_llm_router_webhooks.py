@@ -24,7 +24,7 @@ def _set_required_env(monkeypatch, **overrides: str) -> None:
 def _event_names(payloads: list[dict]) -> list[str]:
     event_names: list[str] = []
     for payload in payloads:
-        event_type = next(field["value"] for field in payload["fields"] if field["name"] == "event_type")
+        event_type = next(field["value"] for field in payload["fields"] if field["name"] == "이벤트")
         event_names.append(event_type)
     return event_names
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
+import traceback
 from typing import Any
 
 from pydantic import BaseModel
@@ -36,13 +38,18 @@ async def _notify_pipeline_event_best_effort(**kwargs) -> None:
         )
 
 
-async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
-    """로드맵 대화 그래프를 실행하고 결과를 반환합니다."""
-    current_itinerary = request.current_itinerary
-    if isinstance(current_itinerary, BaseModel):
-        current_itinerary = current_itinerary.model_dump(mode="json")
+def _to_json_text(value: Any, *, limit: int = 1800) -> str:
+    try:
+        text = json.dumps(value, ensure_ascii=False, indent=2)
+    except Exception:
+        text = str(value)
+    if len(text) > limit:
+        return text[: limit - 3] + "..."
+    return text
 
-    request_context = {
+
+def _build_request_context(request: ChatRequest) -> dict[str, list[str] | str]:
+    return {
         "companion_type": [str(companion) for companion in request.companion_type],
         "travel_themes": [str(theme) for theme in request.travel_themes],
         "pace_preference": str(request.pace_preference),
@@ -51,6 +58,15 @@ async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
         "activity_preference": str(request.activity_preference),
         "priority_preference": str(request.priority_preference),
     }
+
+
+async def run_chat_pipeline(request: ChatRequest) -> ChatResponse:
+    """로드맵 대화 그래프를 실행하고 결과를 반환합니다."""
+    current_itinerary = request.current_itinerary
+    if isinstance(current_itinerary, BaseModel):
+        current_itinerary = current_itinerary.model_dump(mode="json")
+
+    request_context = _build_request_context(request)
 
     initial_state = {
         "current_itinerary": current_itinerary,
@@ -149,16 +165,26 @@ async def process_chat_request(request: ChatRequest) -> None:
     append_job_log(
         "job_start", f"type=chat job_id={request.job_id} query_len={len(request.user_query)} query_hash={query_hash}"
     )
+    request_context = _build_request_context(request)
+    current_itinerary_json = request.current_itinerary.model_dump(mode="json")
+    session_history_json = [msg.model_dump(mode="json") for msg in request.session_history]
     await _notify_pipeline_event_best_effort(
         event_type="chat_started",
         severity="info",
         stage="chat",
         status="STARTED",
-        title="💬 Chat Job Started",
+        title="채팅 수정 시작",
         message="로드맵 수정 작업이 시작되었습니다.",
         job_id=request.job_id,
+        extra_fields=[
+            {"name": "사용자 발화", "value": request.user_query, "inline": False},
+            {"name": "현재 로드맵", "value": _to_json_text(current_itinerary_json), "inline": False},
+            {"name": "요청 조건", "value": _to_json_text(request_context), "inline": False},
+            {"name": "대화 이력", "value": _to_json_text(session_history_json), "inline": False},
+        ],
     )
     status = "SUCCESS"
+    error_trace = ""
 
     try:
         result = await asyncio.wait_for(
@@ -174,6 +200,38 @@ async def process_chat_request(request: ChatRequest) -> None:
             await notify_timeout(request.job_id, "chat", elapsed)
         except Exception as exc:
             logger.warning("Chat timeout webhook failed: job_id=%s error=%s", request.job_id, exc)
+        await _notify_pipeline_event_best_effort(
+            event_type="chat_completed",
+            severity="error",
+            stage="chat",
+            status="FAILED",
+            title="채팅 수정 실패",
+            message="로드맵 수정 작업이 제한 시간을 초과했습니다.",
+            job_id=request.job_id,
+            elapsed_ms=round(elapsed * 1000),
+            error="LLM_TIMEOUT",
+            extra_fields=[
+                {"name": "사용자 발화", "value": request.user_query, "inline": False},
+                {"name": "현재 로드맵", "value": _to_json_text(current_itinerary_json), "inline": False},
+                {"name": "요청 조건", "value": _to_json_text(request_context), "inline": False},
+                {"name": "대화 이력", "value": _to_json_text(session_history_json), "inline": False},
+                {
+                    "name": "오류 상세",
+                    "value": _to_json_text(
+                        {
+                            "오류 유형": "LLM_TIMEOUT",
+                            "오류 메시지": "LLM 응답 시간이 초과되었습니다.",
+                            "스택 트레이스": "timeout while waiting for chat pipeline",
+                            "처리 단계": "chat",
+                            "상태": "FAILED",
+                            "job_id": request.job_id,
+                            "elapsed_seconds": elapsed,
+                        }
+                    ),
+                    "inline": False,
+                },
+            ],
+        )
         payload = {
             "status": ChatStatus.FAILED.value,
             "error": {"code": "LLM_TIMEOUT", "message": "LLM 응답 시간이 초과되었습니다."},
@@ -181,6 +239,7 @@ async def process_chat_request(request: ChatRequest) -> None:
     except Exception:
         status = "FAILED"
         logger.exception("대화 파이프라인 처리 중 예외 발생")
+        error_trace = traceback.format_exc()
         payload = {
             "status": ChatStatus.FAILED.value,
             "error": {"code": "PIPELINE_ERROR", "message": "대화 처리 중 내부 오류가 발생했습니다."},
@@ -195,11 +254,32 @@ async def process_chat_request(request: ChatRequest) -> None:
             severity="error",
             stage="chat",
             status=status,
-            title="❌ Chat Job Failed",
+            title="채팅 수정 실패",
             message="로드맵 수정 작업이 실패했습니다.",
             job_id=request.job_id,
             elapsed_ms=round(elapsed * 1000),
             error=payload.get("error", {}).get("message"),
+            extra_fields=[
+                {"name": "사용자 발화", "value": request.user_query, "inline": False},
+                {"name": "현재 로드맵", "value": _to_json_text(current_itinerary_json), "inline": False},
+                {"name": "요청 조건", "value": _to_json_text(request_context), "inline": False},
+                {"name": "대화 이력", "value": _to_json_text(session_history_json), "inline": False},
+                {
+                    "name": "오류 상세",
+                    "value": _to_json_text(
+                        {
+                            "오류 유형": "PIPELINE_ERROR",
+                            "오류 메시지": payload.get("error", {}).get("message"),
+                            "스택 트레이스": error_trace,
+                            "처리 단계": "chat",
+                            "상태": status,
+                            "job_id": request.job_id,
+                            "elapsed_seconds": elapsed,
+                        }
+                    ),
+                    "inline": False,
+                },
+            ],
         )
 
     callback_endpoint = build_callback_url(

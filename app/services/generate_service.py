@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import traceback
 
 from app.core.config import get_settings
 from app.core.job_log_context import append_job_log, collect_job_logs, init_job_log
@@ -31,6 +33,16 @@ async def _notify_pipeline_event_best_effort(**kwargs) -> None:
             kwargs.get("status"),
             exc,
         )
+
+
+def _to_json_text(value: object, *, limit: int = 1800) -> str:
+    try:
+        text = json.dumps(value, ensure_ascii=False, indent=2)
+    except Exception:
+        text = str(value)
+    if len(text) > limit:
+        return text[: limit - 3] + "..."
+    return text
 
 
 async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
@@ -80,9 +92,12 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
         severity="info",
         stage="generate",
         status="STARTED",
-        title="🚀 Generate Job Started",
+        title="로드맵 생성 시작",
         message="로드맵 생성 작업이 시작되었습니다.",
         job_id=job_id,
+        extra_fields=[
+            {"name": "생성 요청", "value": _to_json_text(payload.model_dump(mode="json")), "inline": False},
+        ],
     )
     status = "SUCCESS"
 
@@ -101,12 +116,42 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
             await notify_timeout(job_id, "generate", elapsed)
         except Exception as exc:
             logger.warning("Generate timeout webhook failed: job_id=%s error=%s", job_id, exc)
+        await _notify_pipeline_event_best_effort(
+            event_type="generate_completed",
+            severity="error",
+            stage="generate",
+            status="FAILED",
+            title="로드맵 생성 실패",
+            message="로드맵 생성 작업이 제한 시간을 초과했습니다.",
+            job_id=job_id,
+            elapsed_ms=round(elapsed * 1000),
+            error="LLM_TIMEOUT",
+            extra_fields=[
+                {"name": "생성 요청", "value": _to_json_text(payload.model_dump(mode="json")), "inline": False},
+                {
+                    "name": "오류 상세",
+                    "value": _to_json_text(
+                        {
+                            "오류 유형": "LLM_TIMEOUT",
+                            "오류 메시지": "LLM 생성 시간이 초과되었습니다.",
+                            "스택 트레이스": "timeout while waiting for roadmap pipeline",
+                            "처리 단계": "generate",
+                            "상태": "FAILED",
+                            "job_id": job_id,
+                            "elapsed_seconds": elapsed,
+                        }
+                    ),
+                    "inline": False,
+                },
+            ],
+        )
         callback = GenerateCallbackFailure(
             error=CallbackError(code="LLM_TIMEOUT", message="LLM 생성 시간이 초과되었습니다."),
         )
         payload_data = callback.model_dump(mode="json")
     except Exception as exc:
         status = "FAILED"
+        error_trace = traceback.format_exc()
         callback = GenerateCallbackFailure(
             error=CallbackError(code="PIPELINE_ERROR", message=str(exc)),
         )
@@ -121,11 +166,29 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
             severity="error",
             stage="generate",
             status=status,
-            title="❌ Generate Job Failed",
+            title="로드맵 생성 실패",
             message="로드맵 생성 작업이 실패했습니다.",
             job_id=job_id,
             elapsed_ms=round(elapsed * 1000),
             error=payload_data.get("error", {}).get("message"),
+            extra_fields=[
+                {"name": "생성 요청", "value": _to_json_text(payload.model_dump(mode="json")), "inline": False},
+                {
+                    "name": "오류 상세",
+                    "value": _to_json_text(
+                        {
+                            "오류 유형": "PIPELINE_ERROR",
+                            "오류 메시지": payload_data.get("error", {}).get("message"),
+                            "스택 트레이스": error_trace,
+                            "처리 단계": "generate",
+                            "상태": status,
+                            "job_id": job_id,
+                            "elapsed_seconds": elapsed,
+                        }
+                    ),
+                    "inline": False,
+                },
+            ],
         )
 
     callback_endpoint = build_callback_url(callback_url, job_id, "itineraries/{job_id}/result")

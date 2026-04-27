@@ -38,16 +38,16 @@ def test_notify_pipeline_event_allows_production_events(monkeypatch, event_type:
 
     fields = {field["name"]: field["value"] for field in captured["fields"]}
     assert captured["title"] == "Demo Event"
-    assert fields["event_type"] == event_type
-    assert fields["severity"] == "warning"
-    assert fields["stage"] == "demo.stage"
-    assert fields["status"] == "RUNNING"
+    assert fields["이벤트"] == event_type
+    assert fields["중요도"] == "warning"
+    assert fields["단계"] == "demo.stage"
+    assert fields["상태"] == "RUNNING"
     assert fields["job_id"] == "`job-1`"
-    assert fields["message"] == "stage event"
-    assert fields["elapsed_ms"] == "123ms"
-    assert fields["model"] == "gpt-demo"
-    assert fields["fallback_used"] == "False"
-    assert "boom" in fields["error"]
+    assert fields["메시지"] == "stage event"
+    assert fields["소요 시간"] == "123ms"
+    assert fields["모델"] == "gpt-demo"
+    assert fields["fallback 사용"] == "False"
+    assert "boom" in fields["오류"]
     assert fields["Custom"] == "value"
 
 

@@ -85,6 +85,12 @@ def test_chat_pipeline_emits_started_and_failed_webhooks(monkeypatch) -> None:
 
     assert captured_payload["status"] == "FAILED"
     assert [event["event_type"] for event in captured_events] == ["chat_started", "chat_completed"]
+    assert captured_events[0]["title"] == "채팅 수정 시작"
+    assert any(
+        field["name"] == "사용자 발화" and "바꿔줘" in field["value"]
+        for field in captured_events[0]["extra_fields"]
+    )
+    assert any(field["name"] == "오류 상세" for field in captured_events[1]["extra_fields"])
     assert captured_events[1]["status"] == "FAILED"
 
 
@@ -118,4 +124,7 @@ def test_generate_pipeline_emits_started_and_failed_webhooks(monkeypatch) -> Non
 
     assert captured_payload["status"] == "FAILED"
     assert [event["event_type"] for event in captured_events] == ["generate_started", "generate_completed"]
+    assert captured_events[0]["title"] == "로드맵 생성 시작"
+    assert any(field["name"] == "생성 요청" for field in captured_events[0]["extra_fields"])
+    assert any(field["name"] == "오류 상세" for field in captured_events[1]["extra_fields"])
     assert captured_events[1]["status"] == "FAILED"

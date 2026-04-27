@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import platform
 import threading
+import traceback
 from datetime import datetime, timezone
 from typing import Any, Awaitable
 
@@ -121,6 +123,27 @@ def _append_field(fields: list[dict[str, Any]], name: str, value: Any, inline: b
     fields.append({"name": name, "value": text, "inline": inline})
 
 
+def _append_json_field(
+    fields: list[dict[str, Any]],
+    name: str,
+    value: Any,
+    inline: bool = False,
+    *,
+    limit: int = 1000,
+) -> None:
+    if value is None:
+        return
+    try:
+        text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2)
+    except Exception:
+        text = str(value)
+    if not text:
+        return
+    if len(text) > limit:
+        text = text[: limit - 3] + "..."
+    fields.append({"name": name, "value": f"```json\n{text}\n```", "inline": inline})
+
+
 def _format_event_title(event_type: str, title: str | None) -> str:
     if title:
         return title
@@ -149,16 +172,16 @@ async def notify_pipeline_event(
         return
 
     fields: list[dict[str, Any]] = []
-    _append_field(fields, "event_type", event_type)
-    _append_field(fields, "severity", severity)
-    _append_field(fields, "stage", stage)
-    _append_field(fields, "status", status)
+    _append_field(fields, "이벤트", event_type)
+    _append_field(fields, "중요도", severity)
+    _append_field(fields, "단계", stage)
+    _append_field(fields, "상태", status)
     _append_field(fields, "job_id", f"`{job_id}`" if job_id else None)
-    _append_field(fields, "message", message, inline=False)
-    _append_field(fields, "elapsed_ms", f"{elapsed_ms}ms" if elapsed_ms is not None else None)
-    _append_field(fields, "model", model)
-    _append_field(fields, "fallback_used", fallback_used)
-    _append_field(fields, "error", f"```{error[:1000]}```" if error else None, inline=False)
+    _append_field(fields, "메시지", message, inline=False)
+    _append_field(fields, "소요 시간", f"{elapsed_ms}ms" if elapsed_ms is not None else None)
+    _append_field(fields, "모델", model)
+    _append_field(fields, "fallback 사용", fallback_used)
+    _append_field(fields, "오류", f"```{error[:1000]}```" if error else None, inline=False)
     if extra_fields:
         fields.extend(extra_fields)
 
@@ -180,12 +203,12 @@ async def notify_server_start() -> None:
         severity="success",
         stage="server",
         status="READY",
-        title="🟢 Server Started",
+        title="서버 시작",
         message="FastAPI 애플리케이션이 시작되었습니다.",
         extra_fields=[
-            {"name": "Env", "value": settings.APP_ENV, "inline": True},
+            {"name": "환경", "value": settings.APP_ENV, "inline": True},
             {"name": "Python", "value": platform.python_version(), "inline": True},
-            {"name": "Host", "value": platform.node(), "inline": True},
+            {"name": "호스트", "value": platform.node(), "inline": True},
         ],
     )
 
@@ -196,9 +219,9 @@ async def notify_server_shutdown() -> None:
         severity="error",
         stage="server",
         status="STOPPED",
-        title="🔴 Server Shutdown",
+        title="서버 종료",
         message="FastAPI 애플리케이션이 종료되었습니다.",
-        extra_fields=[{"name": "Host", "value": platform.node(), "inline": True}],
+        extra_fields=[{"name": "호스트", "value": platform.node(), "inline": True}],
     )
 
 
@@ -208,11 +231,11 @@ async def notify_error_500(method: str, path: str, error: str) -> None:
         severity="error",
         stage="http",
         status="FAILED",
-        title="🔥 500 Internal Server Error",
+        title="HTTP 500 오류",
         message="처리되지 않은 예외가 전역 예외 처리기에 도달했습니다.",
         extra_fields=[
-            {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
-            {"name": "Error", "value": f"```{error[:1000]}```", "inline": False},
+            {"name": "엔드포인트", "value": f"`{method} {path}`", "inline": False},
+            {"name": "오류", "value": f"```{error[:1000]}```", "inline": False},
         ],
     )
 
@@ -223,12 +246,12 @@ async def notify_timeout(job_id: str, job_type: str, elapsed_seconds: float) -> 
         severity="warning",
         stage=job_type,
         status="TIMEOUT",
-        title="⏱️ Pipeline Timeout",
+        title="파이프라인 제한 시간 초과",
         message=f"{job_type} 작업이 제한 시간을 초과했습니다.",
         job_id=job_id,
         extra_fields=[
-            {"name": "Type", "value": job_type, "inline": True},
-            {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
+            {"name": "작업 유형", "value": job_type, "inline": True},
+            {"name": "경과 시간", "value": f"{elapsed_seconds:.1f}s", "inline": True},
         ],
     )
 
@@ -239,11 +262,11 @@ async def notify_request_timeout(method: str, path: str, elapsed_seconds: float)
         severity="warning",
         stage="http",
         status="TIMEOUT",
-        title="⏱️ Request Timeout",
+        title="HTTP 요청 제한 시간 초과",
         message="HTTP 요청이 설정된 타임아웃을 초과했습니다.",
         extra_fields=[
-            {"name": "Endpoint", "value": f"`{method} {path}`", "inline": False},
-            {"name": "Elapsed", "value": f"{elapsed_seconds:.1f}s", "inline": True},
+            {"name": "엔드포인트", "value": f"`{method} {path}`", "inline": False},
+            {"name": "경과 시간", "value": f"{elapsed_seconds:.1f}s", "inline": True},
         ],
     )
 
@@ -259,12 +282,21 @@ async def notify_callback_failure(
         severity="error",
         stage=callback_type,
         status="FAILED",
-        title="🚨 Callback Delivery Failed",
+        title="콜백 전송 실패",
         message="콜백 전송이 재시도 후에도 실패했습니다.",
         job_id=job_id,
         error=error,
         extra_fields=[
-            {"name": "Type", "value": callback_type, "inline": True},
+            {"name": "콜백 유형", "value": callback_type, "inline": True},
             {"name": "URL", "value": f"`{callback_url[:200]}`", "inline": False},
         ],
     )
+
+
+def format_exception_details(exc: BaseException) -> dict[str, str]:
+    """예외를 웹훅에 넣기 좋은 한국어 상세 정보로 변환한다."""
+    return {
+        "오류 유형": type(exc).__name__,
+        "오류 메시지": str(exc),
+        "스택 트레이스": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+    }

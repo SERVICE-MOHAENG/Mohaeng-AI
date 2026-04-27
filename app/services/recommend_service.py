@@ -7,6 +7,7 @@ import hashlib
 import json
 import random
 import time
+import traceback
 from dataclasses import dataclass
 from typing import Any
 
@@ -257,6 +258,16 @@ def _build_pipeline_error_message(exc: Exception, expose_internal_errors: bool) 
     return "추천 처리 중 내부 오류가 발생했습니다."
 
 
+def _to_json_text(value: object, *, limit: int = 1800) -> str:
+    try:
+        text = json.dumps(value, ensure_ascii=False, indent=2)
+    except Exception:
+        text = str(value)
+    if len(text) > limit:
+        return text[: limit - 3] + "..."
+    return text
+
+
 async def _notify_pipeline_event_best_effort(**kwargs) -> None:
     """Discord 웹훅 알림은 실패해도 주 흐름을 막지 않습니다."""
     try:
@@ -303,9 +314,12 @@ async def process_recommend_request(request: RecommendRequest) -> None:
         severity="info",
         stage="recommend",
         status="STARTED",
-        title="Recommend Request Received",
+        title="여행지 추천 접수",
         message="여행지 추천 요청이 접수되었습니다.",
         job_id=request.job_id,
+        extra_fields=[
+            {"name": "설문 요청", "value": _to_json_text(request.model_dump(mode="json")), "inline": False},
+        ],
     )
 
     try:
@@ -322,8 +336,38 @@ async def process_recommend_request(request: RecommendRequest) -> None:
             status="FAILED",
             error=CallbackError(code="LLM_TIMEOUT", message="Analysis took too long to complete."),
         ).model_dump(mode="json")
+        await _notify_pipeline_event_best_effort(
+            event_type="recommend_completed",
+            severity="error",
+            stage="recommend",
+            status="FAILED",
+            title="여행지 추천 실패",
+            message="여행지 추천 작업이 제한 시간을 초과했습니다.",
+            job_id=request.job_id,
+            elapsed_ms=round(elapsed * 1000),
+            error="LLM_TIMEOUT",
+            extra_fields=[
+                {"name": "설문 요청", "value": _to_json_text(request.model_dump(mode="json")), "inline": False},
+                {
+                    "name": "오류 상세",
+                    "value": _to_json_text(
+                        {
+                            "오류 유형": "LLM_TIMEOUT",
+                            "오류 메시지": "Analysis took too long to complete.",
+                            "스택 트레이스": "timeout while waiting for recommendation pipeline",
+                            "처리 단계": "recommend",
+                            "상태": "FAILED",
+                            "job_id": request.job_id,
+                            "elapsed_seconds": elapsed,
+                        }
+                    ),
+                    "inline": False,
+                },
+            ],
+        )
     except Exception as exc:
         logger.exception("Recommendation pipeline failed: %s", exc)
+        error_trace = traceback.format_exc()
         error_message = _build_pipeline_error_message(exc, settings.EXPOSE_INTERNAL_ERRORS)
         callback_payload = RecommendCallbackFailure(
             status="FAILED",
@@ -334,11 +378,29 @@ async def process_recommend_request(request: RecommendRequest) -> None:
             severity="error",
             stage="recommend",
             status="FAILED",
-            title="Recommend Job Failed",
+            title="여행지 추천 실패",
             message="여행지 추천 작업이 실패했습니다.",
             job_id=request.job_id,
             elapsed_ms=round((time.monotonic() - start_time) * 1000),
             error=error_message,
+            extra_fields=[
+                {"name": "설문 요청", "value": _to_json_text(request.model_dump(mode="json")), "inline": False},
+                {
+                    "name": "오류 상세",
+                    "value": _to_json_text(
+                        {
+                            "오류 유형": "PIPELINE_ERROR",
+                            "오류 메시지": error_message,
+                            "스택 트레이스": error_trace,
+                            "처리 단계": "recommend",
+                            "상태": "FAILED",
+                            "job_id": request.job_id,
+                            "elapsed_seconds": round((time.monotonic() - start_time), 3),
+                        }
+                    ),
+                    "inline": False,
+                },
+            ],
         )
 
     await _post_callback(
