@@ -5,6 +5,10 @@
 [![Status](https://img.shields.io/badge/Status-Product%20Iteration-2F80ED)](https://github.com/SERVICE-MOHAENG/Mohaeng-AI)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE.md)
 
+<img style="margin: 0 auto" width="595" height="842" alt="모행판넬" src="https://github.com/user-attachments/assets/ace8d49b-d3d4-46ce-8d58-f18bae970908" />
+
+<br/>
+
 Mohaeng AI는 사용자의 취향과 여행 조건을 바탕으로 여행 로드맵을 만들고, 대화로 일정을 자연스럽게 수정할 수 있게 돕는 AI 여행 플래너입니다.
 
 여행 계획을 처음부터 직접 짜는 부담을 줄이고, 사용자가 원하는 분위기와 제약 조건에 맞는 장소와 동선을 빠르게 제안하는 것을 목표로 합니다.
