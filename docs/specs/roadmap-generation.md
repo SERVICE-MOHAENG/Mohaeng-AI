@@ -50,7 +50,7 @@ LLM이 좌표를 직접 생성하지 않고 Google Places 응답을 우선 사�
 | `callback_url` | URL | Yes | 결과 콜백을 받을 NestJS URL |
 | `payload.start_date` | date | Yes | 전체 여행 시작일 |
 | `payload.end_date` | date | Yes | 전체 여행 종료일 |
-| `payload.regions` | `RegionDateRange[]` | Yes | 지역별 여행 기간 |
+| `payload.regions` | `RegionDateRange[]` | Yes | 지역별 여행 기간, 최대 8개 |
 | `payload.people_count` | integer | Yes | 총 인원 수, 1~20 |
 | `payload.companion_type` | `CompanionType[]` | Yes | 동행자 유형, 1개 이상 |
 | `payload.travel_themes` | `TravelTheme[]` | Yes | 여행 테마, 1개 이상 |
@@ -66,8 +66,10 @@ LLM이 좌표를 직접 생성하지 않고 Google Places 응답을 우선 사�
 ## 입력 검증 규칙
 
 - `end_date`는 `start_date`와 같거나 이후여야 합니다.
+- 전체 여행 기간은 최대 8일이어야 합니다.
 - 각 지역 구간의 `end_date`는 해당 `start_date`와 같거나 이후여야 합니다.
 - 각 지역 구간은 전체 여행 기간 안에 포함되어야 합니다.
+- `payload.regions`는 최대 8개까지 허용합니다.
 - 스켈레톤 생성 단계에서 지역 구간 사이 날짜 공백과 겹침을 검증합니다.
 - 지역 구간을 정렬했을 때 전체 여행 기간을 빠짐없이 덮어야 합니다.
 - `people_count`는 1명 이상 20명 이하입니다.
