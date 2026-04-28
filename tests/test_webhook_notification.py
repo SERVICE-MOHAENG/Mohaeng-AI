@@ -51,6 +51,23 @@ def test_notify_pipeline_event_allows_production_events(monkeypatch, event_type:
     assert fields["Custom"] == "value"
 
 
+def test_format_helpers_wrap_code_and_json() -> None:
+    assert webhook.format_code_block("line 1\nline 2", language="text") == "```text\nline 1\nline 2\n```"
+    assert webhook.format_json_block({"a": 1}) == "```json\n{\n  \"a\": 1\n}\n```"
+
+
+def test_format_exception_details_wraps_stack_trace() -> None:
+    try:
+        raise RuntimeError("boom")
+    except RuntimeError as exc:
+        details = webhook.format_exception_details(exc)
+
+    assert details["오류 유형"] == "RuntimeError"
+    assert details["오류 메시지"] == "boom"
+    assert details["스택 트레이스"].startswith("```text\n")
+    assert details["스택 트레이스"].endswith("\n```")
+
+
 def test_notify_pipeline_event_skips_non_production_events(monkeypatch) -> None:
     sent = {"value": False}
 
