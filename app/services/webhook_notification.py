@@ -144,6 +144,24 @@ def _append_json_field(
     fields.append({"name": name, "value": f"```json\n{text}\n```", "inline": inline})
 
 
+def format_code_block(text: str, *, language: str = "", limit: int = 1000) -> str:
+    """텍스트를 Discord 코드블록으로 포맷한다."""
+    cleaned = text.strip()
+    if len(cleaned) > limit:
+        cleaned = cleaned[: limit - 3] + "..."
+    fence = f"```{language}\n" if language else "```\n"
+    return f"{fence}{cleaned}\n```"
+
+
+def format_json_block(value: Any, *, limit: int = 1000) -> str:
+    """값을 JSON 코드블록으로 포맷한다."""
+    try:
+        text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2)
+    except Exception:
+        text = str(value)
+    return format_code_block(text, language="json", limit=limit)
+
+
 def _format_event_title(event_type: str, title: str | None) -> str:
     if title:
         return title
@@ -181,7 +199,7 @@ async def notify_pipeline_event(
     _append_field(fields, "소요 시간", f"{elapsed_ms}ms" if elapsed_ms is not None else None)
     _append_field(fields, "모델", model)
     _append_field(fields, "fallback 사용", fallback_used)
-    _append_field(fields, "오류", f"```{error[:1000]}```" if error else None, inline=False)
+    _append_field(fields, "오류", format_code_block(error, limit=1000) if error else None, inline=False)
     if extra_fields:
         fields.extend(extra_fields)
 
@@ -298,5 +316,9 @@ def format_exception_details(exc: BaseException) -> dict[str, str]:
     return {
         "오류 유형": type(exc).__name__,
         "오류 메시지": str(exc),
-        "스택 트레이스": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+        "스택 트레이스": format_code_block(
+            "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+            language="text",
+            limit=1800,
+        ),
     }

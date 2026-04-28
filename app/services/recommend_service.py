@@ -33,7 +33,12 @@ from app.schemas.recommend import (
 )
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
-from app.services.webhook_notification import notify_pipeline_event, notify_timeout
+from app.services.webhook_notification import (
+    format_code_block,
+    format_json_block,
+    notify_pipeline_event,
+    notify_timeout,
+)
 
 logger = get_logger(__name__)
 DEFAULT_SELECTION_SIZE = 5
@@ -259,13 +264,7 @@ def _build_pipeline_error_message(exc: Exception, expose_internal_errors: bool) 
 
 
 def _to_json_text(value: object, *, limit: int = 1800) -> str:
-    try:
-        text = json.dumps(value, ensure_ascii=False, indent=2)
-    except Exception:
-        text = str(value)
-    if len(text) > limit:
-        return text[: limit - 3] + "..."
-    return text
+    return format_json_block(value, limit=limit)
 
 
 async def _notify_pipeline_event_best_effort(**kwargs) -> None:
@@ -350,16 +349,24 @@ async def process_recommend_request(request: RecommendRequest) -> None:
                 {"name": "설문 요청", "value": _to_json_text(request.model_dump(mode="json")), "inline": False},
                 {
                     "name": "오류 상세",
-                    "value": _to_json_text(
+                    "value": format_json_block(
                         {
                             "오류 유형": "LLM_TIMEOUT",
                             "오류 메시지": "Analysis took too long to complete.",
-                            "스택 트레이스": "timeout while waiting for recommendation pipeline",
                             "처리 단계": "recommend",
                             "상태": "FAILED",
                             "job_id": request.job_id,
                             "elapsed_seconds": elapsed,
                         }
+                    ),
+                    "inline": False,
+                },
+                {
+                    "name": "스택 트레이스",
+                    "value": format_code_block(
+                        "timeout while waiting for recommendation pipeline",
+                        language="text",
+                        limit=1800,
                     ),
                     "inline": False,
                 },
@@ -387,17 +394,21 @@ async def process_recommend_request(request: RecommendRequest) -> None:
                 {"name": "설문 요청", "value": _to_json_text(request.model_dump(mode="json")), "inline": False},
                 {
                     "name": "오류 상세",
-                    "value": _to_json_text(
+                    "value": format_json_block(
                         {
                             "오류 유형": "PIPELINE_ERROR",
                             "오류 메시지": error_message,
-                            "스택 트레이스": error_trace,
                             "처리 단계": "recommend",
                             "상태": "FAILED",
                             "job_id": request.job_id,
                             "elapsed_seconds": round((time.monotonic() - start_time), 3),
                         }
                     ),
+                    "inline": False,
+                },
+                {
+                    "name": "스택 트레이스",
+                    "value": format_code_block(error_trace, language="text", limit=1800),
                     "inline": False,
                 },
             ],

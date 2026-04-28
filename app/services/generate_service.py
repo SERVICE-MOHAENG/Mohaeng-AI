@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import traceback
 
 from app.core.config import get_settings
@@ -16,7 +15,12 @@ from app.schemas.generate import CallbackError, GenerateCallbackFailure, Generat
 from app.services.callback_delivery import post_callback_with_retry
 from app.services.callback_url import build_callback_url
 from app.services.google_places_service import get_google_places_service
-from app.services.webhook_notification import notify_pipeline_event, notify_timeout
+from app.services.webhook_notification import (
+    format_code_block,
+    format_json_block,
+    notify_pipeline_event,
+    notify_timeout,
+)
 
 logger = get_logger(__name__)
 
@@ -36,13 +40,7 @@ async def _notify_pipeline_event_best_effort(**kwargs) -> None:
 
 
 def _to_json_text(value: object, *, limit: int = 1800) -> str:
-    try:
-        text = json.dumps(value, ensure_ascii=False, indent=2)
-    except Exception:
-        text = str(value)
-    if len(text) > limit:
-        return text[: limit - 3] + "..."
-    return text
+    return format_json_block(value, limit=limit)
 
 
 async def run_roadmap_pipeline(request: CourseRequest) -> CourseResponse:
@@ -130,16 +128,24 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
                 {"name": "생성 요청", "value": _to_json_text(payload.model_dump(mode="json")), "inline": False},
                 {
                     "name": "오류 상세",
-                    "value": _to_json_text(
+                    "value": format_json_block(
                         {
                             "오류 유형": "LLM_TIMEOUT",
                             "오류 메시지": "LLM 생성 시간이 초과되었습니다.",
-                            "스택 트레이스": "timeout while waiting for roadmap pipeline",
                             "처리 단계": "generate",
                             "상태": "FAILED",
                             "job_id": job_id,
                             "elapsed_seconds": elapsed,
                         }
+                    ),
+                    "inline": False,
+                },
+                {
+                    "name": "스택 트레이스",
+                    "value": format_code_block(
+                        "timeout while waiting for roadmap pipeline",
+                        language="text",
+                        limit=1800,
                     ),
                     "inline": False,
                 },
@@ -175,17 +181,21 @@ async def process_generate_request(job_id: str, callback_url: str, payload: Cour
                 {"name": "생성 요청", "value": _to_json_text(payload.model_dump(mode="json")), "inline": False},
                 {
                     "name": "오류 상세",
-                    "value": _to_json_text(
+                    "value": format_json_block(
                         {
                             "오류 유형": "PIPELINE_ERROR",
                             "오류 메시지": payload_data.get("error", {}).get("message"),
-                            "스택 트레이스": error_trace,
                             "처리 단계": "generate",
                             "상태": status,
                             "job_id": job_id,
                             "elapsed_seconds": elapsed,
                         }
                     ),
+                    "inline": False,
+                },
+                {
+                    "name": "스택 트레이스",
+                    "value": format_code_block(error_trace, language="text", limit=1800),
                     "inline": False,
                 },
             ],

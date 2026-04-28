@@ -29,6 +29,10 @@ def _event_names(payloads: list[dict]) -> list[str]:
     return event_names
 
 
+def _event_titles(payloads: list[dict]) -> list[str]:
+    return [payload["title"] for payload in payloads]
+
+
 def test_invoke_does_not_emit_success_webhook(monkeypatch) -> None:
     _set_required_env(monkeypatch, ENABLE_STAGE_LLM_ROUTING="false", LLM_MODEL_NAME="fallback-model")
     import app.core.llm_router as llm_router
@@ -104,6 +108,7 @@ def test_ainvoke_emits_primary_failure_without_routing(monkeypatch) -> None:
         asyncio.run(llm_router.ainvoke(Stage.CHAT_RESPONSE, "prompt"))
 
     assert _event_names(payloads) == ["llm_call_failed"]
+    assert _event_titles(payloads) == ["LLM 호출 실패"]
 
 
 def test_ainvoke_emits_fallback_failure(monkeypatch) -> None:
@@ -134,3 +139,4 @@ def test_ainvoke_emits_fallback_failure(monkeypatch) -> None:
         asyncio.run(llm_router.ainvoke(Stage.ROADMAP_SKELETON, "prompt"))
 
     assert _event_names(payloads) == ["llm_fallback_failed"]
+    assert _event_titles(payloads) == ["LLM 폴백 실패"]
