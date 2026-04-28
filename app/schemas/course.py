@@ -53,7 +53,7 @@ class CourseRequest(BaseModel):
 
     start_date: date = Field(..., description="여행 시작일 (YYYY-MM-DD)")
     end_date: date = Field(..., description="여행 종료일 (YYYY-MM-DD)")
-    regions: List[RegionDateRange] = Field(..., min_length=1, description="지역별 여행 기간")
+    regions: List[RegionDateRange] = Field(..., min_length=1, max_length=8, description="지역별 여행 기간")
     people_count: int = Field(..., ge=1, le=20, description="총 인원 수")
     companion_type: list[CompanionType] = Field(..., min_length=1, description="동행자 유형 목록")
     travel_themes: list[TravelTheme] = Field(..., min_length=1, description="여행 테마 목록")
@@ -84,6 +84,9 @@ class CourseRequest(BaseModel):
         for region_range in self.regions:
             if region_range.start_date < self.start_date or region_range.end_date > self.end_date:
                 raise ValueError("지역별 여행 기간은 전체 여행 기간 안에 있어야 합니다.")
+        total_days = (self.end_date - self.start_date).days + 1
+        if total_days > 8:
+            raise ValueError("여행 기간은 최대 8일이어야 합니다.")
         return self
 
 

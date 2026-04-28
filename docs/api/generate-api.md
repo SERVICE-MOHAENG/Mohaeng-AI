@@ -75,7 +75,7 @@ ai_action: "editable"
 | `payload` | object | Yes | 로드맵 생성 입력값 |
 | `payload.start_date` | date | Yes | 여행 시작일 |
 | `payload.end_date` | date | Yes | 여행 종료일 |
-| `payload.regions` | array | Yes | 지역별 여행 기간, 1개 이상 |
+| `payload.regions` | array | Yes | 지역별 여행 기간, 1개 이상 8개 이하 |
 | `payload.people_count` | integer | Yes | 총 인원 수, 1~20 |
 | `payload.companion_type` | array | Yes | 동행자 유형, 1개 이상 |
 | `payload.travel_themes` | array | Yes | 여행 테마, 1개 이상 |
@@ -103,6 +103,16 @@ ai_action: "editable"
 | `422` | 요청 body 스키마 검증 실패 |
 | `500` | 서버 설정 누락 또는 예상하지 못한 오류 |
 | `504` | 요청 단위 타임아웃 |
+
+## 입력 검증 규칙
+
+- `end_date`는 `start_date`와 같거나 이후여야 합니다.
+- 전체 여행 기간은 최대 8일이어야 합니다.
+- `payload.regions`는 1개 이상 8개 이하이어야 합니다.
+- 각 지역 구간의 `end_date`는 해당 `start_date`와 같거나 이후여야 합니다.
+- 각 지역 구간은 전체 여행 기간 안에 포함되어야 합니다.
+- 스켈레톤 생성 단계에서 지역 구간 사이 날짜 공백과 겹침을 검증합니다.
+- 지역 구간을 정렬했을 때 전체 여행 기간을 빠짐없이 덮어야 합니다.
 
 ## Callback
 
