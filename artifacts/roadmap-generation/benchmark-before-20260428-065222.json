@@ -1,0 +1,496 @@
+{
+  "metadata": {
+    "started_at": "2026-04-28T06:12:25.168372+00:00",
+    "case_count": 10,
+    "required_env_present": {
+      "OPENAI_API_KEY": true,
+      "GOOGLE_PLACES_API_KEY": true,
+      "SERVICE_SECRET": true,
+      "HMAC_SECRET": true
+    },
+    "python": "3.12.13 (main, Apr  7 2026, 02:23:40) [GCC 14.2.0]"
+  },
+  "status": "COMPLETED",
+  "cases": [
+    {
+      "case_id": "seven_days_seoul",
+      "region": "SEOUL",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-07",
+        "regions": [
+          {
+            "region": "SEOUL",
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-07"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "FOOD_TOUR",
+          "CULTURE_ART"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Long urban trip focused on food, culture, and efficient movement."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 40.662,
+        "fetch_places_from_slots": 17.763,
+        "normalize_place_names": 6.292,
+        "synthesize_final_roadmap": 67.13
+      },
+      "total_seconds": 131.847,
+      "job_log_elapsed_seconds": 131.958,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 47,
+        "fetched_slot_count": 47,
+        "empty_place_slot_count": 0,
+        "final_place_count": 47
+      },
+      "errors": [],
+      "job_logs": "benchmark-seven_days_seoul"
+    },
+    {
+      "case_id": "seven_days_san_francisco",
+      "region": "SAN_FRANCISCO",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-06-11",
+        "end_date": "2026-06-17",
+        "regions": [
+          {
+            "region": "SAN_FRANCISCO",
+            "start_date": "2026-06-11",
+            "end_date": "2026-06-17"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "COUPLE"
+        ],
+        "travel_themes": [
+          "CITY_TRIP",
+          "PHOTO_SPOTS"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Include iconic viewpoints, neighborhoods, and local dining."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 44.358,
+        "fetch_places_from_slots": 20.632,
+        "normalize_place_names": 152.287,
+        "synthesize_final_roadmap": 64.281
+      },
+      "total_seconds": 281.558,
+      "job_log_elapsed_seconds": 281.558,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 47,
+        "fetched_slot_count": 47,
+        "empty_place_slot_count": 1,
+        "final_place_count": 46
+      },
+      "errors": [],
+      "job_logs": "benchmark-seven_days_san_francisco"
+    },
+    {
+      "case_id": "seven_days_vancouver",
+      "region": "VANCOUVER",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-06-21",
+        "end_date": "2026-06-27",
+        "regions": [
+          {
+            "region": "VANCOUVER",
+            "start_date": "2026-06-21",
+            "end_date": "2026-06-27"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FAMILY"
+        ],
+        "travel_themes": [
+          "NATURE",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Balance nature, waterfront walks, and family-friendly restaurants."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 21.413,
+        "fetch_places_from_slots": 7.655,
+        "normalize_place_names": 64.289,
+        "synthesize_final_roadmap": 44.662
+      },
+      "total_seconds": 138.019,
+      "job_log_elapsed_seconds": 138.019,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 33,
+        "fetched_slot_count": 33,
+        "empty_place_slot_count": 4,
+        "final_place_count": 29
+      },
+      "errors": [],
+      "job_logs": "benchmark-seven_days_vancouver"
+    },
+    {
+      "case_id": "seven_days_sydney",
+      "region": "SYDNEY",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-01",
+        "end_date": "2026-07-07",
+        "regions": [
+          {
+            "region": "SYDNEY",
+            "start_date": "2026-07-01",
+            "end_date": "2026-07-07"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "SIGHTSEEING",
+          "ACTIVITY"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "SPONTANEOUS",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Prefer beaches, landmarks, and active outdoor experiences."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 34.581,
+        "fetch_places_from_slots": 15.467,
+        "normalize_place_names": 124.081,
+        "synthesize_final_roadmap": 114.457
+      },
+      "total_seconds": 288.586,
+      "job_log_elapsed_seconds": 288.586,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 47,
+        "fetched_slot_count": 47,
+        "empty_place_slot_count": 0,
+        "final_place_count": 47
+      },
+      "errors": [],
+      "job_logs": "benchmark-seven_days_sydney"
+    },
+    {
+      "case_id": "seven_days_paris",
+      "region": "PARIS",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-11",
+        "end_date": "2026-07-17",
+        "regions": [
+          {
+            "region": "PARIS",
+            "start_date": "2026-07-11",
+            "end_date": "2026-07-17"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "SOLO"
+        ],
+        "travel_themes": [
+          "CULTURE_ART",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Prioritize museums, cafes, and walkable local neighborhoods."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 28.921,
+        "fetch_places_from_slots": 8.919,
+        "normalize_place_names": 147.299,
+        "synthesize_final_roadmap": 52.73
+      },
+      "total_seconds": 237.878,
+      "job_log_elapsed_seconds": 237.878,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 33,
+        "fetched_slot_count": 33,
+        "empty_place_slot_count": 0,
+        "final_place_count": 33
+      },
+      "errors": [],
+      "job_logs": "benchmark-seven_days_paris"
+    },
+    {
+      "case_id": "eight_days_tokyo",
+      "region": "TOKYO",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-21",
+        "end_date": "2026-07-28",
+        "regions": [
+          {
+            "region": "TOKYO",
+            "start_date": "2026-07-21",
+            "end_date": "2026-07-28"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "SHOPPING",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Dense city itinerary with shopping, food, and distinct neighborhoods."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 55.407,
+        "fetch_places_from_slots": 18.537,
+        "normalize_place_names": 153.563,
+        "synthesize_final_roadmap": 99.031
+      },
+      "total_seconds": 326.538,
+      "job_log_elapsed_seconds": 326.538,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 54,
+        "fetched_slot_count": 54,
+        "empty_place_slot_count": 0,
+        "final_place_count": 54
+      },
+      "errors": [],
+      "job_logs": "benchmark-eight_days_tokyo"
+    },
+    {
+      "case_id": "eight_days_london",
+      "region": "LONDON",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-31",
+        "end_date": "2026-08-07",
+        "regions": [
+          {
+            "region": "LONDON",
+            "start_date": "2026-07-31",
+            "end_date": "2026-08-07"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FAMILY"
+        ],
+        "travel_themes": [
+          "SIGHTSEEING",
+          "CULTURE_ART"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Family itinerary with landmarks, museums, parks, and moderate pacing."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 35.785,
+        "fetch_places_from_slots": 8.311,
+        "normalize_place_names": 87.55,
+        "synthesize_final_roadmap": 43.182
+      },
+      "total_seconds": 174.829,
+      "job_log_elapsed_seconds": 174.829,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 38,
+        "fetched_slot_count": 38,
+        "empty_place_slot_count": 0,
+        "final_place_count": 38
+      },
+      "errors": [],
+      "job_logs": "benchmark-eight_days_london"
+    },
+    {
+      "case_id": "eight_days_new_york_city",
+      "region": "NEW_YORK_CITY",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-08-10",
+        "end_date": "2026-08-17",
+        "regions": [
+          {
+            "region": "NEW_YORK_CITY",
+            "start_date": "2026-08-10",
+            "end_date": "2026-08-17"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "COUPLE"
+        ],
+        "travel_themes": [
+          "CITY_TRIP",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "SPONTANEOUS",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Mix classic New York highlights with local food and evening views."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 43.264,
+        "fetch_places_from_slots": 16.435,
+        "normalize_place_names": 180.113,
+        "synthesize_final_roadmap": 102.341
+      },
+      "total_seconds": 342.153,
+      "job_log_elapsed_seconds": 342.153,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 54,
+        "fetched_slot_count": 54,
+        "empty_place_slot_count": 0,
+        "final_place_count": 54
+      },
+      "errors": [],
+      "job_logs": "benchmark-eight_days_new_york_city"
+    },
+    {
+      "case_id": "eight_days_bangkok",
+      "region": "BANGKOK",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-08-20",
+        "end_date": "2026-08-27",
+        "regions": [
+          {
+            "region": "BANGKOK",
+            "start_date": "2026-08-20",
+            "end_date": "2026-08-27"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "FOOD_TOUR",
+          "UNIQUE_TRIP"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Street food, markets, temples, and nightlife with efficient movement."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 39.988,
+        "fetch_places_from_slots": 14.405,
+        "normalize_place_names": 128.946,
+        "synthesize_final_roadmap": 93.008
+      },
+      "total_seconds": 276.347,
+      "job_log_elapsed_seconds": 276.347,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 54,
+        "fetched_slot_count": 54,
+        "empty_place_slot_count": 3,
+        "final_place_count": 51
+      },
+      "errors": [],
+      "job_logs": "benchmark-eight_days_bangkok"
+    },
+    {
+      "case_id": "eight_days_singapore",
+      "region": "SINGAPORE",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-08-30",
+        "end_date": "2026-09-06",
+        "regions": [
+          {
+            "region": "SINGAPORE",
+            "start_date": "2026-08-30",
+            "end_date": "2026-09-06"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "PARENTS"
+        ],
+        "travel_themes": [
+          "CITY_TRIP",
+          "HEALING"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Comfortable itinerary with gardens, waterfront, food courts, and easy transit."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 14.993,
+        "fetch_places_from_slots": 7.544,
+        "normalize_place_names": 112.772,
+        "synthesize_final_roadmap": 52.181
+      },
+      "total_seconds": 187.491,
+      "job_log_elapsed_seconds": 187.491,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 38,
+        "fetched_slot_count": 38,
+        "empty_place_slot_count": 0,
+        "final_place_count": 38
+      },
+      "errors": [],
+      "job_logs": "benchmark-eight_days_singapore"
+    }
+  ]
+}
