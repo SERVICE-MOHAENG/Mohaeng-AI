@@ -16,10 +16,13 @@ from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.place_category import resolve_place_category
 from app.core.region_bbox import get_region_bbox
+from app.core.route_optimizer import is_food_anchor, optimize_daily_route
 from app.core.timeout_policy import get_timeout_policy
+from app.core.visit_time_policy import VisitTimeOutputMode, apply_visit_time_policy, build_visit_time_policy_config
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput
+from app.schemas.enums import PlanningPreference
 from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
@@ -103,6 +106,56 @@ def _visit_time_from_section(section: str | None) -> str:
     return _SECTION_VISIT_TIME_MAP.get(key, _DEFAULT_VISIT_TIME)
 
 
+def _resolve_visit_time_output_mode(planning_preference: PlanningPreference) -> VisitTimeOutputMode:
+    if planning_preference == PlanningPreference.PLANNED:
+        return VisitTimeOutputMode.HHMM
+    return VisitTimeOutputMode.SECTION_EN
+
+
+def _apply_route_and_visit_time_policy(daily_places: list[dict], course_request: CourseRequest) -> list[dict]:
+    """일자별 장소 순서를 최적화하고 visit_sequence/visit_time을 재계산합니다."""
+    output_mode = _resolve_visit_time_output_mode(course_request.planning_preference)
+    policy_config = build_visit_time_policy_config()
+    total_before = sum(len(day.get("places", [])) for day in daily_places)
+    changed_days: list[int] = []
+    warnings: list[str] = []
+
+    for day in daily_places:
+        places = day.get("places", [])
+        if not places:
+            continue
+
+        before_place_ids = [place.get("place_id") or place.get("place_name") for place in places]
+        optimized_places = optimize_daily_route(places)
+        after_place_ids = [place.get("place_id") or place.get("place_name") for place in optimized_places]
+        if before_place_ids != after_place_ids:
+            changed_days.append(day.get("day_number"))
+
+        for index, place in enumerate(optimized_places, start=1):
+            section = place.get("section")
+            place["visit_sequence"] = index
+            place.pop("visit_time", None)
+            if section and is_food_anchor(place):
+                place["section_hint"] = section
+            place.pop("section", None)
+
+        resolved_places, new_warnings = apply_visit_time_policy(
+            optimized_places,
+            day_number=day.get("day_number"),
+            config=policy_config,
+            output_mode=output_mode,
+        )
+        day["places"] = resolved_places
+        warnings.extend(new_warnings)
+
+    append_job_log(
+        "route_optimize",
+        f"days_changed={changed_days} total_places={total_before} "
+        f"visit_time_mode={output_mode.value} warnings={len(warnings)}",
+    )
+    return daily_places
+
+
 def _prepare_final_context(
     state: RoadmapState,
 ) -> tuple[str, list[dict]]:
@@ -142,10 +195,7 @@ def _prepare_final_context(
                 if place is None:
                     continue
                 section = slot.get("section")
-                section_label = section or "UNKNOWN"
-                keyword = slot.get("keyword")
                 display_name = place.get("display_name") or place["name"]
-                context_lines.append(f"- {section_label}: {display_name} (키워드: {keyword})")
 
                 geometry = place.get("geometry") or {}
                 place_url = place.get("url")
@@ -177,6 +227,15 @@ def _prepare_final_context(
         daily_places_for_schema.append(
             {"day_number": day_number, "daily_date": current_date.isoformat(), "places": day_places}
         )
+
+    daily_places_for_schema = _apply_route_and_visit_time_policy(daily_places_for_schema, course_request)
+    context_lines = []
+    for day in daily_places_for_schema:
+        context_lines.append(f"\nDay {day['day_number']} ({day['daily_date']}):")
+        for place in day.get("places", []):
+            context_lines.append(
+                f"- #{place.get('visit_sequence')} {place.get('visit_time')}: {place.get('place_name')}"
+            )
 
     return "\n".join(context_lines), daily_places_for_schema
 
@@ -298,7 +357,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
         append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
 
-        append_job_log("finalize_time", "strategy=section_static_map")
+        append_job_log("finalize_time", f"strategy=visit_time_policy preference={course_request.planning_preference}")
 
         course_request_payload = course_request.model_dump(mode="json")
 
