@@ -142,7 +142,7 @@ ai_action: "editable"
             "latitude": 37.5787,
             "longitude": 126.9809,
             "place_url": "https://maps.google.com/?q=place_id:google-place-id",
-            "primary_type": "tourist_attraction",
+            "place_category": "CULTURE",
             "description": "도심에서 전시를 즐길 수 있는 공간입니다.",
             "visit_sequence": 1,
             "visit_time": "09:00"
@@ -156,7 +156,9 @@ ai_action: "editable"
 }
 ```
 
-`itinerary[].places[].primary_type`은 Google Places `primaryType`을 전달하는 선택 필드이며, 원본 응답에 값이 없으면 `null`일 수 있습니다.
+`itinerary[].places[].place_category`는 Mohaeng 장소 대분류 코드입니다.
+Google Places 원본 `primaryType`과 `types`는 내부 분류에만 사용하고 최종 콜백에는 포함하지 않습니다.
+알 수 없는 유형은 `OTHER`로 전달합니다.
 
 실패 콜백은 `GenerateCallbackFailure` 형식입니다.
 
