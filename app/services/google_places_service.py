@@ -30,9 +30,10 @@ class GooglePlacesService(PlacesServiceProtocol):
     _SEARCH_PATH = "/places:searchText"
 
     _SEARCH_FIELD_MASK = (
-        "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.googleMapsUri"
+        "places.id,places.displayName,places.formattedAddress,places.location,"
+        "places.primaryType,places.types,places.googleMapsUri"
     )
-    _DETAILS_FIELD_MASK = "id,displayName,formattedAddress,location,types,googleMapsUri"
+    _DETAILS_FIELD_MASK = "id,displayName,formattedAddress,location,primaryType,types,googleMapsUri"
 
     def __init__(
         self,
@@ -217,6 +218,7 @@ class GooglePlacesService(PlacesServiceProtocol):
             address=raw.get("formattedAddress"),
             geometry=PlaceGeometry(latitude=latitude, longitude=longitude),
             url=raw.get("googleMapsUri"),
+            primary_type=raw.get("primaryType"),
             types=raw.get("types") or [],
         )
 
