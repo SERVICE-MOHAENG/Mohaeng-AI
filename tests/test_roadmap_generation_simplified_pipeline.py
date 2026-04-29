@@ -75,6 +75,7 @@ def test_prepare_final_context_uses_original_place_name_and_static_visit_time() 
                     "address": "Lambeth, London",
                     "geometry": {"latitude": 37.5796, "longitude": 126.977},
                     "url": None,
+                    "primary_type": "tourist_attraction",
                 }
             ]
         },
@@ -86,4 +87,44 @@ def test_prepare_final_context_uses_original_place_name_and_static_visit_time() 
     assert "London Eye" in itinerary_context
     assert place["place_name"] == "London Eye"
     assert place["original_place_name"] == "London Eye"
+    assert place["primary_type"] == "tourist_attraction"
     assert place["visit_time"] == "12:00"
+
+
+def test_prepare_final_context_allows_missing_primary_type() -> None:
+    state = {
+        "course_request": _base_course_request(),
+        "trip_days": 1,
+        "slot_min": 1,
+        "slot_max": 1,
+        "skeleton_plan": [
+            {
+                "day_number": 1,
+                "region": "SEOUL",
+                "slots": [
+                    {
+                        "section": "MORNING",
+                        "area": "중심가",
+                        "keyword": "museum",
+                    }
+                ],
+            }
+        ],
+        "fetched_places": {
+            "day1_slot0": [
+                {
+                    "place_id": "place-1",
+                    "name": "경복궁",
+                    "address": "서울 종로구",
+                    "geometry": {"latitude": 37.5796, "longitude": 126.977},
+                    "url": None,
+                }
+            ]
+        },
+    }
+
+    _, daily_places = _prepare_final_context(state)
+
+    place = daily_places[0]["places"][0]
+    assert place["place_name"] == "경복궁"
+    assert place["primary_type"] is None

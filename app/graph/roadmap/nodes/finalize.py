@@ -163,6 +163,7 @@ def _prepare_final_context(
                         "latitude": geometry.get("latitude"),
                         "longitude": geometry.get("longitude"),
                         "place_url": place_url,
+                        "primary_type": place.get("primary_type"),
                         "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
                         "visit_time": _visit_time_from_section(section),

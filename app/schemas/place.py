@@ -18,4 +18,5 @@ class Place(BaseModel):
     address: str | None = Field(default=None, description="장소 주소")
     geometry: PlaceGeometry = Field(..., description="장소 좌표 정보")
     url: str | None = Field(default=None, description="구글 맵 URL")
+    primary_type: str | None = Field(default=None, description="Google Places 대표 장소 유형")
     types: list[str] = Field(default_factory=list, description="장소 유형 목록")
