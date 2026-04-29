@@ -163,7 +163,7 @@ sequenceDiagram
 
 ## 정책
 
-- 전체 생성 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 60초입니다.
+- 전체 생성 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 180초입니다.
 - Google Places 요청 기본 타임아웃은 `GOOGLE_PLACES_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 생성 결과의 장소 좌표는 LLM 생성값이 아니라 Google Places 응답값을 사용합니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
