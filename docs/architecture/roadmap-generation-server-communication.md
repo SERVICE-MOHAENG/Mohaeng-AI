@@ -134,6 +134,7 @@ sequenceDiagram
             "latitude": 37.5787,
             "longitude": 126.9809,
             "place_url": "https://maps.google.com/?q=place_id:google-place-id",
+            "primary_type": "tourist_attraction",
             "description": "도심에서 전시를 즐길 수 있는 공간입니다.",
             "visit_sequence": 1,
             "visit_time": "09:00"
@@ -166,6 +167,7 @@ sequenceDiagram
 - 전체 생성 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 180초입니다.
 - Google Places 요청 기본 타임아웃은 `GOOGLE_PLACES_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 생성 결과의 장소 좌표는 LLM 생성값이 아니라 Google Places 응답값을 사용합니다.
+- 생성 결과의 `primary_type`은 Google Places `primaryType`을 사용하며, 원본 응답에 값이 없으면 `null`일 수 있습니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.
 

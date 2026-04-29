@@ -130,12 +130,33 @@ ai_action: "editable"
     "tags": ["서울", "전시", "맛집"],
     "title": "서울 감성 여행",
     "summary": "전시와 미식을 중심으로 구성한 서울 일정입니다.",
-    "itinerary": [],
+    "itinerary": [
+      {
+        "day_number": 1,
+        "daily_date": "2026-02-07",
+        "places": [
+          {
+            "place_name": "국립현대미술관 서울",
+            "place_id": "google-place-id",
+            "address": "서울 종로구 삼청로 30",
+            "latitude": 37.5787,
+            "longitude": 126.9809,
+            "place_url": "https://maps.google.com/?q=place_id:google-place-id",
+            "primary_type": "tourist_attraction",
+            "description": "도심에서 전시를 즐길 수 있는 공간입니다.",
+            "visit_sequence": 1,
+            "visit_time": "09:00"
+          }
+        ]
+      }
+    ],
     "llm_commentary": "사용자 요청을 반영해 이동 부담이 적은 순서로 구성했습니다.",
     "next_action_suggestion": ["이 로드맵을 일정 밀도만 조정해서 다시 만들어줘."]
   }
 }
 ```
+
+`itinerary[].places[].primary_type`은 Google Places `primaryType`을 전달하는 선택 필드이며, 원본 응답에 값이 없으면 `null`일 수 있습니다.
 
 실패 콜백은 `GenerateCallbackFailure` 형식입니다.
 
