@@ -110,6 +110,7 @@ REPLACE/ADD 검색어에는 현재 일자의 주소에서 추출한 지역 힌�
 - 하루 장소 수는 최대 10개입니다.
 - 하루 장소 수는 최소 1개를 유지해야 합니다.
 - REPLACE/ADD는 Google Places 검색으로 실제 장소를 가져옵니다.
+- REPLACE/ADD로 새로 들어온 장소에는 Google Places `primaryType`과 `types`를 내부 정적 매핑한 `place_category`를 포함합니다.
 - 검색 시 현재 일자의 장소 좌표로 bbox를 만들고 10km margin을 적용합니다.
 - bbox restriction, bbox bias, 지역명을 붙인 unfiltered 검색, 최소 평점 해제 검색 순으로 fallback합니다.
 - LLM rerank가 켜져 있으면 후보 중 사용자 요청과 가장 맞는 장소를 선택합니다.
@@ -189,6 +190,7 @@ REPLACE/ADD 검색어에는 현재 일자의 주소에서 추출한 지역 힌�
 ## 사용자 노출 기준
 
 - 프론트엔드는 `diff_keys`를 사용해 변경된 장소 카드를 강조할 수 있습니다.
+- 프론트엔드는 각 장소의 `place_category` 영문 코드를 한국어 라벨로 변환해 표시할 수 있습니다.
 - `message`는 사용자에게 그대로 노출 가능한 단일 응답 문장입니다.
 - `ASK_CLARIFICATION` 상태에서는 사용자의 추가 입력을 받아 같은 API로 다시 요청합니다.
 - Undo/Redo는 현재 Python 워커가 직접 제공하지 않으며, 프론트엔드 또는 상위 서비스가 이전 로드맵 상태를 보관해 처리해야 합니다.

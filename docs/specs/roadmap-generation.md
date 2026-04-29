@@ -113,7 +113,7 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 - restriction 검색 결과가 없으면 location bias로 재검색합니다.
 - 그래도 결과가 없으면 지역명을 붙인 쿼리로 unfiltered 검색을 수행합니다.
 - 마지막 fallback에서는 최소 평점 필터를 해제할 수 있습니다.
-- Google Places 응답의 `primaryType`을 `primary_type`으로 보존합니다.
+- Google Places 응답의 `primaryType`과 `types`를 내부 보존하고, Mohaeng 도메인 대분류인 `place_category`를 산출합니다.
 - `GOOGLE_PLACES_MIN_RATING`, `GOOGLE_PLACES_LLM_RERANK_ENABLED`, `GOOGLE_PLACES_LLM_RERANK_MAX_CANDIDATES` 설정을 반영합니다.
 - LLM rerank가 켜져 있으면 일자별 후보 중 슬롯에 가장 적합한 `place_id`를 선택해 우선순위를 조정합니다.
 
@@ -156,8 +156,8 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 ```
 
 `itinerary`는 `DailyItinerary[]`이며 각 일자는 `CoursePlace[]`를 포함합니다.
-각 장소에는 `place_name`, `place_id`, `address`, `latitude`, `longitude`, `place_url`, `primary_type`, `description`, `visit_sequence`, `visit_time`이 포함됩니다.
-`primary_type`은 Google Places `primaryType`이며, Google 응답에 값이 없으면 `null`일 수 있습니다.
+각 장소에는 `place_name`, `place_id`, `address`, `latitude`, `longitude`, `place_url`, `place_category`, `description`, `visit_sequence`, `visit_time`이 포함됩니다.
+`place_category`는 Google Places `primaryType`과 `types`를 내부 정적 매핑으로 변환한 Mohaeng 장소 대분류 코드이며, 알 수 없는 유형은 `OTHER`입니다.
 
 ## 예외와 실패 처리
 

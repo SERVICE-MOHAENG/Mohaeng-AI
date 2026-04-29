@@ -23,6 +23,7 @@ def test_map_place_maps_primary_type() -> None:
     assert place is not None
     assert place.primary_type == "restaurant"
     assert place.types == ["restaurant", "food", "point_of_interest"]
+    assert place.place_category == "FOOD"
 
 
 def test_map_place_allows_missing_primary_type() -> None:
@@ -40,3 +41,22 @@ def test_map_place_allows_missing_primary_type() -> None:
 
     assert place is not None
     assert place.primary_type is None
+    assert place.place_category == "ATTRACTION"
+
+
+def test_map_place_uses_types_for_category_when_primary_type_is_missing() -> None:
+    service = GooglePlacesService.__new__(GooglePlacesService)
+
+    place = service._map_place(
+        {
+            "id": "places/test-place",
+            "displayName": {"text": "테스트 식당"},
+            "formattedAddress": "서울 중구",
+            "location": {"latitude": 37.5665, "longitude": 126.978},
+            "types": ["point_of_interest", "japanese_restaurant"],
+        }
+    )
+
+    assert place is not None
+    assert place.primary_type is None
+    assert place.place_category == "FOOD"

@@ -99,7 +99,7 @@ class CoursePlace(BaseModel):
     latitude: Optional[float] = Field(None, description="위도")
     longitude: Optional[float] = Field(None, description="경도")
     place_url: Optional[str] = Field(None, description="구글 맵 URL")
-    primary_type: Optional[str] = Field(None, description="Google Places 대표 장소 유형")
+    place_category: str = Field(default="OTHER", description="Mohaeng 장소 대분류 코드")
     description: str = Field(..., description="장소에 대한 한 줄 설명")
     visit_sequence: int = Field(..., ge=1, description="해당 일자 내 방문 순서 (1부터 시작)")
     visit_time: str = Field(..., description="방문 시점 (예: 오전, 10:00 AM, 12:30 PM)")

@@ -58,7 +58,7 @@ def _place_to_course_place(place, visit_sequence: int) -> dict:
         "latitude": place.geometry.latitude,
         "longitude": place.geometry.longitude,
         "place_url": place.url,
-        "primary_type": place.primary_type,
+        "place_category": place.place_category,
         "description": f"{place.name}에서 즐길 수 있는 대표 활동입니다.",
         "visit_sequence": visit_sequence,
         "visit_time": "",

@@ -43,7 +43,7 @@ def _base_payload() -> dict:
                             "latitude": 37.579617,
                             "longitude": 126.977041,
                             "place_url": "https://example.com/place",
-                            "primary_type": "tourist_attraction",
+                            "place_category": "ATTRACTION",
                             "description": "고궁 산책",
                             "visit_sequence": 1,
                             "visit_time": "09:00",
@@ -59,7 +59,7 @@ def test_chat_request_accepts_context_fields() -> None:
     request = ChatRequest.model_validate(_base_payload())
     assert request.companion_type == ["FAMILY"]
     assert request.travel_themes == ["HEALING"]
-    assert request.current_itinerary.itinerary[0].places[0].primary_type == "tourist_attraction"
+    assert request.current_itinerary.itinerary[0].places[0].place_category == "ATTRACTION"
 
 
 def test_chat_request_requires_context_fields() -> None:

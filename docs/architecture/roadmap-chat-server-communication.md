@@ -187,6 +187,8 @@ sequenceDiagram
 - `GENERAL_CHAT`, `ASK_CLARIFICATION`, `REJECTED` 상태에서는 `modified_itinerary`가 `null`입니다.
 - `diff_keys`는 프론트엔드가 변경된 장소 카드를 강조하기 위한 식별자입니다.
 - 교체/추가 장소는 Google Places 검색 결과를 사용합니다.
+- 교체/추가 장소의 Google Places `primaryType`과 `types`는 내부 정적 매핑으로 `place_category`를 산출하는 데만 사용합니다.
+- Google Places 원본 `primary_type`과 식사 anchor 판단값 같은 내부 힌트는 콜백에 포함하지 않습니다.
 - 하루 장소 수는 최소 1개, 최대 10개를 기준으로 합니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.

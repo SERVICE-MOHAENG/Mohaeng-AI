@@ -76,6 +76,7 @@ def test_prepare_final_context_uses_original_place_name_and_static_visit_time() 
                     "geometry": {"latitude": 37.5796, "longitude": 126.977},
                     "url": None,
                     "primary_type": "tourist_attraction",
+                    "types": ["tourist_attraction", "point_of_interest"],
                 }
             ]
         },
@@ -87,7 +88,8 @@ def test_prepare_final_context_uses_original_place_name_and_static_visit_time() 
     assert "London Eye" in itinerary_context
     assert place["place_name"] == "London Eye"
     assert place["original_place_name"] == "London Eye"
-    assert place["primary_type"] == "tourist_attraction"
+    assert place["place_category"] == "ATTRACTION"
+    assert "primary_type" not in place
     assert place["visit_time"] == "12:00"
 
 
@@ -118,6 +120,7 @@ def test_prepare_final_context_allows_missing_primary_type() -> None:
                     "address": "서울 종로구",
                     "geometry": {"latitude": 37.5796, "longitude": 126.977},
                     "url": None,
+                    "types": ["unknown_type"],
                 }
             ]
         },
@@ -127,4 +130,5 @@ def test_prepare_final_context_allows_missing_primary_type() -> None:
 
     place = daily_places[0]["places"][0]
     assert place["place_name"] == "경복궁"
-    assert place["primary_type"] is None
+    assert place["place_category"] == "OTHER"
+    assert "primary_type" not in place
