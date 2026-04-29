@@ -32,22 +32,30 @@ ai_action: "editable"
 
 # 개선안
 
-## 1. 장소명 정규화 범위 제한 또는 조건부 생략
+## 사용자 의사결정 결과
+
+- 장소명 정규화 단계는 제거한다.
+- 한국어 정보가 없는 장소는 영어 또는 현지어 원본명이 실제 간판명과 일치할 가능성이 높으므로 Google Places 원본명을 유지한다.
+- 방문 시간 계산 단계는 제거한다.
+- 방문 시간은 skeleton section을 기준으로 `MORNING=09:00`, `LUNCH=12:00` 같은 단순 매핑을 사용한다.
+- 목표는 정확한 이동/체류 시간이 아니라 대략적인 시간대 제공이다.
+
+## 1. 장소명 정규화 제거
 
 - 대상: `normalize_place_names`
-- 내용: 번역 후보 수가 많을 때 LLM 정규화 대상을 제한하거나, Google Places `languageCode=ko` 결과를 우선 신뢰해 정규화 단계를 생략한다.
-- 추천 방식: 7일 이상 또는 번역 후보가 일정 개수 이상이면 LLM 정규화를 생략하고 원본 `name`을 `display_name`으로 fallback한다.
+- 내용: LLM 기반 장소명 정규화 노드를 로드맵 생성 파이프라인에서 제거한다.
+- 구현 방식: Google Places 원본 `name`을 최종 `place_name`으로 사용한다.
 - 예상 효과: 평균 115.719초 병목을 가장 크게 줄일 수 있다.
 - 리스크: 일부 해외 장소명이 영어/현지어로 노출될 수 있다.
-- 필요 테스트: display_name fallback, 한글 포함 장소 제외, 고유 place_id 중복 처리 유지.
+- 필요 테스트: 정규화 노드 제거, 원본 장소명 유지, 최종 응답 place_name 누락 방지.
 
-## 2. 장기 일정의 최종 LLM 후처리 축소
+## 2. 방문 시간 계산 제거
 
 - 대상: `synthesize_final_roadmap`
-- 내용: 7일 이상 일정에서 장소 설명 생성 LLM과 방문 시간 제안 LLM을 조건부 fallback 또는 규칙 기반 처리로 전환한다.
-- 추천 방식: 장소 description은 기존 fallback 문장을 사용하고, visit_time은 `visit_time_policy` 규칙 기반 결과를 우선 사용한다.
+- 내용: 방문 시간 제안 LLM과 이동/체류 시간 계산을 제거하고 section 기반 정적 시각을 사용한다.
+- 구현 방식: `MORNING=09:00`, `LUNCH=12:00`, `AFTERNOON=14:00`, `DINNER=18:00`, `EVENING=20:00`, `NIGHT=22:00`으로 매핑한다.
 - 예상 효과: 평균 73.300초 병목을 줄일 수 있다.
-- 리스크: 장소 설명의 자연스러움이 낮아지고 방문 시간이 덜 개인화될 수 있다.
+- 리스크: 방문 시간이 정밀하지 않고 같은 section의 장소가 같은 시간으로 표시될 수 있다.
 - 필요 테스트: `CourseResponse` 스키마 유지, description/visit_time 누락 방지, PLANNED/SPONTANEOUS 출력 유지.
 
 ## 3. Timeout 정책 분리 및 stage 관측성 강화
@@ -75,13 +83,12 @@ ai_action: "editable"
 
 # 추천 승인 범위
 
-1차 개선으로는 다음 3개를 승인받는 것을 추천한다.
+1차 개선으로 다음 2개를 적용한다.
 
-1. `normalize_place_names` 장기 일정 조건부 생략 또는 후보 수 제한
-2. `synthesize_final_roadmap` 장기 일정 LLM 후처리 축소
-3. Timeout stage 관측성 강화
+1. `normalize_place_names` 제거
+2. 방문 시간 계산 제거 및 section 기반 정적 매핑 적용
 
-이 조합은 가장 큰 병목 2개를 직접 줄이고, 추후 timeout이 남을 경우 어느 단계에서 발생하는지 관측할 수 있게 한다.
+이 조합은 가장 큰 병목 2개를 직접 줄인다.
 `fetch_places_from_slots`와 skeleton 경량화는 1차 개선 후 재측정 결과를 보고 추가 적용 여부를 결정하는 것이 안전하다.
 
 # 승인 필요 사항

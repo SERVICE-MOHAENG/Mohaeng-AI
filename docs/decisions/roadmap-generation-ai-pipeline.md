@@ -39,7 +39,6 @@ Mohaeng-AI는 사용자의 비정형 여행 요구사항을 실행 가능한 일
 ```text
 generate_skeleton
 -> fetch_places_from_slots
--> normalize_place_names
 -> synthesize_final_roadmap
 -> END
 ```

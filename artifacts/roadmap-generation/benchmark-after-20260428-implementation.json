@@ -1,0 +1,4841 @@
+{
+  "metadata": {
+    "started_at": "2026-04-29T00:05:06.467547+00:00",
+    "case_count": 10,
+    "case_timeout_seconds": 600,
+    "required_env_present": {
+      "OPENAI_API_KEY": true,
+      "GOOGLE_PLACES_API_KEY": true,
+      "SERVICE_SECRET": true,
+      "HMAC_SECRET": true
+    },
+    "python": "3.12.13 (main, Apr  7 2026, 02:23:40) [GCC 14.2.0]"
+  },
+  "status": "COMPLETED",
+  "cases": [
+    {
+      "case_id": "seven_days_seoul",
+      "region": "SEOUL",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-07",
+        "regions": [
+          {
+            "region": "SEOUL",
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-07"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "FOOD_TOUR",
+          "CULTURE_ART"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Long urban trip focused on food, culture, and efficient movement."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 79.091,
+        "fetch_places_from_slots": 17.127,
+        "synthesize_final_roadmap": 49.529
+      },
+      "total_seconds": 145.747,
+      "job_log_elapsed_seconds": 145.83,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 47,
+        "fetched_slot_count": 47,
+        "empty_place_slot_count": 1,
+        "final_place_count": 46
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 33123,
+          "level": "detail",
+          "latency_ms": 33036
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 79173,
+          "level": "detail",
+          "latency_ms": 46046
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=SEOUL days=7 D1:6s D2:7s D3:7s D4:7s D5:7s D6:7s D7:6s attempt=2 repair=True autofix=True",
+          "elapsed_ms": 79175,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=7 slots=47 regions=SEOUL warnings=12",
+          "elapsed_ms": 79175,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=1c72acc5a1190ce97412966033696206 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79175,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=d1db09faa8686de298aaefd1560eb007 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79183,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=47dc87f7cffef4dcdae4740f0134a739 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79183,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=41f8d5b813ef5394476b0a9797f93af2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79184,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=ecf3a5596af392eeda67d89834cb22ab geo=restriction min_rating=4.0",
+          "elapsed_ms": 79184,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=6c8a760300e912a68ccea3620ca91260 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79184,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=665200f424e87c0edb2c9e3c4066a1b9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79184,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=88c57cdf75880810810000e9f3f9bd51 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79184,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=dc6da52289fbe8eb269f5712d406bce5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79184,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=53376533f065fd916fd2c2885f55e966 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=d3084e70c507a4fccc970f97db35c611 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=b288e1be723781468a729371babc2394 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=92c3e7fa03572bafeb9b772da85fa246 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=226e2c77837d53fb8e1d010604506a82 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=00a7f90105fbd25260ea657b1e19fc06 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=13 q_hash=16488ff8d29d0d2f6e129d98528a23ab geo=restriction min_rating=4.0",
+          "elapsed_ms": 79185,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=78f48165b19dcd29909e05435b9f6b65 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=645f9b188a8d338bb02ff52ff3216fbb geo=restriction min_rating=4.0",
+          "elapsed_ms": 79186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=d6bbbb286e68fba9f443f348b663a94d geo=restriction min_rating=4.0",
+          "elapsed_ms": 79186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=836c98c017a042486b513535b1feb562 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=58288d4e9e60cbea7181f39128a4bc68 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=9b65dcc1f1e3e4f9306619a7a5c96348 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=be2d9afe28167875c2674b37a52212c7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79187,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=e4b393ed0c173bb3143042759ab1c753 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79187,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=2ad701a0df3acb7a79188b1a7b175c1b geo=restriction min_rating=4.0",
+          "elapsed_ms": 79187,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=7e26035748935d063208fbb5d0fe2924 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79187,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=58391396f231e116af7bdf57ffef6cc7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79187,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=8ba226ed51b2166efe22fdfc212c3b18 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79187,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=268292314050e98df72205b7ba3e37ea geo=restriction min_rating=4.0",
+          "elapsed_ms": 79188,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=ad1b38d34e35612be2b11df9546702fc geo=restriction min_rating=4.0",
+          "elapsed_ms": 79188,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=8548abf7c469a18b655534bd0b442410 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79188,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=8e21424d6dbda5aa4f71469eae07ce94 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79188,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=0362c17ffa71362a20bb5d29dd76f46a geo=restriction min_rating=4.0",
+          "elapsed_ms": 79188,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=4e2d93a3e82e7e19cb75e05392f9c71b geo=restriction min_rating=4.0",
+          "elapsed_ms": 79188,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=5c766f045dcf8e02371570ab46ff622f geo=restriction min_rating=4.0",
+          "elapsed_ms": 79189,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=804ef9ae78a23f79d5b75269825c4af3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79189,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=2c5856993556fee832a413ce346cd126 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79189,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=cfc52dd3549a99e5220941a7e3c89a6e geo=restriction min_rating=4.0",
+          "elapsed_ms": 79189,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=7a0932e24966a75ae5cecad0c9d00977 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79189,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=5ccf017c34780b410aea74e0ee15515a geo=restriction min_rating=4.0",
+          "elapsed_ms": 79189,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=e99f62a29f9caf168f4992247e28c1a0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79190,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=c98089b36aa557d737d2746c8014d25a geo=restriction min_rating=4.0",
+          "elapsed_ms": 79190,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=b471688daefdc6ef397e50abc4373392 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79190,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=42d347fd7a4dd67ca61adbf24af3af6d geo=restriction min_rating=4.0",
+          "elapsed_ms": 79190,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=d8f4b378d8aad739f5be82e0ce1b5af0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 79190,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=20ec9b83583ea8074c399904f80dfc6d geo=restriction min_rating=4.0",
+          "elapsed_ms": 79190,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=b0d1932ab503a3a8e238680bc1a27d4d geo=restriction min_rating=4.0",
+          "elapsed_ms": 79191,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=e99f62a29f9caf168f4992247e28c1a0 geo=bias min_rating=4.0",
+          "elapsed_ms": 79593,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=55e123af21a64d94a703e01f8d4d8395 geo=none min_rating=4.0",
+          "elapsed_ms": 79963,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=55e123af21a64d94a703e01f8d4d8395 geo=none min_rating=None",
+          "elapsed_ms": 80172,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day6_slot6 q=Yeongdeungpo 도심 야경 사진 촬영 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 80390,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 86538,
+          "level": "detail",
+          "latency_ms": 6141
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 86553,
+          "level": "detail",
+          "latency_ms": 6162
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 88450,
+          "level": "detail",
+          "latency_ms": 8043
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 88890,
+          "level": "detail",
+          "latency_ms": 8491
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 94234,
+          "level": "detail",
+          "latency_ms": 13834
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 95528,
+          "level": "detail",
+          "latency_ms": 15124
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 96301,
+          "level": "detail",
+          "latency_ms": 15907
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=47 rerank=True empty=1 restriction=46 unfiltered_without_min_rating=1",
+          "elapsed_ms": 96301,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 141804,
+          "level": "detail",
+          "latency_ms": 45499
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=46",
+          "elapsed_ms": 141804,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 141804,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 145830,
+          "level": "detail",
+          "latency_ms": 4025
+        },
+        {
+          "stage": "finalize",
+          "message": "title=서울 미식문화여행 places=46",
+          "elapsed_ms": 145830,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "seven_days_san_francisco",
+      "region": "SAN_FRANCISCO",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-06-11",
+        "end_date": "2026-06-17",
+        "regions": [
+          {
+            "region": "SAN_FRANCISCO",
+            "start_date": "2026-06-11",
+            "end_date": "2026-06-17"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "COUPLE"
+        ],
+        "travel_themes": [
+          "CITY_TRIP",
+          "PHOTO_SPOTS"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Include iconic viewpoints, neighborhoods, and local dining."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 59.411,
+        "fetch_places_from_slots": 18.338,
+        "synthesize_final_roadmap": 34.409
+      },
+      "total_seconds": 112.157,
+      "job_log_elapsed_seconds": 112.157,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 47,
+        "fetched_slot_count": 47,
+        "empty_place_slot_count": 1,
+        "final_place_count": 46
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 28643,
+          "level": "detail",
+          "latency_ms": 28638
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 59406,
+          "level": "detail",
+          "latency_ms": 30758
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=SAN_FRANCISCO days=7 D1:6s D2:7s D3:7s D4:7s D5:7s D6:7s D7:6s attempt=2 repair=True autofix=True",
+          "elapsed_ms": 59411,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=7 slots=47 regions=SAN_FRANCISCO warnings=21",
+          "elapsed_ms": 59411,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=43e542ee16bc3fef0965d97d530b608f geo=restriction min_rating=4.0",
+          "elapsed_ms": 59412,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=662bf278728458089f021f9b86a12887 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59413,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=44c5077037fcda7c6c208b2bcef7276c geo=restriction min_rating=4.0",
+          "elapsed_ms": 59413,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=31 q_hash=5ad29a6645353810505b53191eb05d80 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59414,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=334323f8370d43982d8feacb9757eca8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59414,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=b32ad45311f0407d469746fd8f41718d geo=restriction min_rating=4.0",
+          "elapsed_ms": 59415,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=22d5664af78202c8a2b5ddf150cb1756 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59415,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=4a908c5067004a0f087577daecea22d6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59415,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=36a56b5b3362ce82c2bc05471a57be69 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59415,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=5ca57e6035bdd028b37bc8be8d0ec8b4 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59416,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=3b1a4b5f84383d9492a56a89f6fa4f74 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59416,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=d7d22c135ebdbec31394cce496276c88 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59417,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=9801fa1db97aec30f6534a0f0548b091 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59417,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=e7341f7ca5943670a0f2577a46a4e50c geo=restriction min_rating=4.0",
+          "elapsed_ms": 59417,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=a87f80d0d90f87cb4917cdd18497970f geo=restriction min_rating=4.0",
+          "elapsed_ms": 59417,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=31 q_hash=9436bf42f8cfc4235983186301e183b7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59417,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=79da7af9bfd7b96c9ec63b482c5d01eb geo=restriction min_rating=4.0",
+          "elapsed_ms": 59418,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=f98c2163c49c0a88e699c62ec6a7e76b geo=restriction min_rating=4.0",
+          "elapsed_ms": 59418,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=8bba3e5a318b2d41521bc371c5408b8c geo=restriction min_rating=4.0",
+          "elapsed_ms": 59418,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=8e39091b33ae25a4231f284852f5ed59 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59418,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=d64ac10411570e68d8c0e5c25e8b6f65 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59419,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=28bffad7cf88d190243a3e8a1b90f754 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59419,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=84556f74bf9e1cddd1b93154150aead1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59419,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=e264b2a846db647023df792a06f72410 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59419,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=3938590e4e328fddc7dc60b9c913a2c0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59420,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=cd0be32cafe718682ce9a4647a7e9b20 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59420,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=5089863a091d527580869873a242f0ae geo=restriction min_rating=4.0",
+          "elapsed_ms": 59420,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=3680b515f5a3e03d65d927edafe263e8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59420,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=c4f4a173e5d4a12b4b4b7c7aa8e5d50b geo=restriction min_rating=4.0",
+          "elapsed_ms": 59420,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=f0f85cf2cdd6b8dbcf0a0cbcaa414617 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59420,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=9243997cc3e6da93601080adb4386862 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59421,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=90e1a5c940ea68c2527788b37b36e75d geo=restriction min_rating=4.0",
+          "elapsed_ms": 59421,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=ede396f59ebf2c227b6b550460b00aee geo=restriction min_rating=4.0",
+          "elapsed_ms": 59421,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=b1ed877c6cb3072fe64b473a9cbe4841 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59421,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=0bf40366c4f3df8ec3219abd327b83eb geo=restriction min_rating=4.0",
+          "elapsed_ms": 59421,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=0b795e5bc36305ac01fc7fb52b28194c geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=2884bc0bd9ff5e08348c0fb3a5619638 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=e164a02e992cfba14aa35092eca9b338 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=b5a624349499aa1989e5d71501518ff1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=2411ce9d2351e37ddf404658a667fa75 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=fcbd769840d36e8e84ecc47777fc0d27 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=dffbb07ffcfd83109557d28cdbac5f12 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59422,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=d04cab307ace5d858a0259e022ed36f7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59423,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=54390c8c05fdd3f6a616c8e6a348b2d8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59423,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=51680096637bdfa35368df392cc13940 geo=restriction min_rating=4.0",
+          "elapsed_ms": 59423,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=1c22a6d3cf3f5016895cfedf19ce9e2b geo=restriction min_rating=4.0",
+          "elapsed_ms": 59423,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=22395ea51a2f5cb0ca86e11fadadea4f geo=restriction min_rating=4.0",
+          "elapsed_ms": 59423,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=8e39091b33ae25a4231f284852f5ed59 geo=bias min_rating=4.0",
+          "elapsed_ms": 60051,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=37 q_hash=67cb18105ee23a8a4d37db9dc4f58e93 geo=none min_rating=4.0",
+          "elapsed_ms": 60319,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=37 q_hash=67cb18105ee23a8a4d37db9dc4f58e93 geo=none min_rating=None",
+          "elapsed_ms": 60515,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day3_slot6 q=South Beach 해변가에서의 밤 산책 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 60705,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 66469,
+          "level": "detail",
+          "latency_ms": 5755
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 68567,
+          "level": "detail",
+          "latency_ms": 7847
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 68581,
+          "level": "detail",
+          "latency_ms": 7862
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 70117,
+          "level": "detail",
+          "latency_ms": 9395
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 73012,
+          "level": "detail",
+          "latency_ms": 12301
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 74155,
+          "level": "detail",
+          "latency_ms": 13447
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 77748,
+          "level": "detail",
+          "latency_ms": 17031
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=47 rerank=True empty=1 restriction=46 unfiltered_without_min_rating=1",
+          "elapsed_ms": 77749,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 108847,
+          "level": "detail",
+          "latency_ms": 31096
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=46",
+          "elapsed_ms": 108848,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 108848,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 112157,
+          "level": "detail",
+          "latency_ms": 3308
+        },
+        {
+          "stage": "finalize",
+          "message": "title=샌프란시스코 감성 여행 places=46",
+          "elapsed_ms": 112157,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "seven_days_vancouver",
+      "region": "VANCOUVER",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-06-21",
+        "end_date": "2026-06-27",
+        "regions": [
+          {
+            "region": "VANCOUVER",
+            "start_date": "2026-06-21",
+            "end_date": "2026-06-27"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FAMILY"
+        ],
+        "travel_themes": [
+          "NATURE",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Balance nature, waterfront walks, and family-friendly restaurants."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 32.852,
+        "fetch_places_from_slots": 10.631,
+        "synthesize_final_roadmap": 22.968
+      },
+      "total_seconds": 66.451,
+      "job_log_elapsed_seconds": 66.452,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 33,
+        "fetched_slot_count": 33,
+        "empty_place_slot_count": 4,
+        "final_place_count": 29
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 19184,
+          "level": "detail",
+          "latency_ms": 19181
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 32848,
+          "level": "detail",
+          "latency_ms": 13658
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=VANCOUVER days=7 D1:4s D2:5s D3:5s D4:5s D5:5s D6:5s D7:4s attempt=2 repair=True autofix=True",
+          "elapsed_ms": 32852,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=7 slots=33 regions=VANCOUVER warnings=21",
+          "elapsed_ms": 32852,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=baef9b31ab75f4c4441cb608b0b31fe1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32853,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=ace904014b49a71aa329992539fa04b3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32854,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=4971065f810cfae97c0e674767c74603 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32855,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=263f58a2b6c2571fd53c4592c4a326b0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32855,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=d4acc0facbd76c38d66e5ace6c1d7634 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=df8cf8c3456955656cfc3185900d4f3a geo=restriction min_rating=4.0",
+          "elapsed_ms": 32856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=6390249a948d25dfecb8c89948c73a6f geo=restriction min_rating=4.0",
+          "elapsed_ms": 32856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=03f22b8dd2d9244e1fdf4aaa7eff94bc geo=restriction min_rating=4.0",
+          "elapsed_ms": 32857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=5237f3ec030c4b96f794dcd05aac9fb8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=39 q_hash=f48919eb7b4477045dd9cad60cb274f8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=cd986e77848fb8ea0d91b80b701f6252 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=46af594ab355e75fc44d6b098a86876a geo=restriction min_rating=4.0",
+          "elapsed_ms": 32858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=073a838745d3db61f9ff429f36ef693f geo=restriction min_rating=4.0",
+          "elapsed_ms": 32859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=34 q_hash=f58671843dec1ef55c664ec5439b0a3e geo=restriction min_rating=4.0",
+          "elapsed_ms": 32859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=38 q_hash=a26f15e98a568c6962e81732a3802e9d geo=restriction min_rating=4.0",
+          "elapsed_ms": 32859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=6d4a50467c9b3b08af05f4b36a82d818 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=dab6406df4c159ac3bbaf3d1f42de47b geo=restriction min_rating=4.0",
+          "elapsed_ms": 32860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=1a118680abeaef05b272f77b8e3a4e18 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=38 q_hash=96e47d4cec30183d509fd13c1ff3ce81 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=d1e6d72e0f4720b2b862eb6c1ca314eb geo=restriction min_rating=4.0",
+          "elapsed_ms": 32861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=6712f8f6a8e84e08948304c784454ca2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=69b398ca87c6f869b2fa6ff5d1210b37 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=e6b48eade45d9156448f95a52f93f8df geo=restriction min_rating=4.0",
+          "elapsed_ms": 32862,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=cec574f8f45090f9d94f0385d191cdf9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32862,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=1a3ec596a2dc49acf84a8f185b65d54a geo=restriction min_rating=4.0",
+          "elapsed_ms": 32862,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=73f9756fe8a81ded53693f5520af7971 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32863,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=a52ef853c727db8244c4b407272b4761 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32863,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=d7d2e1e4c2e4424e523f335c237e3415 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32863,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=814f5aa34b7b137fa5a77fa8adcd4015 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32863,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=37 q_hash=99f2b5e8b04ff21c29988be81bd3635b geo=restriction min_rating=4.0",
+          "elapsed_ms": 32864,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=81711e510cdfa863c8b560263527f4f6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 32864,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=5637ac59c738f622516fb49a12d6d0ee geo=restriction min_rating=4.0",
+          "elapsed_ms": 32864,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=e3adf8f059e4cb4155c3df4abd47a42f geo=restriction min_rating=4.0",
+          "elapsed_ms": 32865,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=03f22b8dd2d9244e1fdf4aaa7eff94bc geo=bias min_rating=4.0",
+          "elapsed_ms": 33172,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=d1e6d72e0f4720b2b862eb6c1ca314eb geo=bias min_rating=4.0",
+          "elapsed_ms": 33208,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=dab6406df4c159ac3bbaf3d1f42de47b geo=bias min_rating=4.0",
+          "elapsed_ms": 33219,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=cec574f8f45090f9d94f0385d191cdf9 geo=bias min_rating=4.0",
+          "elapsed_ms": 33264,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=e6b48eade45d9156448f95a52f93f8df geo=bias min_rating=4.0",
+          "elapsed_ms": 33270,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=073a838745d3db61f9ff429f36ef693f geo=bias min_rating=4.0",
+          "elapsed_ms": 33285,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day2_slot3 q=Commercial Drive 다양한 세계 요리 맛보기 fb=bias n=1",
+          "elapsed_ms": 33462,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=a3c09588a7edc6506396de217c54e3b6 geo=none min_rating=4.0",
+          "elapsed_ms": 33504,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=42 q_hash=0590ab3aa2365ecdeaa8c0c2403b92d2 geo=none min_rating=4.0",
+          "elapsed_ms": 33510,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=bea427c730681277a9e92d976be03258 geo=none min_rating=4.0",
+          "elapsed_ms": 33536,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=7976cb93100b488972cef048c24dacbd geo=none min_rating=4.0",
+          "elapsed_ms": 33538,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=40 q_hash=f27a7ed4e0c05cb7633ece7f7358709d geo=none min_rating=4.0",
+          "elapsed_ms": 33538,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=42 q_hash=0590ab3aa2365ecdeaa8c0c2403b92d2 geo=none min_rating=None",
+          "elapsed_ms": 33716,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=40 q_hash=f27a7ed4e0c05cb7633ece7f7358709d geo=none min_rating=None",
+          "elapsed_ms": 33749,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=a3c09588a7edc6506396de217c54e3b6 geo=none min_rating=None",
+          "elapsed_ms": 33756,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=bea427c730681277a9e92d976be03258 geo=none min_rating=None",
+          "elapsed_ms": 33773,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day3_slot3 q=West End 편안한 분위기의 저녁 식사 fb=unfiltered_with_min_rating n=5",
+          "elapsed_ms": 33812,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day4_slot2 q=Museum of Anthropology 문화와 역사 탐방 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 33908,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day5_slot0 q=Grouse Mountain 산 정상에서의 아침 하이킹 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 33964,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day5_slot4 q=Steveston 해안 마을 산책과 디저트 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 33987,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day5_slot3 q=Richmond 다양한 아시아 요리 저녁 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 34014,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 36436,
+          "level": "detail",
+          "latency_ms": 2408
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 36665,
+          "level": "detail",
+          "latency_ms": 2638
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 37762,
+          "level": "detail",
+          "latency_ms": 3733
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 38287,
+          "level": "detail",
+          "latency_ms": 4271
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 39028,
+          "level": "detail",
+          "latency_ms": 5009
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 39482,
+          "level": "detail",
+          "latency_ms": 5457
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 43483,
+          "level": "detail",
+          "latency_ms": 9463
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=33 rerank=True empty=4 bias=1 restriction=27 unfiltered_with_min_rating=1 unfiltered_without_min_rating=4",
+          "elapsed_ms": 43484,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 62427,
+          "level": "detail",
+          "latency_ms": 18940
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=29",
+          "elapsed_ms": 62428,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 62428,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 66451,
+          "level": "detail",
+          "latency_ms": 4023
+        },
+        {
+          "stage": "finalize",
+          "message": "title=밴쿠버 자연과 미식 places=29",
+          "elapsed_ms": 66451,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "seven_days_sydney",
+      "region": "SYDNEY",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-01",
+        "end_date": "2026-07-07",
+        "regions": [
+          {
+            "region": "SYDNEY",
+            "start_date": "2026-07-01",
+            "end_date": "2026-07-07"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "SIGHTSEEING",
+          "ACTIVITY"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "SPONTANEOUS",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Prefer beaches, landmarks, and active outdoor experiences."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 12.584,
+        "fetch_places_from_slots": 13.028,
+        "synthesize_final_roadmap": 45.883
+      },
+      "total_seconds": 71.496,
+      "job_log_elapsed_seconds": 71.496,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 47,
+        "fetched_slot_count": 47,
+        "empty_place_slot_count": 0,
+        "final_place_count": 47
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 12583,
+          "level": "detail",
+          "latency_ms": 12580
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=SYDNEY days=7 D1:6s D2:7s D3:7s D4:7s D5:7s D6:7s D7:6s attempt=1 repair=False autofix=False",
+          "elapsed_ms": 12584,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=7 slots=47 regions=SYDNEY warnings=3",
+          "elapsed_ms": 12584,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=ef344c93300f3d82bf26269f6cd7b03e geo=restriction min_rating=4.0",
+          "elapsed_ms": 12585,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=aeb446de4c8c67bc963997370e89f159 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12586,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=71995c566f6711bd0f4eb617aca293e1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12586,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=5d3a75b194796afec8ec9ca4bbd44e65 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12587,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=aa126630da0158cc854691b870f83eb3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12589,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=c8a2e7c4a04ca805e05b95b27ea86bf2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12589,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=91802488b34ccb0096f15ca0bb8fd727 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12590,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=088222762c41fd643b568953a7354a25 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12590,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=6a4cfca775366968fe02e8a5e15d8dc7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12590,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=288d6c322f3524e4eed814d69daa9069 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12590,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=1c86add5b974c824c0e22c1a3657b8cb geo=restriction min_rating=4.0",
+          "elapsed_ms": 12591,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=4d74de86043ea79e4148db6da529d71e geo=restriction min_rating=4.0",
+          "elapsed_ms": 12591,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=12cc0ee887c42e1f3b9631cfab53f05f geo=restriction min_rating=4.0",
+          "elapsed_ms": 12591,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=729959239f25d240b8f370108185f967 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12591,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=611740a47f71f9fc706e38420ded8c56 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12591,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=ec402b489191052024f2406c1a828f64 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12591,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=db46b268f14da5e71238add71419ce82 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12592,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=f11f8bdd1cbd0cadb6161e661e828aa7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12593,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=c98976862429311be4d3fba25e53da1d geo=restriction min_rating=4.0",
+          "elapsed_ms": 12594,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=a1fc98e0946c4542f9891b9084a8afd5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12595,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=7c569be5550e467cf2a4e88bb54cac74 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12596,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=e387db464996eb7af35b80cbcf01b43f geo=restriction min_rating=4.0",
+          "elapsed_ms": 12597,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=31 q_hash=d03acd32d24c5d2dc341925d0db97ffc geo=restriction min_rating=4.0",
+          "elapsed_ms": 12597,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=0a061c1f9c260774c25d43ca813422c1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12597,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=e1829a267228f374cbb027edebf25faa geo=restriction min_rating=4.0",
+          "elapsed_ms": 12598,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=c7b4ecab66c374619ebd2b8a8fc12cbc geo=restriction min_rating=4.0",
+          "elapsed_ms": 12598,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=8a18f5c4614300fc11c9f22ce80097db geo=restriction min_rating=4.0",
+          "elapsed_ms": 12598,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=7eb1dd97a8eb8728e5c169689d07432e geo=restriction min_rating=4.0",
+          "elapsed_ms": 12661,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=6e20851b733db13f286ef3bfd66feeca geo=restriction min_rating=4.0",
+          "elapsed_ms": 12661,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=42 q_hash=833be30af75fd68b8913c4ea84ce11bc geo=restriction min_rating=4.0",
+          "elapsed_ms": 12662,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=d59756cdba53364ecbd0b4dff4f3e45c geo=restriction min_rating=4.0",
+          "elapsed_ms": 12662,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=34c83baea0b6695b502902390cd4be95 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12662,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=fc3b669826261aebb72d804bd5c64ebb geo=restriction min_rating=4.0",
+          "elapsed_ms": 12662,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=607ce92df0dc1e8a6e6ce503a18ea644 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12662,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=c18f9ee055f485dafb2c947426605197 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=c9411a8ceee8b6e96e78aa9ff8427bd9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=bffc54ed118d9b0be7b8cb4082ba3b59 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=f2a3e0e3936934c7f789ee1abcff048a geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=5e881844b6619cbe84f852dadce789bb geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=f9c6c28af7cba4f6f621c60459841ce2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=04865abfc50c24bfd782c504bf176918 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12663,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=66ae565a5219135be612d1100c9c5490 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12664,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=0ab5f2a393b64b2fd9176428d3b78ea6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12664,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=4bea31d2e7a9e3f08ba2571dad9249f7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12664,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=b68e22f906a2cc654db0a972acee365e geo=restriction min_rating=4.0",
+          "elapsed_ms": 12664,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=f33f56e97af32f04921df2fca956dac8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12664,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=3712107934b28ebdeea8e6eadc3d0e27 geo=restriction min_rating=4.0",
+          "elapsed_ms": 12665,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 17216,
+          "level": "detail",
+          "latency_ms": 3951
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 19261,
+          "level": "detail",
+          "latency_ms": 5993
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 19289,
+          "level": "detail",
+          "latency_ms": 6030
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 20064,
+          "level": "detail",
+          "latency_ms": 6800
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 20535,
+          "level": "detail",
+          "latency_ms": 7268
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 22223,
+          "level": "detail",
+          "latency_ms": 8967
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 25612,
+          "level": "detail",
+          "latency_ms": 12353
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=47 rerank=True empty=0 restriction=47",
+          "elapsed_ms": 25613,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 67916,
+          "level": "detail",
+          "latency_ms": 42299
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=47",
+          "elapsed_ms": 67917,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 67917,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 71496,
+          "level": "detail",
+          "latency_ms": 3578
+        },
+        {
+          "stage": "finalize",
+          "message": "title=시드니 액티브 투어 places=47",
+          "elapsed_ms": 71496,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "seven_days_paris",
+      "region": "PARIS",
+      "days": 7,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-11",
+        "end_date": "2026-07-17",
+        "regions": [
+          {
+            "region": "PARIS",
+            "start_date": "2026-07-11",
+            "end_date": "2026-07-17"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "SOLO"
+        ],
+        "travel_themes": [
+          "CULTURE_ART",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Prioritize museums, cafes, and walkable local neighborhoods."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 28.689,
+        "fetch_places_from_slots": 5.912,
+        "synthesize_final_roadmap": 25.599
+      },
+      "total_seconds": 60.201,
+      "job_log_elapsed_seconds": 60.201,
+      "summary": {
+        "trip_days": 7,
+        "slot_count": 33,
+        "fetched_slot_count": 33,
+        "empty_place_slot_count": 2,
+        "final_place_count": 31
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 14389,
+          "level": "detail",
+          "latency_ms": 14385
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 28688,
+          "level": "detail",
+          "latency_ms": 14297
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=PARIS days=7 D1:4s D2:5s D3:5s D4:5s D5:5s D6:5s D7:4s attempt=2 repair=True autofix=False",
+          "elapsed_ms": 28689,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=7 slots=33 regions=PARIS warnings=0",
+          "elapsed_ms": 28689,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=3cbfe3bc4fd38193df919b6d6219ee8c geo=restriction min_rating=4.0",
+          "elapsed_ms": 28690,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=08fa6ed0c7fd4d38525ee252802bcf49 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28691,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=f742eb65b7f87529f52dc81e70164a92 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28693,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=36 q_hash=4785f58fa0fa66e6e0b8228729cf8c96 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28693,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=9c697d2ee7f4267f604e194005d461fb geo=restriction min_rating=4.0",
+          "elapsed_ms": 28693,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=45694fa53dfbb2ac88bab12efe29a649 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28694,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=4dd4eeddc6b039e4610bd6a843791d5c geo=restriction min_rating=4.0",
+          "elapsed_ms": 28694,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=0f850f45b6d4250ae6f26c0b7bd3a765 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28694,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=e865320515d3b5831caf479c7c12cf74 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28695,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=263ae2262e7b67da51273607f4b4e825 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28695,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=b979edefd0600ed6c913c746489aabac geo=restriction min_rating=4.0",
+          "elapsed_ms": 28695,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=81ce86e72e62e281d98d2d635f942ce9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28696,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=6ff128747edc854f819a58a446e1869d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28696,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=49f9652ce654291b9c77203b1571e2df geo=restriction min_rating=4.0",
+          "elapsed_ms": 28696,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=ee29bc6d09069614faf9c47ea9e94729 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28697,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=bd556f56565e36444b101231e56f6bef geo=restriction min_rating=4.0",
+          "elapsed_ms": 28697,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=a51290b8c6c029ba17e0c87aaf931262 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28697,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=9a1cccd2bc87e731bb02d1860f320c39 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28698,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=20a17711d1abaf7591de6c7ed15e0c2b geo=restriction min_rating=4.0",
+          "elapsed_ms": 28698,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=f61c8898bd2fc1e787c4c5118a83c528 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28698,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=2504e808a25f7c1f708b5d0d3a04850d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28699,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=ccfc92df6f24376928d1e539730fddc1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28699,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=e3da5b05aee6f275e187895e77ac5a66 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28699,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=b0e3d5df83cbc830636d47cfa0fa8fbc geo=restriction min_rating=4.0",
+          "elapsed_ms": 28700,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=5a60917df2359ce03528aa990f862105 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28700,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=7955c8f12f1bb3f95e6c074467b3b70e geo=restriction min_rating=4.0",
+          "elapsed_ms": 28700,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=2666a5d11b7c875f550266cb1878eda1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28701,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=c67debd1c01f34a5f55ea1b96cbf10cc geo=restriction min_rating=4.0",
+          "elapsed_ms": 28701,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=a09afebeebd9f51cddb0d98eea01c7e2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28701,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=12dc8cdeb7b86d70d8a9da4e6a37d7c9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28702,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=91a76e2792a88494dda4c99aa02a31ee geo=restriction min_rating=4.0",
+          "elapsed_ms": 28702,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=80d20ec9535992dfd8e6947cfb2f05c9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28702,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=c0806955af4588d40033aa44775c8e24 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28702,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=2666a5d11b7c875f550266cb1878eda1 geo=bias min_rating=4.0",
+          "elapsed_ms": 29057,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=2504e808a25f7c1f708b5d0d3a04850d geo=bias min_rating=4.0",
+          "elapsed_ms": 29069,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=918d7acb4947be39ccfb5d0a5a649ddf geo=none min_rating=4.0",
+          "elapsed_ms": 29348,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=a4eb3100cf0fc0bd6ae64c03ba787e9b geo=none min_rating=4.0",
+          "elapsed_ms": 29349,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=a4eb3100cf0fc0bd6ae64c03ba787e9b geo=none min_rating=None",
+          "elapsed_ms": 29520,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=918d7acb4947be39ccfb5d0a5a649ddf geo=none min_rating=None",
+          "elapsed_ms": 29552,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day5_slot1 q=Belleville 다문화 요리 체험 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 29695,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day6_slot2 q=Versailles 궁전 정원 산책 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 29773,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 33388,
+          "level": "detail",
+          "latency_ms": 3601
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34051,
+          "level": "detail",
+          "latency_ms": 4275
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34061,
+          "level": "detail",
+          "latency_ms": 4272
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34213,
+          "level": "detail",
+          "latency_ms": 4432
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34220,
+          "level": "detail",
+          "latency_ms": 4428
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34329,
+          "level": "detail",
+          "latency_ms": 4539
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34602,
+          "level": "detail",
+          "latency_ms": 4823
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=33 rerank=True empty=2 restriction=31 unfiltered_without_min_rating=2",
+          "elapsed_ms": 34602,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 57336,
+          "level": "detail",
+          "latency_ms": 22732
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=31",
+          "elapsed_ms": 57337,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 57337,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 60201,
+          "level": "detail",
+          "latency_ms": 2864
+        },
+        {
+          "stage": "finalize",
+          "message": "title=파리 예술 산책 places=31",
+          "elapsed_ms": 60201,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "eight_days_tokyo",
+      "region": "TOKYO",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-21",
+        "end_date": "2026-07-28",
+        "regions": [
+          {
+            "region": "TOKYO",
+            "start_date": "2026-07-21",
+            "end_date": "2026-07-28"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "SHOPPING",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Dense city itinerary with shopping, food, and distinct neighborhoods."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 30.285,
+        "fetch_places_from_slots": 12.218,
+        "synthesize_final_roadmap": 34.265
+      },
+      "total_seconds": 76.769,
+      "job_log_elapsed_seconds": 76.769,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 54,
+        "fetched_slot_count": 54,
+        "empty_place_slot_count": 4,
+        "final_place_count": 50
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 9395,
+          "level": "detail",
+          "latency_ms": 9391
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 30281,
+          "level": "detail",
+          "latency_ms": 20883
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=TOKYO days=8 D1:6s D2:7s D3:7s D4:7s D5:7s D6:7s D7:7s D8:6s attempt=2 repair=True autofix=False",
+          "elapsed_ms": 30284,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=8 slots=54 regions=TOKYO warnings=2",
+          "elapsed_ms": 30285,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=488aac672e12ef83023f34972cbbc363 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30285,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=7d72f50bd1e51a643371d9f7e35daaa8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30287,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=b42846d69299ab85e6b30cc77afb1497 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30287,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=0f23ff9ea7d641bde62a3fb428ffcb91 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30288,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=767f0509373f6f016dcece66c49d6f99 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30288,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=4de43212b40ac7ad80ebe56a05c9d1da geo=restriction min_rating=4.0",
+          "elapsed_ms": 30289,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=7291ffe4a64be8c421db1c7ca45d97e9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30290,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=232f569c1c9db465ab7314330a3b413c geo=restriction min_rating=4.0",
+          "elapsed_ms": 30291,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=4299c9336e431d9dac5315cc622abb4e geo=restriction min_rating=4.0",
+          "elapsed_ms": 30292,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=a58bd0abf8cd9484c2d6be7e39b23ace geo=restriction min_rating=4.0",
+          "elapsed_ms": 30293,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=bc5287f40767a7df740d3481343dd82b geo=restriction min_rating=4.0",
+          "elapsed_ms": 30293,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=b102fe5982d6306fe2e1780d7dbe86a9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30294,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=21148d2fcfc9a07e5e430087358956f5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30295,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=eff59895a60d8c4f04f9d322e3ab4a03 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30295,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=e2949b3bfc9a0409e1535db5509ef301 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30295,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=04767d1e2f46e9c5e5071974c7edfc59 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30296,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=de96df3ec0fdeb5ace26570145b5f5db geo=restriction min_rating=4.0",
+          "elapsed_ms": 30296,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=43d8d9b69ca50f39b56de337e7379d8b geo=restriction min_rating=4.0",
+          "elapsed_ms": 30296,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=a3430fba56e17ecfb526de04f3676774 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30297,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=21f0cff1df84c994d0c2f53bc398f0cb geo=restriction min_rating=4.0",
+          "elapsed_ms": 30297,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=a5480fd2a4bc07a99c9b78725356ea24 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30297,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=d945c27970c2427007143276c14be0cf geo=restriction min_rating=4.0",
+          "elapsed_ms": 30298,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=682316074e5c7d689b17a4c4590d26d3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30298,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=931732599c9b8ca161bd0ec34ef71b00 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30298,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=6caa98255682a8464f4746ed32357a7a geo=restriction min_rating=4.0",
+          "elapsed_ms": 30299,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=6f9fc931f4cd72c63e66c14de4e9594f geo=restriction min_rating=4.0",
+          "elapsed_ms": 30299,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=192497d0b7812b42a816c82a1ea66e19 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30299,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=6d259bf51d34248faeb7447bb8e12cad geo=restriction min_rating=4.0",
+          "elapsed_ms": 30300,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=d3d3babd9fb469d109e68e22b9647205 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30300,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=931be3f433b4846b8bd3abf5b9dcb71f geo=restriction min_rating=4.0",
+          "elapsed_ms": 30300,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=2f84bce95fac2d190f87cad6dabb9916 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30300,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=a3d67e6a006917f4b9f8f27fa79531d0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30301,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=12993169c87f05e5e2be345b055be69c geo=restriction min_rating=4.0",
+          "elapsed_ms": 30301,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=6c030163f81a7884bc7af78a68102879 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30301,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=9e06425bbdb6ae148a98fedab95687ac geo=restriction min_rating=4.0",
+          "elapsed_ms": 30302,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=6001b3bab982c22ea3ffec3d5a138b8a geo=restriction min_rating=4.0",
+          "elapsed_ms": 30302,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=d96a572c0c4b0fd32064e3662756dd09 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30302,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=9e39d14a0742013a7864658d5510c794 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30302,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=94818671640181e01b2943b39ae78064 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30303,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=3b185a870921f7e42678f9f94cbc9783 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30303,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=4d2465752c4e034b27dd5fdf650674e0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30303,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=0ef10085027bd0e3a8f15aadbff0eaee geo=restriction min_rating=4.0",
+          "elapsed_ms": 30304,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=4ab840c49f888a1dbbd4adb2c7cb4eaf geo=restriction min_rating=4.0",
+          "elapsed_ms": 30304,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=81492bcaef5732409c37a9c467ce8e42 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30304,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=e11b29ada64a4d7fb9bbeb5e8a5397a9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30304,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=982ccc2b6b1dc81c1da23262d2f5f72c geo=restriction min_rating=4.0",
+          "elapsed_ms": 30304,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=81f226f80362e6d28f429a18c1d6c7b7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30305,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=dac4f7c7a0cde7500992f0d4d7679fa5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30305,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=48f0b70de869fc4d095791e34682e4de geo=restriction min_rating=4.0",
+          "elapsed_ms": 30305,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=d46f98cf5bc7fd4df8bbc43ce803b2d3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30305,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=81a77120e6671f6822c040b0ea1324c1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30306,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=a3a28f08fdf8b5333ec2faca4b6c8498 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30306,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=841d3fc35e67b311a94094bfec3052dc geo=restriction min_rating=4.0",
+          "elapsed_ms": 30306,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=a335ba96c88f23fd76f4a8a80f0b15e5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 30307,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=48f0b70de869fc4d095791e34682e4de geo=bias min_rating=4.0",
+          "elapsed_ms": 30697,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=841d3fc35e67b311a94094bfec3052dc geo=bias min_rating=4.0",
+          "elapsed_ms": 30704,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=d46f98cf5bc7fd4df8bbc43ce803b2d3 geo=bias min_rating=4.0",
+          "elapsed_ms": 30713,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=81492bcaef5732409c37a9c467ce8e42 geo=bias min_rating=4.0",
+          "elapsed_ms": 30816,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=56a43f4532fa64699a7db3ad48250cec geo=none min_rating=4.0",
+          "elapsed_ms": 30990,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=fb33c87444362cae4a792867cf61785e geo=none min_rating=4.0",
+          "elapsed_ms": 31027,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=0d6593394d84784a56906c2dc0ac36ff geo=none min_rating=4.0",
+          "elapsed_ms": 31028,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=7d85ceec4e8edc46ec323b3d92e4b011 geo=none min_rating=4.0",
+          "elapsed_ms": 31091,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=56a43f4532fa64699a7db3ad48250cec geo=none min_rating=None",
+          "elapsed_ms": 31199,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=fb33c87444362cae4a792867cf61785e geo=none min_rating=None",
+          "elapsed_ms": 31225,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=7d85ceec4e8edc46ec323b3d92e4b011 geo=none min_rating=None",
+          "elapsed_ms": 31267,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=0d6593394d84784a56906c2dc0ac36ff geo=none min_rating=None",
+          "elapsed_ms": 31298,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day8_slot4 q=Yokohama 항구 야경 감상 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 31410,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day8_slot0 q=Yokohama 항구 도시 산책 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 31413,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day7_slot2 q=Kichijoji 수공예품 쇼핑 탐방 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 31441,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day8_slot1 q=Yokohama 중화 거리 점심 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 31526,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34308,
+          "level": "detail",
+          "latency_ms": 2761
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 36395,
+          "level": "detail",
+          "latency_ms": 4849
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 37712,
+          "level": "detail",
+          "latency_ms": 6168
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 37874,
+          "level": "detail",
+          "latency_ms": 6346
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 37875,
+          "level": "detail",
+          "latency_ms": 6342
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 39081,
+          "level": "detail",
+          "latency_ms": 7538
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 41867,
+          "level": "detail",
+          "latency_ms": 10336
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 42503,
+          "level": "detail",
+          "latency_ms": 10963
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=54 rerank=True empty=4 restriction=50 unfiltered_without_min_rating=4",
+          "elapsed_ms": 42503,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 73613,
+          "level": "detail",
+          "latency_ms": 31108
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=50",
+          "elapsed_ms": 73613,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 73613,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 76768,
+          "level": "detail",
+          "latency_ms": 3154
+        },
+        {
+          "stage": "finalize",
+          "message": "title=도쿄 쇼핑&미식 여행 places=50",
+          "elapsed_ms": 76769,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "eight_days_london",
+      "region": "LONDON",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-07-31",
+        "end_date": "2026-08-07",
+        "regions": [
+          {
+            "region": "LONDON",
+            "start_date": "2026-07-31",
+            "end_date": "2026-08-07"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FAMILY"
+        ],
+        "travel_themes": [
+          "SIGHTSEEING",
+          "CULTURE_ART"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Family itinerary with landmarks, museums, parks, and moderate pacing."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 23.719,
+        "fetch_places_from_slots": 6.235,
+        "synthesize_final_roadmap": 25.064
+      },
+      "total_seconds": 55.018,
+      "job_log_elapsed_seconds": 55.018,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 38,
+        "fetched_slot_count": 38,
+        "empty_place_slot_count": 0,
+        "final_place_count": 38
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 11992,
+          "level": "detail",
+          "latency_ms": 11989
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 23718,
+          "level": "detail",
+          "latency_ms": 11721
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=LONDON days=8 D1:4s D2:5s D3:5s D4:5s D5:5s D6:5s D7:5s D8:4s attempt=2 repair=True autofix=False",
+          "elapsed_ms": 23719,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=8 slots=38 regions=LONDON warnings=16",
+          "elapsed_ms": 23719,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=0b3460ca9ac834de11b119e24e8b975d geo=restriction min_rating=4.0",
+          "elapsed_ms": 23721,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=2aea39facf31fd12e3108f7b3903b78f geo=restriction min_rating=4.0",
+          "elapsed_ms": 23722,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=289a8f5b1c9df618f80c6e8dd3640691 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23730,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=050ee7f9d1de41ad5f15412cf56fef6f geo=restriction min_rating=4.0",
+          "elapsed_ms": 23731,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=701cfe62892bee194a08845a9818c28b geo=restriction min_rating=4.0",
+          "elapsed_ms": 23732,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=714fb4f69cd0643ec4bed8c7e54cc4fb geo=restriction min_rating=4.0",
+          "elapsed_ms": 23732,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=fddd2e60226dddb2ac4eba9018ac992f geo=restriction min_rating=4.0",
+          "elapsed_ms": 23733,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=2032503bb5bf4488d8d3f30d965ddfb6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23733,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=faed7774e0219b95bc65d010e5f0b922 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23734,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=ebb3df029d35f0281c2a4168cf0d37ed geo=restriction min_rating=4.0",
+          "elapsed_ms": 23734,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=cdfa9f40a0ba249dd1fb7a8d32032a1a geo=restriction min_rating=4.0",
+          "elapsed_ms": 23734,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=5f42c2f3d3c4b98c1f00c96311d1a021 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23735,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=058c90593b03cfad4ec883a34b4c0218 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23735,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=976763d95768b6b996f95f662de4ddc8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23735,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=09b210e5f49371d08ed9cee02282de02 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23736,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=0da638c1644ad8a356bbbf530470473d geo=restriction min_rating=4.0",
+          "elapsed_ms": 23736,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=e4b17b5721635c9861c3239766ab7321 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23737,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=969f022b48f71913a12069a19672a829 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23737,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=fb06588f50bdb1faf344a3ef06d06fcb geo=restriction min_rating=4.0",
+          "elapsed_ms": 23737,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=32bc5615ca9c7eb6188b001c5c9ca8e5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23738,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=7c6a23c8c2ef2fd711568b1943a258cc geo=restriction min_rating=4.0",
+          "elapsed_ms": 23738,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=06c59a676834f6565136fced8b40c7a4 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23738,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=f331262db4055ffdda2037cfa67a6d5b geo=restriction min_rating=4.0",
+          "elapsed_ms": 23739,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=27e467fdb46327b00ee4c2ffbf85a919 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23739,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=c8438217580ee86de17c74e89381fa3f geo=restriction min_rating=4.0",
+          "elapsed_ms": 23739,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=23b15bc8d1a9f84acbcd8821fe143aea geo=restriction min_rating=4.0",
+          "elapsed_ms": 23740,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=1f8b0218cfc0429fc269425375328a69 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23740,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=72cf357416333361472522cc19fd457a geo=restriction min_rating=4.0",
+          "elapsed_ms": 23741,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=715732c222e2a8c538ef032faa5d860e geo=restriction min_rating=4.0",
+          "elapsed_ms": 23741,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=b62bab61e67513d46ce40fe7abd33e48 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23741,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=7763498e1393ae2b5e36090f93d29da7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23742,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=016b5d6c36a38eeb7cfb8a3260f9dea2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23742,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=4c062b07f9607de82697d3f780604498 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23742,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=1fe2a2f61e4c9513af50663371504894 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23743,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=11334c322ce99a71c3ad0f505328a1c2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23747,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=ee60572fdb65c94391526fd7cc12c1f2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23747,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=6f03a23c319f1bf82774cd8a78280b69 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23750,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=020e0785d0682bf65e44a183dfb70669 geo=restriction min_rating=4.0",
+          "elapsed_ms": 23750,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=cdfa9f40a0ba249dd1fb7a8d32032a1a geo=bias min_rating=4.0",
+          "elapsed_ms": 24400,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=ab2b11bbbbc5a72722f801263bf9a842 geo=none min_rating=4.0",
+          "elapsed_ms": 24882,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day3_slot1 q=Regent's Park 공원에서 피크닉 점심 fb=unfiltered_with_min_rating n=1",
+          "elapsed_ms": 25094,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 28606,
+          "level": "detail",
+          "latency_ms": 3509
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 28846,
+          "level": "detail",
+          "latency_ms": 3745
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 28901,
+          "level": "detail",
+          "latency_ms": 3784
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 29329,
+          "level": "detail",
+          "latency_ms": 4218
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 29510,
+          "level": "detail",
+          "latency_ms": 4395
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 29765,
+          "level": "detail",
+          "latency_ms": 4652
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 29829,
+          "level": "detail",
+          "latency_ms": 4730
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 29954,
+          "level": "detail",
+          "latency_ms": 4845
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=38 rerank=True empty=0 restriction=37 unfiltered_with_min_rating=1",
+          "elapsed_ms": 29954,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 53157,
+          "level": "detail",
+          "latency_ms": 23199
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=38",
+          "elapsed_ms": 53158,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 53158,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 55017,
+          "level": "detail",
+          "latency_ms": 1859
+        },
+        {
+          "stage": "finalize",
+          "message": "title=런던 문화 탐방 places=38",
+          "elapsed_ms": 55018,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "eight_days_new_york_city",
+      "region": "NEW_YORK_CITY",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-08-10",
+        "end_date": "2026-08-17",
+        "regions": [
+          {
+            "region": "NEW_YORK_CITY",
+            "start_date": "2026-08-10",
+            "end_date": "2026-08-17"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "COUPLE"
+        ],
+        "travel_themes": [
+          "CITY_TRIP",
+          "FOOD_TOUR"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "SPONTANEOUS",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EMOTIONAL",
+        "notes": "Mix classic New York highlights with local food and evening views."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 36.848,
+        "fetch_places_from_slots": 10.136,
+        "synthesize_final_roadmap": 70.727
+      },
+      "total_seconds": 117.711,
+      "job_log_elapsed_seconds": 117.711,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 54,
+        "fetched_slot_count": 54,
+        "empty_place_slot_count": 0,
+        "final_place_count": 54
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 16005,
+          "level": "detail",
+          "latency_ms": 16002
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 36843,
+          "level": "detail",
+          "latency_ms": 20833
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=NEW_YORK_CITY days=8 D1:6s D2:7s D3:7s D4:7s D5:7s D6:7s D7:7s D8:6s attempt=2 repair=True autofix=False",
+          "elapsed_ms": 36848,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=8 slots=54 regions=NEW_YORK_CITY warnings=14",
+          "elapsed_ms": 36848,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=c2ae2736537d97908d53440bdb18e892 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36849,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=3ccb64c3c7d7ca21bdd2f880ef5eb9ce geo=restriction min_rating=4.0",
+          "elapsed_ms": 36850,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=4666f31e6036e552d5f832d0b663e210 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36851,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=d2ed09df434a26d109e6380bdc55369d geo=restriction min_rating=4.0",
+          "elapsed_ms": 36851,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=d10b781f31df6933f5d93ad0fce30eba geo=restriction min_rating=4.0",
+          "elapsed_ms": 36851,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=991b33c810dd41c14518bb79d560ffef geo=restriction min_rating=4.0",
+          "elapsed_ms": 36851,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=5eb3ab3bb006d812a31cc5a126ca0fcf geo=restriction min_rating=4.0",
+          "elapsed_ms": 36851,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=0677cdf8e1bbd64ba2a5f95406f451c6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36851,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=e0da463a31e6ff4a7262d2df8d1224fc geo=restriction min_rating=4.0",
+          "elapsed_ms": 36852,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=dc51473d20ea9d60ee565ebb94cc59e9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36852,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=1e78c465475dcbe93fbbef3fc2bf717d geo=restriction min_rating=4.0",
+          "elapsed_ms": 36852,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=4b5c2955ee9371b3c04d2dfd9e8de985 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36853,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=32462127541150c0d0e2f9b88678cd3f geo=restriction min_rating=4.0",
+          "elapsed_ms": 36853,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=2dd29c2dbd9b30b992c2f15d27c155e1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36853,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=a5f5b3a16a002bbab8ac53c81b9b549b geo=restriction min_rating=4.0",
+          "elapsed_ms": 36853,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=8cad45c5a565dbe6e6baec1ac745853f geo=restriction min_rating=4.0",
+          "elapsed_ms": 36854,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=500f8b6150dd000007deb830aa5d06f6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36854,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=31 q_hash=969e06380f8b4704910aaebc9513752d geo=restriction min_rating=4.0",
+          "elapsed_ms": 36854,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=a76336d17dfb4f2830dc28861d8cfdea geo=restriction min_rating=4.0",
+          "elapsed_ms": 36855,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=226625f512c2875756977631e6aad900 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36855,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=bacf73d64d8368b8272a10f86979dd24 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36855,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=a3ad82ae59c4bdd76e7bd8125fac5f00 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=7e267fbde6ff51005c05c332c42e3cb2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=f502a82a74a01bd8a6f3b86063ba418d geo=restriction min_rating=4.0",
+          "elapsed_ms": 36856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=416abb42fd13426a44c0547e5f36db4d geo=restriction min_rating=4.0",
+          "elapsed_ms": 36856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=31 q_hash=690c5575988d254cb6a243e1587e28ca geo=restriction min_rating=4.0",
+          "elapsed_ms": 36856,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=f998263d84fdb0a97221e9bfac368dea geo=restriction min_rating=4.0",
+          "elapsed_ms": 36857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=c8bb9f7280fef1185e514c7522c2151d geo=restriction min_rating=4.0",
+          "elapsed_ms": 36857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=322a9efe15c07f137992030a7fa45369 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=503755197847ad758eda4b8ef07d30ce geo=restriction min_rating=4.0",
+          "elapsed_ms": 36857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=4243926877a16b4cdfde6ccf165073fc geo=restriction min_rating=4.0",
+          "elapsed_ms": 36857,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=0f806055d9279e1040a47b3c36f6f102 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=998e8184793f9aae8bd4f6d600f39f1c geo=restriction min_rating=4.0",
+          "elapsed_ms": 36858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=942b142e98a27571c20cf21b6e5cccbc geo=restriction min_rating=4.0",
+          "elapsed_ms": 36858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=7be24b7f560a6a6ac5d73eda5252c6d5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=3f8fd8fe1290f3bcda20b3dd2339f3e9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=152f032dc946b42a83fa7f70487eed40 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=ed06be4447b59b75f50f178e18a8ee99 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=47a265e1842ae0cff29932662288a66b geo=restriction min_rating=4.0",
+          "elapsed_ms": 36859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=809092e553ca888fb477b86012414336 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=a32c5c9849bec43330c94de925abed65 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=23108b328956f8e22860351c2e16c79a geo=restriction min_rating=4.0",
+          "elapsed_ms": 36859,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=c5bc4fd04fe4dee408c50939c426b8dd geo=restriction min_rating=4.0",
+          "elapsed_ms": 36860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=053ff9914a59ec55e0893f6aaf3e3311 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=5c194ac08b721b9fc72b3d6fb6f47b8f geo=restriction min_rating=4.0",
+          "elapsed_ms": 36860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=a0d211d53fdc58ecb29f61f8d604012c geo=restriction min_rating=4.0",
+          "elapsed_ms": 36860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=8cc01521fef576890054c24f5f5ae4e1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=f0522706b5cce9ada8f32dbd16b0aeca geo=restriction min_rating=4.0",
+          "elapsed_ms": 36860,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=f8acd1f78f6452a3d6cdf9ff69066c5a geo=restriction min_rating=4.0",
+          "elapsed_ms": 36861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=14e7405ed56c3e2ccc5f2513695c0637 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=1b451def257e6d2130ca5c75ba925ff8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=6ad1a51cbfcf6f8daf1e13c156d55d69 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36861,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=2fa828d2670e4e7bd68c118750abe401 geo=restriction min_rating=4.0",
+          "elapsed_ms": 36862,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=b727900097286a2a8ae646720875270c geo=restriction min_rating=4.0",
+          "elapsed_ms": 36862,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=2fa828d2670e4e7bd68c118750abe401 geo=bias min_rating=4.0",
+          "elapsed_ms": 37293,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=38 q_hash=92990f70425995bdf543fc5382200a3c geo=none min_rating=4.0",
+          "elapsed_ms": 37688,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=38 q_hash=92990f70425995bdf543fc5382200a3c geo=none min_rating=None",
+          "elapsed_ms": 37890,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day8_slot4 q=Staten Island 해변에서 일몰 감상 fb=unfiltered_without_min_rating n=1",
+          "elapsed_ms": 38102,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 42475,
+          "level": "detail",
+          "latency_ms": 4368
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 43671,
+          "level": "detail",
+          "latency_ms": 5547
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 44139,
+          "level": "detail",
+          "latency_ms": 6027
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 44243,
+          "level": "detail",
+          "latency_ms": 6124
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 44313,
+          "level": "detail",
+          "latency_ms": 6190
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 44380,
+          "level": "detail",
+          "latency_ms": 6270
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 44744,
+          "level": "detail",
+          "latency_ms": 6626
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 46984,
+          "level": "detail",
+          "latency_ms": 8863
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=54 rerank=True empty=0 restriction=53 unfiltered_without_min_rating=1",
+          "elapsed_ms": 46984,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 115411,
+          "level": "detail",
+          "latency_ms": 68424
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=54",
+          "elapsed_ms": 115412,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 115412,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 117711,
+          "level": "detail",
+          "latency_ms": 2297
+        },
+        {
+          "stage": "finalize",
+          "message": "title=뉴욕 로맨틱 시티투어 places=54",
+          "elapsed_ms": 117711,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "eight_days_bangkok",
+      "region": "BANGKOK",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-08-20",
+        "end_date": "2026-08-27",
+        "regions": [
+          {
+            "region": "BANGKOK",
+            "start_date": "2026-08-20",
+            "end_date": "2026-08-27"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "FRIENDS"
+        ],
+        "travel_themes": [
+          "FOOD_TOUR",
+          "UNIQUE_TRIP"
+        ],
+        "pace_preference": "DENSE",
+        "planning_preference": "PLANNED",
+        "destination_preference": "LOCAL_EXPERIENCE",
+        "activity_preference": "ACTIVE",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Street food, markets, temples, and nightlife with efficient movement."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 28.64,
+        "fetch_places_from_slots": 21.379,
+        "synthesize_final_roadmap": 29.011
+      },
+      "total_seconds": 79.03,
+      "job_log_elapsed_seconds": 79.03,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 54,
+        "fetched_slot_count": 54,
+        "empty_place_slot_count": 2,
+        "final_place_count": 52
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 12865,
+          "level": "detail",
+          "latency_ms": 12862
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 28636,
+          "level": "detail",
+          "latency_ms": 15764
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=BANGKOK days=8 D1:6s D2:7s D3:7s D4:7s D5:7s D6:7s D7:7s D8:6s attempt=2 repair=True autofix=False",
+          "elapsed_ms": 28640,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=8 slots=54 regions=BANGKOK warnings=16",
+          "elapsed_ms": 28640,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=3af477da7403834d9564ebc5d11dcd20 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28640,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=2d669897eef48fe007513cc0342ea39e geo=restriction min_rating=4.0",
+          "elapsed_ms": 28642,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=ba1af52b252c5e4993004ea1f2b4216d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28642,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=a46a11f3a44378b86c867fdd3e33f08d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28642,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=57de5ea7766efcf513896071c820bc7d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28643,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=536091755c3573b3208d17f6dc25a59d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28643,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=dac534857ba9afb70fbb222ee41f0ce3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28644,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=14 q_hash=51d40e81535d3e7076f171c8946a0756 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28644,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=687fbd9cb9fb0a364ca52ebea57f170a geo=restriction min_rating=4.0",
+          "elapsed_ms": 28645,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=c82dfa3464bb98c268cbb9b68de4ced9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28645,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=d44444992b771b2256196481c83b47ee geo=restriction min_rating=4.0",
+          "elapsed_ms": 28646,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=33992607e2f066c1ad711dc418c4dea0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28646,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=13 q_hash=ee9264d8f8df507af18e7d0543a5ff81 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28647,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=0aa79f6b54a18d5a1a2a37c2f1697d4d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28648,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=43425d0377d429400e0e3c4ef740040b geo=restriction min_rating=4.0",
+          "elapsed_ms": 28649,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=adb7361d2d6043611ac21830f6bd7eab geo=restriction min_rating=4.0",
+          "elapsed_ms": 28649,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=dca09540f71f4e832ca023f04a102b97 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28650,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=29 q_hash=1c04f149f15ed09598c9b287f3edcd7d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28651,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=4a9481b823701c901f119c25fbbd3006 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28652,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=9ecc8351932798c44b76a78ee47c7a2d geo=restriction min_rating=4.0",
+          "elapsed_ms": 28653,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=fedd799f9355b76205e7961398cfd427 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28653,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=9c58e25a7df7b1929c1e8c852f37b751 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28653,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=31b8cd895a1dc0d82f1b660be4da0bfe geo=restriction min_rating=4.0",
+          "elapsed_ms": 28653,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=be960d9ec642a35654cca936fbc3da39 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28654,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=a1e086cdd213533e4e8dcc65e60b02d6 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28654,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=a14d5ab0928e3a6d11d014d84051a708 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28654,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=84e4edbacdd1be1850869b02e0dd6dca geo=restriction min_rating=4.0",
+          "elapsed_ms": 28654,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=b696f6c3f1ffa21121505f47519b95e1 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28654,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=945eaa6ef18c75796086f27903ef7703 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28655,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=652b7d6638d7a5c50e591d5f597cf880 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28655,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=e72276dc4b20680267ff9ab94a566483 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28655,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=3ddb7c79c284eb949673a1c432843cda geo=restriction min_rating=4.0",
+          "elapsed_ms": 28655,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=a8d68294ab8fb73dc80f93e33826a295 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28655,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=2bfc75fa112a59b2ad361cb00aefc62f geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=198b595f5907468e8d51eb51a1ffa2d9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=f6d916172672dcb18dd301ad99a230ba geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=3eed25054ba36526665fddba8f5fa61a geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=c67348efaedf23a9d3ebbc42f00dbb6f geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=9af9b23a8e3ef58beb6a5a74021ff2fc geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=83ed7955db61c530fa51c0a38293d8ea geo=restriction min_rating=4.0",
+          "elapsed_ms": 28656,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=e363a63a87f46c5022ca875e7e87ce5b geo=restriction min_rating=4.0",
+          "elapsed_ms": 28657,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=eb455cd26d1714f2329694654b7d401a geo=restriction min_rating=4.0",
+          "elapsed_ms": 28657,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=3729f4a8761c11e450920e87464ae327 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28657,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=0571d139aed7bcb040d3d6abfb105f5b geo=restriction min_rating=4.0",
+          "elapsed_ms": 28657,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=f6928c8975b78b1c28e7a5e4b94856cc geo=restriction min_rating=4.0",
+          "elapsed_ms": 28657,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=7c08f0761627b6236a28bd28487f9186 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28658,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=31d31cd412675e020bba723b23f323b7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28658,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=15 q_hash=a6edd5a5663b8762058b82d8a7cdd3ae geo=restriction min_rating=4.0",
+          "elapsed_ms": 28658,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=5a4a3b7551b233cb0bb9d1812747d8c5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28658,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=bbabde83747a2112e7eed4203d02c1ec geo=restriction min_rating=4.0",
+          "elapsed_ms": 28658,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=8d2bc4c2b91cc8204b1a88c183267f5b geo=restriction min_rating=4.0",
+          "elapsed_ms": 28659,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=8ac96797fd812dfbedeadcf0963145eb geo=restriction min_rating=4.0",
+          "elapsed_ms": 28659,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=00e7eb6d639ec13ef7159032c8e18e04 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28659,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=c645c24e57ca17bddbb7075e9f34c0d2 geo=restriction min_rating=4.0",
+          "elapsed_ms": 28660,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=7c08f0761627b6236a28bd28487f9186 geo=bias min_rating=4.0",
+          "elapsed_ms": 29037,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=00e7eb6d639ec13ef7159032c8e18e04 geo=bias min_rating=4.0",
+          "elapsed_ms": 29046,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=3eed25054ba36526665fddba8f5fa61a geo=bias min_rating=4.0",
+          "elapsed_ms": 29186,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=197dab0ed6d94541ed3ecc603cc01b9d geo=none min_rating=4.0",
+          "elapsed_ms": 29356,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=fa44c99559a8d974c11ecbaed96d957c geo=none min_rating=4.0",
+          "elapsed_ms": 29373,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=34 q_hash=0c387e00e80183fdfca7aad802de6627 geo=none min_rating=4.0",
+          "elapsed_ms": 29471,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=fa44c99559a8d974c11ecbaed96d957c geo=none min_rating=None",
+          "elapsed_ms": 29550,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=197dab0ed6d94541ed3ecc603cc01b9d geo=none min_rating=None",
+          "elapsed_ms": 29552,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=34 q_hash=0c387e00e80183fdfca7aad802de6627 geo=none min_rating=None",
+          "elapsed_ms": 29673,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day6_slot2 q=Thonburi 강변 사원 방문 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 29725,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day8_slot4 q=Phaya Thai 야경과 함께하는 저녁 산책 fb=unfiltered_without_min_rating n=2",
+          "elapsed_ms": 29752,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day7_slot4 q=Bang Kho Laem 강변 야경과 저녁 산책 fb=unfiltered_without_min_rating n=0",
+          "elapsed_ms": 29867,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34272,
+          "level": "detail",
+          "latency_ms": 4393
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34765,
+          "level": "detail",
+          "latency_ms": 4880
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 34795,
+          "level": "detail",
+          "latency_ms": 4924
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 35018,
+          "level": "detail",
+          "latency_ms": 5136
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 35183,
+          "level": "detail",
+          "latency_ms": 5315
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 35530,
+          "level": "detail",
+          "latency_ms": 5660
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 37445,
+          "level": "detail",
+          "latency_ms": 7569
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 50018,
+          "level": "detail",
+          "latency_ms": 20141
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=54 rerank=True empty=2 restriction=51 unfiltered_without_min_rating=3",
+          "elapsed_ms": 50019,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 75907,
+          "level": "detail",
+          "latency_ms": 25885
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=52",
+          "elapsed_ms": 75907,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 75907,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 79030,
+          "level": "detail",
+          "latency_ms": 3122
+        },
+        {
+          "stage": "finalize",
+          "message": "title=방콕 미식 탐험 places=52",
+          "elapsed_ms": 79030,
+          "level": "info"
+        }
+      ]
+    },
+    {
+      "case_id": "eight_days_singapore",
+      "region": "SINGAPORE",
+      "days": 8,
+      "status": "SUCCESS",
+      "request": {
+        "start_date": "2026-08-30",
+        "end_date": "2026-09-06",
+        "regions": [
+          {
+            "region": "SINGAPORE",
+            "start_date": "2026-08-30",
+            "end_date": "2026-09-06"
+          }
+        ],
+        "people_count": 2,
+        "companion_type": [
+          "PARENTS"
+        ],
+        "travel_themes": [
+          "CITY_TRIP",
+          "HEALING"
+        ],
+        "pace_preference": "RELAXED",
+        "planning_preference": "PLANNED",
+        "destination_preference": "TOURIST_SPOTS",
+        "activity_preference": "REST_FOCUSED",
+        "priority_preference": "EFFICIENCY",
+        "notes": "Comfortable itinerary with gardens, waterfront, food courts, and easy transit."
+      },
+      "durations_seconds": {
+        "generate_skeleton": 11.39,
+        "fetch_places_from_slots": 6.427,
+        "synthesize_final_roadmap": 23.312
+      },
+      "total_seconds": 41.13,
+      "job_log_elapsed_seconds": 41.13,
+      "summary": {
+        "trip_days": 8,
+        "slot_count": 38,
+        "fetched_slot_count": 38,
+        "empty_place_slot_count": 0,
+        "final_place_count": 38
+      },
+      "errors": [],
+      "job_logs": [
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SKELETON model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 11389,
+          "level": "detail",
+          "latency_ms": 11386
+        },
+        {
+          "stage": "skeleton",
+          "message": "region=SINGAPORE days=8 D1:4s D2:5s D3:5s D4:5s D5:5s D6:5s D7:5s D8:4s attempt=1 repair=False autofix=False",
+          "elapsed_ms": 11390,
+          "level": "info"
+        },
+        {
+          "stage": "skeleton_done",
+          "message": "days=8 slots=38 regions=SINGAPORE warnings=2",
+          "elapsed_ms": 11390,
+          "level": "info"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=8cc168b5f0b6685e746d03ffcbe69215 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11390,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=6518c11daab5a8468f98081976581697 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11392,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=514b0da1b931a6174a0aa4336ba8360c geo=restriction min_rating=4.0",
+          "elapsed_ms": 11392,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=6bc6ff4ba1e41b8bcba557bf39078d29 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11392,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=ebb348dc248dc868c778803b00c96404 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11392,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=700c577aa8c730ea147c246acb95a8da geo=restriction min_rating=4.0",
+          "elapsed_ms": 11395,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=16 q_hash=b13a046060c4664cb07bafb758b27c47 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11395,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=cb5b1c44dc7215b79999968922d26626 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11395,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=17 q_hash=8df0e409d44c415c3f878a4068c92ff7 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11395,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=32 q_hash=817b145fd6020f920836d81f21c03578 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11395,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=2543bb6683d20da366244ee9abc1faa3 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11396,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=d29c2b2b0a75d7d47e16bf2e2f78acdc geo=restriction min_rating=4.0",
+          "elapsed_ms": 11396,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=1d2afe13194f8f1a4bc415bc10bf5316 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11396,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=a79cca8cbb2a92a29d9baa75dd76501f geo=restriction min_rating=4.0",
+          "elapsed_ms": 11396,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=fa03390a5b869e2a9f132604078ef8d8 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11396,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=599098b3f964afd6baeee0325503d695 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11396,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=645f9e9cbb01028d085c135cd40c1bce geo=restriction min_rating=4.0",
+          "elapsed_ms": 11397,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=26f1ec9061fd2bf0546bce335a2b33f9 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11397,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=2f9b46fac60a2d0fe16b49203838841f geo=restriction min_rating=4.0",
+          "elapsed_ms": 11397,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=d2444fc0f6fd396a544e0a10e633167a geo=restriction min_rating=4.0",
+          "elapsed_ms": 11398,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=b504c51ce6b7347928d2acbf9548c8d5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11398,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=3567ca0b807818c0fbbc5cce70a68e1d geo=restriction min_rating=4.0",
+          "elapsed_ms": 11398,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=6d6d1ed1a164df0b40d677416fe7193a geo=restriction min_rating=4.0",
+          "elapsed_ms": 11398,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=ac9fa13ccdc8190fde3d8a6551494a1e geo=restriction min_rating=4.0",
+          "elapsed_ms": 11399,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=25 q_hash=f1ce9a4bc4d1d4c022caea36c5bb3bb0 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11399,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=18 q_hash=f4b6b34572611de03dabf96cb0ea2246 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11400,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=b006dd00d63afb16fd598f1b4761489e geo=restriction min_rating=4.0",
+          "elapsed_ms": 11400,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=19f7b576c90b832a5567239526565e1f geo=restriction min_rating=4.0",
+          "elapsed_ms": 11400,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=b7385e8ecb2f093e802c520b16d64d05 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11400,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=27 q_hash=b044d162b8f4ae88176ffdd88de46403 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11400,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=5106cc25e096e7400a206ddbb5220d88 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=e41972ef6c511ea7b22d4e740ad78c2a geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=098d42cc2297afaca6f45a63afe02dac geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=7eaa8e1e8009fe2dc9d08716238257f5 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=a139e4c53bfb1549badad6a41697eb74 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=26 q_hash=f644cbad5dabb0f8f9f9d9547ba0663e geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=19 q_hash=315a431868afb5a600dae78cea647edd geo=restriction min_rating=4.0",
+          "elapsed_ms": 11401,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=22 q_hash=328aed7bbef9ad839d751f169a52f430 geo=restriction min_rating=4.0",
+          "elapsed_ms": 11402,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=24 q_hash=a139e4c53bfb1549badad6a41697eb74 geo=bias min_rating=4.0",
+          "elapsed_ms": 11717,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=23 q_hash=8cc168b5f0b6685e746d03ffcbe69215 geo=bias min_rating=4.0",
+          "elapsed_ms": 11720,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=21 q_hash=e41972ef6c511ea7b22d4e740ad78c2a geo=bias min_rating=4.0",
+          "elapsed_ms": 11730,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=20 q_hash=b7385e8ecb2f093e802c520b16d64d05 geo=bias min_rating=4.0",
+          "elapsed_ms": 11803,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=28 q_hash=599098b3f964afd6baeee0325503d695 geo=bias min_rating=4.0",
+          "elapsed_ms": 11858,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=33 q_hash=923f4c6e064084b543b962350a3ba2f4 geo=none min_rating=4.0",
+          "elapsed_ms": 11962,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=34 q_hash=d71687555e5cce0e696e6b930a8c1e4e geo=none min_rating=4.0",
+          "elapsed_ms": 11967,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=31 q_hash=3a754f8acbec98c9170f263f1c45e4e0 geo=none min_rating=4.0",
+          "elapsed_ms": 11974,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=30 q_hash=d61a64d5a8b279a5f0086c87a93b054d geo=none min_rating=4.0",
+          "elapsed_ms": 12041,
+          "level": "detail"
+        },
+        {
+          "stage": "google_places",
+          "message": "q_len=38 q_hash=5691bf89ad9064a7c60ff856ddf37200 geo=none min_rating=4.0",
+          "elapsed_ms": 12047,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day1_slot0 q=MARINA_BAY 정원 산책과 아침 명상 fb=unfiltered_with_min_rating n=3",
+          "elapsed_ms": 12164,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day8_slot0 q=PULAU_UBIN 자연 탐방과 자전거 타기 fb=unfiltered_with_min_rating n=5",
+          "elapsed_ms": 12167,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day7_slot2 q=ANG_MO_KIO 지역 공원에서 휴식 fb=unfiltered_with_min_rating n=4",
+          "elapsed_ms": 12170,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day6_slot4 q=WEST_COAST 해변 산책과 휴식 fb=unfiltered_with_min_rating n=1",
+          "elapsed_ms": 12274,
+          "level": "detail"
+        },
+        {
+          "stage": "places_search",
+          "message": "slot=day4_slot1 q=HOLLAND_VILLAGE 카페에서 여유로운 점심 fb=unfiltered_with_min_rating n=5",
+          "elapsed_ms": 12284,
+          "level": "detail"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 14255,
+          "level": "detail",
+          "latency_ms": 1956
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 15751,
+          "level": "detail",
+          "latency_ms": 3449
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 15783,
+          "level": "detail",
+          "latency_ms": 3482
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 16032,
+          "level": "detail",
+          "latency_ms": 3745
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 16283,
+          "level": "detail",
+          "latency_ms": 3992
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 16285,
+          "level": "detail",
+          "latency_ms": 3990
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 16382,
+          "level": "detail",
+          "latency_ms": 4084
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_RERANK model=gpt-4o-mini tier=COST fallback=false",
+          "elapsed_ms": 17817,
+          "level": "detail",
+          "latency_ms": 5528
+        },
+        {
+          "stage": "places_fetch",
+          "message": "slots=38 rerank=True empty=0 restriction=33 unfiltered_with_min_rating=5",
+          "elapsed_ms": 17817,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_PLACE_DETAIL model=gpt-4o-mini tier=SPEED fallback=false",
+          "elapsed_ms": 39246,
+          "level": "detail",
+          "latency_ms": 21426
+        },
+        {
+          "stage": "finalize_desc",
+          "message": "place_descriptions_filled=38",
+          "elapsed_ms": 39247,
+          "level": "info"
+        },
+        {
+          "stage": "finalize_time",
+          "message": "strategy=section_static_map",
+          "elapsed_ms": 39247,
+          "level": "info"
+        },
+        {
+          "stage": "llm",
+          "message": "stage=ROADMAP_SUMMARY model=gpt-4o tier=QUALITY fallback=false",
+          "elapsed_ms": 41129,
+          "level": "detail",
+          "latency_ms": 1882
+        },
+        {
+          "stage": "finalize",
+          "message": "title=싱가포르 힐링 여행 places=38",
+          "elapsed_ms": 41130,
+          "level": "info"
+        }
+      ]
+    }
+  ],
+  "completed_at": "2026-04-29T00:19:22.842657+00:00"
+}
