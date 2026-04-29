@@ -182,7 +182,7 @@ sequenceDiagram
 
 ## 정책
 
-- 채팅 수정 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 60초입니다.
+- 채팅 수정 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 180초입니다.
 - `SUCCESS` 상태일 때만 `modified_itinerary`를 포함합니다.
 - `GENERAL_CHAT`, `ASK_CLARIFICATION`, `REJECTED` 상태에서는 `modified_itinerary`가 `null`입니다.
 - `diff_keys`는 프론트엔드가 변경된 장소 카드를 강조하기 위한 식별자입니다.

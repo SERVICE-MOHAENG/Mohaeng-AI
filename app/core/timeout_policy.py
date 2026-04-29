@@ -40,8 +40,8 @@ class TimeoutPolicy:
 
 def build_timeout_policy(settings: Settings) -> TimeoutPolicy:
     """설정값으로부터 일관된 타임아웃 정책을 생성합니다."""
-    request_timeout = _normalize_timeout(settings.REQUEST_TIMEOUT_SECONDS, default=60)
-    llm_timeout = _normalize_timeout(settings.LLM_TIMEOUT_SECONDS, default=60, upper_bound=request_timeout)
+    request_timeout = _normalize_timeout(settings.REQUEST_TIMEOUT_SECONDS, default=180)
+    llm_timeout = _normalize_timeout(settings.LLM_TIMEOUT_SECONDS, default=180, upper_bound=request_timeout)
     recommend_timeout = _normalize_timeout(
         settings.RECOMMEND_TIMEOUT_SECONDS,
         default=45,

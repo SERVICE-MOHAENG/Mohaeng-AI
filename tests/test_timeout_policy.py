@@ -4,6 +4,22 @@ from app.core.config import Settings
 from app.core.timeout_policy import build_timeout_policy, to_httpx_timeout, to_requests_timeout
 
 
+def test_build_timeout_policy_uses_long_roadmap_generation_defaults(monkeypatch) -> None:
+    monkeypatch.delenv("REQUEST_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("LLM_TIMEOUT_SECONDS", raising=False)
+
+    settings = Settings(
+        OPENAI_API_KEY="test-key",
+        SERVICE_SECRET="test-service-secret",
+        HMAC_SECRET="test-hmac-secret",
+    )
+
+    policy = build_timeout_policy(settings)
+
+    assert policy.request_timeout_seconds == 180
+    assert policy.llm_timeout_seconds == 180
+
+
 def test_build_timeout_policy_caps_by_request_timeout() -> None:
     settings = Settings(
         OPENAI_API_KEY="test-key",

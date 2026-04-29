@@ -113,7 +113,7 @@ uv run pre-commit run --all-files
 | callback URL 조립과 전송 | `uv run pytest tests/test_callback_url.py tests/test_callback_delivery.py` |
 | 여행지 추천 | `uv run pytest tests/test_recommend_service.py` |
 | 로드맵 채팅 스키마 | `uv run pytest tests/test_chat_schema.py` |
-| 로드맵 장소명 정규화 | `uv run pytest tests/test_roadmap_place_name_translation.py` |
+| 로드맵 생성 단순화 파이프라인 | `uv run pytest tests/test_roadmap_generation_simplified_pipeline.py` |
 | timeout 정책 | `uv run pytest tests/test_timeout_policy.py` |
 | LLM 라우터와 Discord 알림 | `uv run pytest tests/test_llm_router_webhooks.py tests/test_webhook_notification.py` |
 | 넓은 코드 변경 | `uv run pytest` |

@@ -16,18 +16,22 @@ from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
 from app.core.region_bbox import get_region_bbox
 from app.core.timeout_policy import get_timeout_policy
-from app.core.visit_time_llm import propose_visit_times_for_days
-from app.core.visit_time_policy import (
-    VisitTimeOutputMode,
-    apply_visit_time_policy,
-    build_visit_time_policy_config,
-)
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
-from app.schemas.course import CourseRequest, CourseResponseLLMOutput, PlanningPreference
+from app.schemas.course import CourseRequest, CourseResponseLLMOutput
 from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
+
+_SECTION_VISIT_TIME_MAP = {
+    "MORNING": "09:00",
+    "LUNCH": "12:00",
+    "AFTERNOON": "14:00",
+    "DINNER": "18:00",
+    "EVENING": "20:00",
+    "NIGHT": "22:00",
+}
+_DEFAULT_VISIT_TIME = "09:00"
 
 
 async def _notify_pipeline_event_best_effort(**kwargs) -> None:
@@ -92,6 +96,12 @@ def _fallback_grace_timeout(timeout_seconds: int) -> int:
     return max(1, int(timeout_seconds) * 2)
 
 
+def _visit_time_from_section(section: str | None) -> str:
+    """스켈레톤 section을 대략적인 방문 시각으로 변환합니다."""
+    key = str(section or "").strip().upper()
+    return _SECTION_VISIT_TIME_MAP.get(key, _DEFAULT_VISIT_TIME)
+
+
 def _prepare_final_context(
     state: RoadmapState,
 ) -> tuple[str, list[dict]]:
@@ -111,9 +121,6 @@ def _prepare_final_context(
         course_request = CourseRequest.model_validate(raw_request)
     except Exception as exc:
         raise ValueError(f"CourseRequest 모델 유효성 검증에 실패했습니다: {exc}") from exc
-
-    planning_preference = course_request.planning_preference
-    planned = planning_preference == PlanningPreference.PLANNED
 
     context_lines = []
     daily_places_for_schema = []
@@ -158,7 +165,7 @@ def _prepare_final_context(
                         "place_url": place_url,
                         "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
-                        "visit_time": None if planned else section,
+                        "visit_time": _visit_time_from_section(section),
                         "section": section,
                     }
                 )
@@ -276,38 +283,6 @@ async def _fill_place_descriptions_with_llm(daily_places: list[dict]) -> list[di
     return daily_places
 
 
-async def _apply_visit_time_for_daily_places(
-    daily_places: list[dict],
-    planning_preference: PlanningPreference,
-) -> list[dict]:
-    """공용 정책 엔진으로 visit_time을 확정합니다."""
-    output_mode = (
-        VisitTimeOutputMode.HHMM
-        if planning_preference == PlanningPreference.PLANNED
-        else VisitTimeOutputMode.SECTION_EN
-    )
-    policy_config = build_visit_time_policy_config()
-    proposals = await propose_visit_times_for_days(daily_places, stage=Stage.CHAT_VISIT_TIME)
-    warnings: list[str] = []
-
-    for day in daily_places:
-        day_number = day.get("day_number")
-        places = day.get("places", [])
-        resolved_places, day_warnings = apply_visit_time_policy(
-            places,
-            day_number=day_number,
-            config=policy_config,
-            llm_proposals_by_sequence=proposals.get(day_number, {}),
-            output_mode=output_mode,
-        )
-        day["places"] = resolved_places
-        warnings.extend(day_warnings)
-
-    if warnings:
-        logger.info("Visit time policy warnings: %s", " | ".join(warnings))
-    return daily_places
-
-
 async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
     """모든 정보를 종합해 최종 로드맵을 생성합니다."""
     if state.get("error"):
@@ -320,11 +295,7 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
         append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
 
-        daily_places = await _apply_visit_time_for_daily_places(
-            daily_places,
-            course_request.planning_preference,
-        )
-        append_job_log("finalize_time", f"preference={course_request.planning_preference}")
+        append_job_log("finalize_time", "strategy=section_static_map")
 
         course_request_payload = course_request.model_dump(mode="json")
 

@@ -14,7 +14,7 @@ Mohaeng-AI는 `POST /api/v1/generate` 요청을 즉시 수락하고, 생성 결�
 
 # 배경
 
-로드맵 생성은 LLM 추론, Google Places 검색, 장소명 정규화, 설명과 방문 시간 생성이 포함된 장기 작업입니다.
+로드맵 생성은 LLM 추론, Google Places 검색, 장소 설명과 메타데이터 생성이 포함된 장기 작업입니다.
 NestJS는 작업 상태와 저장을 담당하고, Mohaeng-AI는 무상태 워커처럼 생성 요청을 처리한 뒤 결과를 callback으로 전달합니다.
 
 # 본문
@@ -50,7 +50,7 @@ sequenceDiagram
     Python->>Python: skeleton 생성
     Python->>Places: 장소 검색
     Places-->>Python: 장소 후보와 좌표
-    Python->>Python: 장소명 정규화, 설명/시간/메타데이터 생성
+    Python->>Python: 설명/시간/메타데이터 생성
     Python->>Nest: POST /itineraries/{job_id}/result
     Nest->>Nest: 로드맵 결과 저장
 ```
@@ -163,7 +163,7 @@ sequenceDiagram
 
 ## 정책
 
-- 전체 생성 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 60초입니다.
+- 전체 생성 작업은 `LLM_TIMEOUT_SECONDS` 안에 완료되어야 하며 기본값은 180초입니다.
 - Google Places 요청 기본 타임아웃은 `GOOGLE_PLACES_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 생성 결과의 장소 좌표는 LLM 생성값이 아니라 Google Places 응답값을 사용합니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.

@@ -11,7 +11,7 @@ ai_action: "editable"
 
 로드맵 생성 기능은 사용자의 여행 기간, 지역, 동행자, 테마, 여행 성향을 받아 실행 가능한 일자별 여행 로드맵을 생성합니다.
 API는 `/api/v1/generate`이며, 요청을 즉시 수락한 뒤 LangGraph 기반 파이프라인을 비동기로 실행하고 콜백으로 결과를 전달합니다.
-현재 구현은 스켈레톤 생성, Google Places 검색, 장소명 정규화, 최종 로드맵 합성 단계를 거칩니다.
+현재 구현은 스켈레톤 생성, Google Places 검색, 최종 로드맵 합성 단계를 거칩니다.
 
 # 배경
 
@@ -82,7 +82,6 @@ LangGraph 워크플로우는 다음 노드 순서로 실행됩니다.
 ```text
 generate_skeleton
 -> fetch_places_from_slots
--> normalize_place_names
 -> synthesize_final_roadmap
 -> END
 ```
@@ -117,12 +116,7 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 - `GOOGLE_PLACES_MIN_RATING`, `GOOGLE_PLACES_LLM_RERANK_ENABLED`, `GOOGLE_PLACES_LLM_RERANK_MAX_CANDIDATES` 설정을 반영합니다.
 - LLM rerank가 켜져 있으면 일자별 후보 중 슬롯에 가장 적합한 `place_id`를 선택해 우선순위를 조정합니다.
 
-### 3. `normalize_place_names`
-
-Google Places 결과의 장소명을 한국어 표시 품질에 맞게 정규화합니다.
-이 단계는 최종 로드맵 합성 전에 장소명 표현을 보정하는 중간 단계입니다.
-
-### 4. `synthesize_final_roadmap`
+### 3. `synthesize_final_roadmap`
 
 확정된 장소 목록을 바탕으로 최종 응답을 조립합니다.
 
@@ -130,7 +124,9 @@ Google Places 결과의 장소명을 한국어 표시 품질에 맞게 정규화
 
 - 장소별 한 줄 설명을 LLM으로 생성합니다.
 - 설명 생성 실패 또는 타임아웃 시 기본 설명을 적용합니다.
-- `planning_preference`에 따라 `visit_time`을 `HH:MM` 또는 section 값으로 확정합니다.
+- `visit_time`은 스켈레톤의 section 값을 기준으로 대략적인 시각에 정적 매핑합니다.
+- section 매핑은 `MORNING=09:00`, `LUNCH=12:00`, `AFTERNOON=14:00`, `DINNER=18:00`, `EVENING=20:00`, `NIGHT=22:00`입니다.
+- 알 수 없는 section은 `09:00`으로 fallback합니다.
 - LLM으로 `title`, `summary`, `tags`, `llm_commentary`를 생성합니다.
 - `next_action_suggestion`은 LLM 결과를 그대로 쓰지 않고 시스템에서 지원 가능한 문장만 안전하게 주입합니다.
 - `CourseResponse` 스키마로 최종 검증합니다.
@@ -186,11 +182,11 @@ Google Places 결과의 장소명을 한국어 표시 품질에 맞게 정규화
 | API 라우터 | `app/api/generate.py` | `/api/v1/generate` 요청 수락, 인증 의존성, 비동기 작업 시작 |
 | 서비스 | `app/services/generate_service.py` | 생성 그래프 실행, timeout 처리, callback payload 생성 |
 | 그래프 정의 | `app/graph/roadmap/workflow.py` | LangGraph 노드 연결과 실행 순서 |
-| 그래프 노드 | `app/graph/roadmap/nodes/` | 스켈레톤 생성, 장소 검색, 장소명 정규화, 최종 합성 |
+| 그래프 노드 | `app/graph/roadmap/nodes/` | 스켈레톤 생성, 장소 검색, 최종 합성 |
 | 장소 검색 | `app/services/google_places_service.py`, `app/services/places_service.py`, `app/services/place_rerank_service.py` | Google Places 호출, fallback, rerank 정책 |
 | 요청/응답 스키마 | `app/schemas/generate.py`, `app/schemas/course.py`, `app/schemas/skeleton.py`, `app/schemas/place.py` | 생성 요청, 최종 로드맵, 중간 스켈레톤, 장소 모델 |
-| 공통 정책 | `app/core/visit_time_policy.py`, `app/core/visit_time_llm.py`, `app/core/timeout_policy.py` | 방문 시간 확정, LLM 시간 제안, timeout 분류 |
-| 테스트 | `tests/test_roadmap_place_name_translation.py`, `tests/test_timeout_policy.py` | 장소명 정규화, timeout 정책 |
+| 공통 정책 | `app/core/timeout_policy.py` | timeout 분류 |
+| 테스트 | `tests/test_roadmap_generation_simplified_pipeline.py`, `tests/test_timeout_policy.py` | 단순화된 생성 파이프라인, timeout 정책 |
 
 # 관련 문서
 
@@ -203,4 +199,3 @@ Google Places 결과의 장소명을 한국어 표시 품질에 맞게 정규화
 
 - 예산 기반 장소 필터링이 필요하면 `CourseRequest` 스키마와 Google Places 검색 정책을 함께 확장합니다.
 - 실제 대중교통 이동 시간 또는 경로가 필요하면 Google Routes API 도입 여부를 별도 결정합니다.
-- `normalize_place_names`의 입력/출력 정책을 별도 세부 명세로 분리할지 검토합니다.

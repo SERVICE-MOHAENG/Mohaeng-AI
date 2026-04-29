@@ -21,8 +21,8 @@ class Settings(BaseSettings):
     LLM_MODEL_QUALITY: str = "gpt-4o-mini"
     LLM_MODEL_SPEED: str = "gpt-4o-mini"
     LLM_MODEL_COST: str = "gpt-4o-mini"
-    REQUEST_TIMEOUT_SECONDS: int = 60
-    LLM_TIMEOUT_SECONDS: int = 60
+    REQUEST_TIMEOUT_SECONDS: int = 180
+    LLM_TIMEOUT_SECONDS: int = 180
     RECOMMEND_TIMEOUT_SECONDS: int = 45
     RECOMMEND_LLM_TEMPERATURE: float = 0.6
     EXTERNAL_API_TIMEOUT_SECONDS: int = 15
