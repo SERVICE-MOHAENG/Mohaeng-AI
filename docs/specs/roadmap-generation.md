@@ -123,11 +123,14 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 
 이 단계에서 수행하는 작업은 다음과 같습니다.
 
+- 하루별 장소 목록에 대해 서버 내부 동선 최적화를 수행합니다.
+- `place_category == FOOD`인 장소는 section과 무관하게 hard anchor로 고정하고, FOOD anchor 사이의 비음식 장소만 Haversine 직선거리 기반으로 재정렬합니다.
+- 외부 경로 API나 추가 LLM 호출 없이 deterministic optimizer를 사용합니다.
 - 장소별 한 줄 설명을 LLM으로 생성합니다.
 - 설명 생성 실패 또는 타임아웃 시 기본 설명을 적용합니다.
-- `visit_time`은 스켈레톤의 section 값을 기준으로 대략적인 시각에 정적 매핑합니다.
-- section 매핑은 `MORNING=09:00`, `LUNCH=12:00`, `AFTERNOON=14:00`, `DINNER=18:00`, `EVENING=20:00`, `NIGHT=22:00`입니다.
-- 알 수 없는 section은 `09:00`으로 fallback합니다.
+- 최적화된 순서 기준으로 `visit_sequence`를 1부터 다시 부여합니다.
+- `visit_time`은 최종 순서와 `planning_preference` 기준으로 `app/core/visit_time_policy.py` 정책을 적용해 재계산합니다.
+- `planning_preference == PLANNED`이면 `HH:MM`, `SPONTANEOUS`이면 `MORNING`/`LUNCH` 같은 section label을 출력합니다.
 - LLM으로 `title`, `summary`, `tags`, `llm_commentary`를 생성합니다.
 - `next_action_suggestion`은 LLM 결과를 그대로 쓰지 않고 시스템에서 지원 가능한 문장만 안전하게 주입합니다.
 - `CourseResponse` 스키마로 최종 검증합니다.
@@ -187,6 +190,7 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 | 그래프 노드 | `app/graph/roadmap/nodes/` | 스켈레톤 생성, 장소 검색, 최종 합성 |
 | 장소 검색 | `app/services/google_places_service.py`, `app/services/places_service.py`, `app/services/place_rerank_service.py` | Google Places 호출, fallback, rerank 정책 |
 | 요청/응답 스키마 | `app/schemas/generate.py`, `app/schemas/course.py`, `app/schemas/skeleton.py`, `app/schemas/place.py` | 생성 요청, 최종 로드맵, 중간 스켈레톤, 장소 모델 |
+| 동선/시간 정책 | `app/core/route_optimizer.py`, `app/core/visit_time_policy.py` | FOOD anchor 기반 장소 순서 최적화, 최종 visit_time 재계산 |
 | 공통 정책 | `app/core/timeout_policy.py` | timeout 분류 |
 | 테스트 | `tests/test_roadmap_generation_simplified_pipeline.py`, `tests/test_timeout_policy.py` | 단순화된 생성 파이프라인, timeout 정책 |
 
