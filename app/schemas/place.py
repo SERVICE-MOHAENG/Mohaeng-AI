@@ -20,3 +20,4 @@ class Place(BaseModel):
     url: str | None = Field(default=None, description="구글 맵 URL")
     primary_type: str | None = Field(default=None, description="Google Places 대표 장소 유형")
     types: list[str] = Field(default_factory=list, description="장소 유형 목록")
+    place_category: str = Field(default="OTHER", description="Mohaeng 장소 대분류 코드")

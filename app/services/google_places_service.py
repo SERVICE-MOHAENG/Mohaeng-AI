@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.core.geo import GeoRectangle
 from app.core.job_log_context import append_job_log
 from app.core.logger import get_logger
+from app.core.place_category import resolve_place_category
 from app.core.timeout_policy import get_timeout_policy, to_httpx_timeout
 from app.schemas.place import Place, PlaceGeometry
 from app.services.places_service import PlacesServiceProtocol
@@ -211,6 +212,8 @@ class GooglePlacesService(PlacesServiceProtocol):
 
         if not (name and place_id and latitude is not None and longitude is not None):
             return None
+        primary_type = raw.get("primaryType")
+        place_types = raw.get("types") or []
 
         return Place(
             place_id=place_id,
@@ -218,8 +221,9 @@ class GooglePlacesService(PlacesServiceProtocol):
             address=raw.get("formattedAddress"),
             geometry=PlaceGeometry(latitude=latitude, longitude=longitude),
             url=raw.get("googleMapsUri"),
-            primary_type=raw.get("primaryType"),
-            types=raw.get("types") or [],
+            primary_type=primary_type,
+            types=place_types,
+            place_category=resolve_place_category(primary_type, place_types).value,
         )
 
 

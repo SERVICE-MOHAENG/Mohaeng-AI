@@ -14,6 +14,7 @@ from app.core.geo import GeoRectangle
 from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, ainvoke
 from app.core.logger import get_logger
+from app.core.place_category import resolve_place_category
 from app.core.region_bbox import get_region_bbox
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.roadmap.state import RoadmapState
@@ -163,7 +164,8 @@ def _prepare_final_context(
                         "latitude": geometry.get("latitude"),
                         "longitude": geometry.get("longitude"),
                         "place_url": place_url,
-                        "primary_type": place.get("primary_type"),
+                        "place_category": place.get("place_category")
+                        or resolve_place_category(place.get("primary_type"), place.get("types") or []).value,
                         "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
                         "visit_time": _visit_time_from_section(section),
