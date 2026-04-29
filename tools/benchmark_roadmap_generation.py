@@ -28,7 +28,6 @@ from app.core.job_log_context import collect_job_logs, init_job_log  # noqa: E40
 from app.graph.roadmap.nodes import (  # noqa: E402
     fetch_places_from_slots,
     generate_skeleton,
-    normalize_place_names,
     synthesize_final_roadmap,
 )
 from app.schemas.course import CourseRequest  # noqa: E402
@@ -273,7 +272,6 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
         for stage_name, stage_call in (
             ("generate_skeleton", lambda current: generate_skeleton(current)),
             ("fetch_places_from_slots", lambda current: fetch_places_from_slots(current, config)),
-            ("normalize_place_names", lambda current: normalize_place_names(current)),
             ("synthesize_final_roadmap", lambda current: synthesize_final_roadmap(current)),
         ):
             with timed() as stage_timer:
