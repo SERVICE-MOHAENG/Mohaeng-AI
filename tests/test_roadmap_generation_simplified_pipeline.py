@@ -190,12 +190,12 @@ def test_prepare_final_context_reorders_places_and_recalculates_planned_visit_ti
     places = daily_places[0]["places"]
     assert [place["place_name"] for place in places] == ["A", "C", "B"]
     assert [place["visit_sequence"] for place in places] == [1, 2, 3]
-    assert all(":" in place["visit_time"] for place in places)
+    assert [place["visit_time"] for place in places] == ["09:00", "12:00", "14:00"]
     assert "#2" in itinerary_context
     assert "C" in itinerary_context
 
 
-def test_prepare_final_context_uses_section_labels_for_spontaneous_visit_time() -> None:
+def test_prepare_final_context_uses_sequence_labels_for_spontaneous_visit_time() -> None:
     request = _base_course_request()
     request["planning_preference"] = "SPONTANEOUS"
     state = {
@@ -228,4 +228,4 @@ def test_prepare_final_context_uses_section_labels_for_spontaneous_visit_time() 
 
     place = daily_places[0]["places"][0]
     assert place["place_category"] == "FOOD"
-    assert place["visit_time"] == "LUNCH"
+    assert place["visit_time"] == "MORNING"

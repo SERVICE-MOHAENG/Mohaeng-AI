@@ -129,8 +129,10 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 - 장소별 한 줄 설명을 LLM으로 생성합니다.
 - 설명 생성 실패 또는 타임아웃 시 기본 설명을 적용합니다.
 - 최적화된 순서 기준으로 `visit_sequence`를 1부터 다시 부여합니다.
-- `visit_time`은 최종 순서와 `planning_preference` 기준으로 `app/core/visit_time_policy.py` 정책을 적용해 재계산합니다.
-- `planning_preference == PLANNED`이면 `HH:MM`, `SPONTANEOUS`이면 `MORNING`/`LUNCH` 같은 section label을 출력합니다.
+- `visit_time`은 최종 `visit_sequence`와 `planning_preference` 기준으로 `app/core/visit_time_policy.py` 정책을 적용해 재계산합니다.
+- `planning_preference == PLANNED`이면 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 -> 23:00` 매핑을 사용합니다.
+- `planning_preference == SPONTANEOUS`이면 같은 순서 매핑을 `MORNING`/`LUNCH` 같은 section label로 변환해 출력합니다.
+- `visit_time` 재계산은 좌표 기반 이동시간, 체류시간, 자정 초과 검증을 수행하지 않습니다.
 - LLM으로 `title`, `summary`, `tags`, `llm_commentary`를 생성합니다.
 - `next_action_suggestion`은 LLM 결과를 그대로 쓰지 않고 시스템에서 지원 가능한 문장만 안전하게 주입합니다.
 - `CourseResponse` 스키마로 최종 검증합니다.
@@ -177,7 +179,7 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 
 > [!NOTE]
 > 원본 문서에는 `budget_range` 기반 Google Places price level 매핑, 카테고리별 체류 시간, Google Routes API 전제 등이 포함되어 있었습니다.
-> 현재 코드의 `CourseRequest`에는 `budget_range`가 없고, 실제 이동 시간은 공용 visit time policy와 LLM 제안을 조합해 처리합니다.
+> 현재 코드의 `CourseRequest`에는 `budget_range`가 없고, `visit_time`은 실제 이동 시간이 아니라 최종 방문 순서 기반 표시값입니다.
 > 이 문서는 현재 구현된 필드와 파이프라인을 기준으로 작성합니다.
 
 ## 코드 진입점과 검증
