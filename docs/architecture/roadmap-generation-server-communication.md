@@ -50,6 +50,7 @@ sequenceDiagram
     Python->>Python: skeleton 생성
     Python->>Places: 장소 검색
     Places-->>Python: 장소 후보와 좌표
+    Python->>Python: FOOD anchor 기반 동선 최적화
     Python->>Python: 설명/시간/메타데이터 생성
     Python->>Nest: POST /itineraries/{job_id}/result
     Nest->>Nest: 로드맵 결과 저장
@@ -168,6 +169,12 @@ sequenceDiagram
 - Google Places 요청 기본 타임아웃은 `GOOGLE_PLACES_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 생성 결과의 장소 좌표는 LLM 생성값이 아니라 Google Places 응답값을 사용합니다.
 - 생성 결과의 `place_category`는 Google Places `primaryType`과 `types`를 정적 매핑한 Mohaeng 대분류 코드입니다.
+- 생성 결과의 하루별 장소 순서는 `place_category == FOOD` 장소를 hard anchor로 고정하고, anchor 사이의 비음식 장소만 Haversine 직선거리 기반으로 재정렬한 결과입니다.
+- 동선 최적화는 Mohaeng-AI 내부 결정론적 알고리즘으로 수행하며, Google Routes API나 Distance Matrix API를 호출하지 않습니다.
+- 최종 `visit_sequence`와 `visit_time`은 동선 최적화 후 다시 계산합니다.
+- `visit_time`은 좌표 기반 이동시간을 계산하지 않고, 최종 `visit_sequence` 기반 고정 슬롯을 사용합니다.
+- `planning_preference`가 `PLANNED`이면 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 이상 -> 23:00` 매핑을 사용합니다.
+- `planning_preference`가 `SPONTANEOUS`이면 같은 순서 매핑을 section label 형식으로 변환합니다.
 - Google Places 원본 `primary_type`과 식사 anchor 판단값 같은 내부 힌트는 콜백에 포함하지 않습니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.

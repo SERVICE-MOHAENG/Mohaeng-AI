@@ -159,6 +159,12 @@ ai_action: "editable"
 `itinerary[].places[].place_category`는 Mohaeng 장소 대분류 코드입니다.
 Google Places 원본 `primaryType`과 `types`는 내부 분류에만 사용하고 최종 콜백에는 포함하지 않습니다.
 알 수 없는 유형은 `OTHER`로 전달합니다.
+일자별 장소 순서는 FOOD 장소를 anchor로 고정한 내부 동선 최적화 결과이며, `visit_sequence`와 `visit_time`은 최종 순서 기준으로 재계산됩니다.
+`planning_preference`가 `PLANNED`이면 `visit_time`은 `visit_sequence` 기준 고정 `HH:MM` 값으로 전달됩니다.
+현재 매핑은 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 이상 -> 23:00`입니다.
+`SPONTANEOUS`이면 같은 순서 매핑을 `MORNING`/`LUNCH` 같은 section label 형식으로 변환해 전달합니다.
+`visit_time` 계산에는 좌표 기반 이동시간이나 체류시간을 반영하지 않습니다.
+anchor 여부나 최적화 점수 같은 내부 판단값은 콜백에 포함하지 않습니다.
 
 실패 콜백은 `GenerateCallbackFailure` 형식입니다.
 
