@@ -173,7 +173,7 @@ sequenceDiagram
 - 동선 최적화는 Mohaeng-AI 내부 결정론적 알고리즘으로 수행하며, Google Routes API나 Distance Matrix API를 호출하지 않습니다.
 - 최종 `visit_sequence`와 `visit_time`은 동선 최적화 후 다시 계산합니다.
 - `visit_time`은 좌표 기반 이동시간을 계산하지 않고, 최종 `visit_sequence` 기반 고정 슬롯을 사용합니다.
-- `planning_preference`가 `PLANNED`이면 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 -> 23:00` 매핑을 사용합니다.
+- `planning_preference`가 `PLANNED`이면 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 이상 -> 23:00` 매핑을 사용합니다.
 - `planning_preference`가 `SPONTANEOUS`이면 같은 순서 매핑을 section label 형식으로 변환합니다.
 - Google Places 원본 `primary_type`과 식사 anchor 판단값 같은 내부 힌트는 콜백에 포함하지 않습니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.

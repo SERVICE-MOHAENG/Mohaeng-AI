@@ -37,3 +37,17 @@ def test_apply_visit_time_policy_maps_sequence_to_section_labels() -> None:
         "NIGHT",
     ]
     assert warnings == []
+
+
+def test_apply_visit_time_policy_clamps_sequences_after_last_slot() -> None:
+    places = [*_places(), {"place_name": "H", "visit_sequence": 8}]
+
+    hhmm_places, hhmm_warnings = apply_visit_time_policy(places, output_mode=VisitTimeOutputMode.HHMM)
+    section_places, section_warnings = apply_visit_time_policy(
+        _places() + [{"place_name": "H", "visit_sequence": 8}], output_mode=VisitTimeOutputMode.SECTION_EN
+    )
+
+    assert hhmm_places[-1]["visit_time"] == "23:00"
+    assert section_places[-1]["visit_time"] == "NIGHT"
+    assert hhmm_warnings == []
+    assert section_warnings == []

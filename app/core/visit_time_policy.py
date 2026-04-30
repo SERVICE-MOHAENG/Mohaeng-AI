@@ -133,7 +133,10 @@ def _sequence_minutes(sequence: int, config: VisitTimePolicyConfig) -> int:
         parsed = parse_time_to_hhmm_minutes(mapped)
         if parsed is not None:
             return parsed
-    return config.start_minutes
+
+    last_sequence = max(_SEQUENCE_TIME_MAP)
+    last_mapped = parse_time_to_hhmm_minutes(_SEQUENCE_TIME_MAP[last_sequence])
+    return last_mapped if last_mapped is not None else config.start_minutes
 
 
 def apply_visit_time_policy(

@@ -134,6 +134,10 @@ def _optimize_segment(segment: list[dict], start_anchor: dict | None, end_anchor
         return list(segment)
     if any(_coordinate(place) is None for place in segment):
         return list(segment)
+    if (start_anchor is not None and _coordinate(start_anchor) is None) or (
+        end_anchor is not None and _coordinate(end_anchor) is None
+    ):
+        return list(segment)
 
     ordered = _nearest_neighbor_order(segment, start_anchor)
     return _two_opt(ordered, start_anchor, end_anchor)

@@ -130,7 +130,7 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 - 설명 생성 실패 또는 타임아웃 시 기본 설명을 적용합니다.
 - 최적화된 순서 기준으로 `visit_sequence`를 1부터 다시 부여합니다.
 - `visit_time`은 최종 `visit_sequence`와 `planning_preference` 기준으로 `app/core/visit_time_policy.py` 정책을 적용해 재계산합니다.
-- `planning_preference == PLANNED`이면 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 -> 23:00` 매핑을 사용합니다.
+- `planning_preference == PLANNED`이면 `1 -> 09:00`, `2 -> 12:00`, `3 -> 14:00`, `4 -> 18:00`, `5 -> 20:00`, `6 -> 22:00`, `7 이상 -> 23:00` 매핑을 사용합니다.
 - `planning_preference == SPONTANEOUS`이면 같은 순서 매핑을 `MORNING`/`LUNCH` 같은 section label로 변환해 출력합니다.
 - `visit_time` 재계산은 좌표 기반 이동시간, 체류시간, 자정 초과 검증을 수행하지 않습니다.
 - LLM으로 `title`, `summary`, `tags`, `llm_commentary`를 생성합니다.

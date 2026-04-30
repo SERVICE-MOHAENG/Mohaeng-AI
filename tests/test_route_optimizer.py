@@ -79,6 +79,19 @@ def test_optimize_daily_route_preserves_order_when_segment_has_missing_coordinat
     assert _names(optimized) == ["A", "B", "C"]
 
 
+def test_optimize_daily_route_preserves_segment_order_when_anchor_has_missing_coordinates() -> None:
+    places = [
+        _place("lunch", "FOOD", None, None, section="LUNCH"),
+        _place("far", "CULTURE", 37.5, 127.09),
+        _place("near", "NATURE", 37.5, 127.01),
+        _place("dinner", "FOOD", 37.5, 127.02, section="DINNER"),
+    ]
+
+    optimized = optimize_daily_route(places)
+
+    assert _names(optimized) == ["lunch", "far", "near", "dinner"]
+
+
 @pytest.mark.parametrize("places", [[], [_place("A", "CULTURE", 37.5, 127.0)]])
 def test_optimize_daily_route_handles_zero_and_one_place(places: list[dict]) -> None:
     assert optimize_daily_route(places) == places
