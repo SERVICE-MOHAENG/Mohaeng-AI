@@ -39,7 +39,9 @@ class ChatRoadmap(BaseModel):
     title: str = Field(..., description="여행 로드맵의 제목")
     summary: str = Field(..., description="로드맵 한 줄 설명")
     planning_preference: PlanningPreference = Field(..., description="여행 계획 성향")
-    itinerary: list[DailyItinerary] = Field(..., description="일자별 상세 일정 리스트")
+    itinerary: list[DailyItinerary] = Field(
+        ..., description="일자별 상세 일정 리스트 (각 일차는 하루 최소 1개, 최대 10개 장소)"
+    )
 
 
 class ChatRequest(BaseModel):

@@ -60,6 +60,7 @@ API는 `/api/v1/chat`이며, 요청을 즉시 수락한 뒤 LangGraph 기반 대
 | `session_history` | `Message[]` | No | 최근 대화 맥락 |
 
 `current_itinerary`는 `start_date`, `end_date`, `trip_days`, `nights`, `people_count`, `tags`, `title`, `summary`, `planning_preference`, `itinerary`를 포함해야 합니다.
+`current_itinerary.itinerary[].places`는 공용 `DailyItinerary` 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함해야 합니다.
 
 ## 처리 흐름
 
@@ -107,8 +108,7 @@ REPLACE/ADD 검색어에는 현재 일자의 주소에서 추출한 지역 힌�
 
 수정 규칙은 다음과 같습니다.
 
-- 하루 장소 수는 최대 10개입니다.
-- 하루 장소 수는 최소 1개를 유지해야 합니다.
+- 하루 장소 수는 공용 `DailyItinerary` 스키마 기준으로 최소 1개, 최대 10개입니다.
 - REPLACE/ADD는 Google Places 검색으로 실제 장소를 가져옵니다.
 - REPLACE/ADD로 새로 들어온 장소에는 Google Places `primaryType`과 `types`를 내부 정적 매핑한 `place_category`를 포함합니다.
 - 검색 시 현재 일자의 장소 좌표로 bbox를 만들고 10km margin을 적용합니다.

@@ -160,6 +160,7 @@ ai_action: "editable"
 Google Places 원본 `primaryType`과 `types`는 내부 분류에만 사용하고 최종 콜백에는 포함하지 않습니다.
 알 수 없는 유형은 `OTHER`로 전달합니다.
 일자별 장소 순서는 FOOD 장소를 anchor로 고정한 내부 동선 최적화 결과이며, `visit_sequence`와 `visit_time`은 최종 순서 기준으로 재계산됩니다.
+`itinerary[].places`는 공용 `DailyItinerary` 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함해야 합니다.
 `planning_preference`가 `PLANNED`이면 `visit_time`은 `08:00` 이상 `24:00` 이하의 `HH:MM` 값으로 전달됩니다.
 로드맵 생성 파이프라인은 별도 visit_time LLM 제안을 호출하지 않고, 최종 방문 순서와 장소 수를 기준으로 공용 fallback 분배 정책을 적용합니다.
 `SPONTANEOUS`이면 같은 fallback 분배 결과를 `MORNING`/`LUNCH` 같은 section label 형식으로 변환해 전달합니다.

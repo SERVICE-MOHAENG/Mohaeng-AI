@@ -74,6 +74,7 @@ LLM이 좌표를 직접 생성하지 않고 Google Places 응답을 우선 사�
 - 지역 구간을 정렬했을 때 전체 여행 기간을 빠짐없이 덮어야 합니다.
 - `people_count`는 1명 이상 20명 이하입니다.
 - `companion_type`과 `travel_themes`는 각각 최소 1개 이상이어야 합니다.
+- 최종 로드맵의 각 일차는 공용 `DailyItinerary` 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함해야 합니다.
 
 ## 처리 흐름
 
@@ -162,6 +163,7 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 ```
 
 `itinerary`는 `DailyItinerary[]`이며 각 일자는 `CoursePlace[]`를 포함합니다.
+각 일자의 장소 수는 공용 `DailyItinerary` 스키마 기준으로 최소 1개, 최대 10개입니다.
 각 장소에는 `place_name`, `place_id`, `address`, `latitude`, `longitude`, `place_url`, `place_category`, `description`, `visit_sequence`, `visit_time`이 포함됩니다.
 `place_category`는 Google Places `primaryType`과 `types`를 내부 정적 매핑으로 변환한 Mohaeng 장소 대분류 코드이며, 알 수 없는 유형은 `OTHER`입니다.
 

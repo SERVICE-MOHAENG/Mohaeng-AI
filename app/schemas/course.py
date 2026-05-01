@@ -16,6 +16,9 @@ from app.schemas.enums import (
     TravelTheme,
 )
 
+DAILY_ITINERARY_MIN_PLACES = 1
+DAILY_ITINERARY_MAX_PLACES = 10
+
 
 class RegionDateRange(BaseModel):
     """지역별 여행 기간 모델."""
@@ -110,7 +113,12 @@ class DailyItinerary(BaseModel):
 
     day_number: int = Field(..., ge=1, description="여행 N일차 (1, 2, 3...)")
     daily_date: date = Field(..., description="여행 날짜 (YYYY-MM-DD 형식)")
-    places: List[CoursePlace] = Field(..., description="순서대로 정렬된 방문 장소 리스트")
+    places: List[CoursePlace] = Field(
+        ...,
+        min_length=DAILY_ITINERARY_MIN_PLACES,
+        max_length=DAILY_ITINERARY_MAX_PLACES,
+        description="순서대로 정렬된 방문 장소 리스트 (하루 최소 1개, 최대 10개)",
+    )
 
 
 class CourseResponse(BaseModel):

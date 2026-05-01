@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.course import CourseRequest
+from app.schemas.course import CourseRequest, DailyItinerary
 
 
 def _base_payload() -> dict:
@@ -23,6 +23,21 @@ def _base_payload() -> dict:
         "destination_preference": "TOURIST_SPOTS",
         "activity_preference": "REST_FOCUSED",
         "priority_preference": "EFFICIENCY",
+    }
+
+
+def _course_place(index: int) -> dict:
+    return {
+        "place_name": f"장소 {index}",
+        "place_id": f"place-{index}",
+        "address": "서울 종로구",
+        "latitude": 37.579617,
+        "longitude": 126.977041,
+        "place_url": "https://example.com/place",
+        "place_category": "ATTRACTION",
+        "description": "테스트 장소입니다.",
+        "visit_sequence": index,
+        "visit_time": "09:00",
     }
 
 
@@ -68,3 +83,28 @@ def test_course_request_rejects_more_than_eight_regions() -> None:
         CourseRequest.model_validate(payload)
 
     assert "at most 8 items" in str(exc_info.value) or "최대 8" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("place_count", [1, 10])
+def test_daily_itinerary_accepts_one_to_ten_places(place_count: int) -> None:
+    itinerary = DailyItinerary.model_validate(
+        {
+            "day_number": 1,
+            "daily_date": "2026-02-01",
+            "places": [_course_place(index) for index in range(1, place_count + 1)],
+        }
+    )
+
+    assert len(itinerary.places) == place_count
+
+
+@pytest.mark.parametrize("place_count", [0, 11])
+def test_daily_itinerary_rejects_out_of_range_places(place_count: int) -> None:
+    with pytest.raises(ValidationError):
+        DailyItinerary.model_validate(
+            {
+                "day_number": 1,
+                "daily_date": "2026-02-01",
+                "places": [_course_place(index) for index in range(1, place_count + 1)],
+            }
+        )
