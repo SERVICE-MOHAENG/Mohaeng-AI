@@ -104,6 +104,17 @@ def _normalize_output_mode(output_mode: VisitTimeOutputMode | str) -> VisitTimeO
         return VisitTimeOutputMode.HHMM
 
 
+def _build_baseline_minutes(total_count: int, start_minutes: int) -> list[int]:
+    """장소 수에 맞춰 하루 종료 시각까지 균등하게 시간을 배분합니다."""
+    if total_count <= 0:
+        return []
+    if total_count == 1:
+        return [start_minutes]
+
+    step = max(1, (_FALLBACK_END_MINUTES - start_minutes) // total_count)
+    return [min(start_minutes + step * index, _MAX_VISIT_TIME_MINUTES) for index in range(total_count)]
+
+
 def build_visit_time_policy_config(settings: Settings | None = None) -> VisitTimePolicyConfig:
     """설정값으로 visit_time 정책 구성을 만듭니다."""
     resolved_settings = settings or get_settings()
@@ -161,11 +172,11 @@ def apply_visit_time_policy(
 
     resolved_config = config or build_visit_time_policy_config()
     resolved_output_mode = _normalize_output_mode(output_mode)
-    proposals_provided = llm_proposals_by_sequence is not None
+    proposals_provided = llm_proposals_by_sequence is not None and resolved_output_mode == VisitTimeOutputMode.HHMM
     proposals = llm_proposals_by_sequence or {}
     warnings: list[str] = []
     previous_minutes: int | None = None
-    total_count = len(places)
+    baseline_minutes = _build_baseline_minutes(len(places), resolved_config.start_minutes)
 
     for index, place in enumerate(places):
         sequence_raw = place.get("visit_sequence")
@@ -193,8 +204,7 @@ def apply_visit_time_policy(
                 warnings.append(f"day={day_number} sequence={sequence} missing_visit_time; fallback applied")
 
         if assigned_time is None:
-            # 산술적 배분 대신 시작 시각 또는 이전 시각 유지 (최후의 보루)
-            assigned_time = previous_minutes if previous_minutes is not None else resolved_config.start_minutes
+            assigned_time = baseline_minutes[index]
 
         if previous_minutes is not None and assigned_time < previous_minutes:
             assigned_time = previous_minutes

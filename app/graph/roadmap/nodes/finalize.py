@@ -17,9 +17,13 @@ from app.core.logger import get_logger
 from app.core.place_category import resolve_place_category
 from app.core.region_bbox import get_region_bbox
 from app.core.route_optimizer import is_food_anchor, optimize_daily_route
-from app.core.visit_time_llm import propose_visit_times_for_days
 from app.core.timeout_policy import get_timeout_policy
-from app.core.visit_time_policy import VisitTimeOutputMode, apply_visit_time_policy, build_visit_time_policy_config
+from app.core.visit_time_llm import propose_visit_times_for_days
+from app.core.visit_time_policy import (
+    VisitTimeOutputMode,
+    apply_visit_time_policy,
+    build_visit_time_policy_config,
+)
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput
@@ -28,6 +32,15 @@ from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
 
+_SECTION_VISIT_TIME_MAP = {
+    "MORNING": "09:00",
+    "LUNCH": "12:00",
+    "AFTERNOON": "14:00",
+    "DINNER": "18:00",
+    "EVENING": "20:00",
+    "NIGHT": "22:00",
+}
+_DEFAULT_VISIT_TIME = "09:00"
 
 
 async def _notify_pipeline_event_best_effort(**kwargs) -> None:
@@ -91,6 +104,13 @@ def _fallback_grace_timeout(timeout_seconds: int) -> int:
     """ainvoke 내부 fallback 시도 여유를 위해 외부 wait_for 타임아웃을 확장합니다."""
     return max(1, int(timeout_seconds) * 2)
 
+
+def _visit_time_from_section(section: str | None) -> str:
+    """스켈레톤 section을 대략적인 방문 시각으로 변환합니다."""
+    key = str(section or "").strip().upper()
+    return _SECTION_VISIT_TIME_MAP.get(key, _DEFAULT_VISIT_TIME)
+
+
 def _resolve_visit_time_output_mode(planning_preference: PlanningPreference) -> VisitTimeOutputMode:
     if planning_preference == PlanningPreference.PLANNED:
         return VisitTimeOutputMode.HHMM
@@ -125,7 +145,9 @@ async def _apply_route_and_visit_time_policy(daily_places: list[dict], course_re
             section = place.get("section")
             place["visit_sequence"] = index
             place.pop("visit_time", None)
-            # section 정보는 apply_visit_time_policy에서 즉흥형(SPONTANEOUS)일 때 활용하므로 유지
+            if section and is_food_anchor(place):
+                place["section_hint"] = section
+            place.pop("section", None)
 
         day_number = day.get("day_number", 1)
         resolved_places, new_warnings = apply_visit_time_policy(
@@ -146,7 +168,19 @@ async def _apply_route_and_visit_time_policy(daily_places: list[dict], course_re
     return daily_places
 
 
-async def _prepare_final_context(
+def _build_itinerary_context(daily_places: list[dict]) -> str:
+    """일자별 장소 목록을 summary 프롬프트용 텍스트로 변환합니다."""
+    context_lines: list[str] = []
+    for day in daily_places:
+        context_lines.append(f"\nDay {day['day_number']} ({day['daily_date']}):")
+        for place in day.get("places", []):
+            context_lines.append(
+                f"- #{place.get('visit_sequence')} {place.get('visit_time')}: {place.get('place_name')}"
+            )
+    return "\n".join(context_lines)
+
+
+def _prepare_final_context(
     state: RoadmapState,
 ) -> tuple[str, list[dict]]:
     """LLM 입력 컨텍스트와 일자별 장소 목록을 생성합니다."""
@@ -166,14 +200,12 @@ async def _prepare_final_context(
     except Exception as exc:
         raise ValueError(f"CourseRequest 모델 유효성 검증에 실패했습니다: {exc}") from exc
 
-    context_lines = []
     daily_places_for_schema = []
     for day_plan in skeleton_plan:
         day_number = day_plan["day_number"]
         day_region = day_plan.get("region")
         day_region_bbox = get_region_bbox(day_region)
         current_date = course_request.start_date + timedelta(days=day_number - 1)
-        context_lines.append(f"\nDay {day_number} ({current_date.strftime('%Y-%m-%d')}):")
 
         day_places = []
         visit_sequence_counter = 1
@@ -208,6 +240,7 @@ async def _prepare_final_context(
                         or resolve_place_category(place.get("primary_type"), place.get("types") or []).value,
                         "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
+                        "visit_time": _visit_time_from_section(section),
                         "section": section,
                     }
                 )
@@ -217,16 +250,32 @@ async def _prepare_final_context(
             {"day_number": day_number, "daily_date": current_date.isoformat(), "places": day_places}
         )
 
-    daily_places_for_schema = await _apply_route_and_visit_time_policy(daily_places_for_schema, course_request)
-    context_lines = []
+    policy_config = build_visit_time_policy_config()
+    output_mode = _resolve_visit_time_output_mode(course_request.planning_preference)
     for day in daily_places_for_schema:
-        context_lines.append(f"\nDay {day['day_number']} ({day['daily_date']}):")
-        for place in day.get("places", []):
-            context_lines.append(
-                f"- #{place.get('visit_sequence')} {place.get('visit_time')}: {place.get('place_name')}"
-            )
+        places = day.get("places", [])
+        if not places:
+            continue
 
-    return "\n".join(context_lines), daily_places_for_schema
+        day_number = day.get("day_number", 1)
+        optimized_places = optimize_daily_route(places)
+        for index, place in enumerate(optimized_places, start=1):
+            section = place.get("section")
+            place["visit_sequence"] = index
+            place.pop("visit_time", None)
+            if section and is_food_anchor(place):
+                place["section_hint"] = section
+            place.pop("section", None)
+
+        resolved_places, _warnings = apply_visit_time_policy(
+            optimized_places,
+            day_number=day_number,
+            config=policy_config,
+            output_mode=output_mode,
+        )
+        day["places"] = resolved_places
+
+    return _build_itinerary_context(daily_places_for_schema), daily_places_for_schema
 
 
 def _safe_next_action_suggestions(trip_days: int) -> list[str]:
@@ -394,9 +443,11 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         return state
 
     try:
-        itinerary_context, daily_places = await _prepare_final_context(state)
+        itinerary_context, daily_places = _prepare_final_context(state)
         course_request = CourseRequest.model_validate(state["course_request"])
         daily_places = await _fill_place_descriptions_with_llm(daily_places)
+        daily_places = await _apply_route_and_visit_time_policy(daily_places, course_request)
+        itinerary_context = _build_itinerary_context(daily_places)
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
         append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
 
