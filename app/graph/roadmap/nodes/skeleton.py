@@ -323,6 +323,7 @@ def _build_segment_prompt(
         "- keyword는 8~40자 사이로 작성하고, 한 단어 대신 구체 맥락(활동+대상+분위기)을 포함하세요\n"
         "- 예시: '한강 야경 산책 코스', '로컬 해산물 저녁 식사', '현대미술 전시 관람'\n"
         "- '맛집', '카페', '쇼핑' 같은 단일 범주형 단어만 쓰지 마세요\n"
+        "- Google Place API 후보는 동일 place_id가 다른 슬롯/일자에 중복되지 않도록 가능한 다른 후보를 선택하세요\n"
         "{priority_notes_rules}"
         "- 출력은 스키마를 정확히 따라야 하며 추가 텍스트는 금지합니다\n"
     ).format(
@@ -358,6 +359,7 @@ def _build_segment_prompt(
         "- section은 다음 중 하나여야 합니다 MORNING, LUNCH, AFTERNOON, DINNER, EVENING, NIGHT\n\n"
         "- '최우선 사용자 메모'가 있으면 모든 day에서 그 의도가 보이도록 슬롯을 설계하세요\n"
         "- 특히 포함/제외 대상, 분위기, 속도감, 동선 톤 같은 자유 입력 요구를 일반 선호보다 먼저 반영하세요\n\n"
+        "- Google Place API 후보는 동일 place_id가 다른 슬롯/일자에 중복되지 않도록 가능한 다른 후보를 선택하세요\n\n"
         "{format_instructions}"
     )
 
@@ -402,6 +404,7 @@ def _build_repair_prompt(
     system_prompt = (
         "당신은 여행 스켈레톤 JSON 복구 전문가입니다.\n"
         "입력으로 주어진 JSON의 형식/제약 위반만 수정하고 의도는 최대한 유지하세요.\n"
+        "Google Place API 후보는 동일 place_id가 다른 슬롯/일자에 중복되지 않도록 가능한 다른 후보를 선택하세요.\n"
         "반드시 JSON만 출력하고, 설명 텍스트는 절대 포함하지 마세요."
     )
     user_prompt = (
@@ -412,7 +415,8 @@ def _build_repair_prompt(
         "필수 section: MORNING, LUNCH, AFTERNOON, DINNER, EVENING, NIGHT\n"
         "추가 제약: 좌표/전화번호/P.O. Box/C/O/상세 주소 금지, keyword는 8~40자\n"
         "keyword는 Text Search textQuery로 직접 쓰이므로 구체 맥락(활동+대상+분위기)을 포함\n"
-        "'맛집/카페/쇼핑' 같은 단일 범주 단어만 사용 금지\n\n"
+        "'맛집/카페/쇼핑' 같은 단일 범주 단어만 사용 금지\n"
+        "Google Place API 후보는 동일 place_id가 다른 슬롯/일자에 중복되지 않도록 가능한 다른 후보를 선택\n\n"
         "원본 요청 요약:\n"
         "- 전체 일정: {start_date} ~ {end_date}\n"
         "- 인원: {people_count}\n"
