@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.chat import ChatRequest
+from app.schemas.chat import ChatIntent, ChatRequest
 
 
 def _base_payload() -> dict:
@@ -83,6 +83,25 @@ def test_chat_request_requires_context_fields() -> None:
 
     with pytest.raises(ValidationError):
         ChatRequest.model_validate(payload)
+
+
+def test_chat_intent_allows_day_optimize_without_destination() -> None:
+    intent = ChatIntent.model_validate(
+        {
+            "op": "MOVE",
+            "target_scope": "DAY_OPTIMIZE",
+            "target_day": 1,
+            "target_index": 1,
+            "destination_day": None,
+            "destination_index": None,
+            "search_keyword": None,
+            "reasoning": "단일 일차 동선 최적화",
+            "is_compound": False,
+            "needs_clarification": False,
+        }
+    )
+
+    assert intent.target_scope == "DAY_OPTIMIZE"
 
 
 @pytest.mark.parametrize("places", [[], [_course_place(index) for index in range(1, 12)]])

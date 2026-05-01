@@ -90,9 +90,11 @@ class ChatIntent(BaseModel):
     """LLM이 추출한 수정 의도 모델."""
 
     op: ChatOperation = Field(..., description="수정 Operation (REPLACE / ADD / REMOVE / MOVE)")
-    target_scope: Literal["ITEM", "DAY_PLACES"] = Field(
+    target_scope: Literal["ITEM", "DAY_PLACES", "DAY_OPTIMIZE"] = Field(
         default="ITEM",
-        description="수정 범위. ITEM은 장소 단위, DAY_PLACES는 일차의 장소 묶음 교체",
+        description=(
+            "수정 범위. ITEM은 장소 단위, DAY_PLACES는 일차의 장소 묶음 교체, DAY_OPTIMIZE는 단일 일차 동선 최적화"
+        ),
     )
     target_day: int = Field(..., ge=1, description="대상 일자 (1-based)")
     target_index: int = Field(..., ge=1, description="대상 visit_sequence (1-based)")
@@ -114,7 +116,7 @@ class ChatIntent(BaseModel):
         """
         if self.needs_clarification:
             return self
-        if self.op == ChatOperation.MOVE:
+        if self.op == ChatOperation.MOVE and self.target_scope != "DAY_OPTIMIZE":
             if self.destination_day is None or self.destination_index is None:
                 raise ValueError("MOVE 시 destination_day와 destination_index가 필요합니다.")
         if self.op == ChatOperation.REPLACE and self.target_scope == "DAY_PLACES" and self.destination_day is None:
