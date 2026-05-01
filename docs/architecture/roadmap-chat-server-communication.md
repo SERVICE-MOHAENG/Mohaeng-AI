@@ -190,6 +190,10 @@ sequenceDiagram
 - 교체/추가 장소의 Google Places `primaryType`과 `types`는 내부 정적 매핑으로 `place_category`를 산출하는 데만 사용합니다.
 - Google Places 원본 `primary_type`과 식사 anchor 판단값 같은 내부 힌트는 콜백에 포함하지 않습니다.
 - 하루 장소 수는 공용 `DailyItinerary` 스키마 기준으로 최소 1개, 최대 10개입니다.
+- 일차 간 장소 이동은 출발 일차가 최소 1개 장소를 유지하고 도착 일차가 최대 10개 장소를 넘지 않을 때만 허용합니다.
+- 일차 일정 묶음 교체는 각 일차의 `day_number`, `daily_date` 등 day-level 메타데이터를 유지하고 `places` 배열만 서로 교체합니다.
+- 일차 간 재배치 후 영향을 받은 모든 일차의 `visit_sequence`는 1부터 순차 정렬합니다.
+- `diff_keys`는 기존 장소 카드 단위 형식인 `dayN_placeM`만 사용하며 day 단위 key는 추가하지 않습니다.
 - `planning_preference == PLANNED`이면 수정된 일차에 대해 LLM visit_time 제안을 생성하고, 서버가 `08:00` 이상 `24:00` 이하 `HH:MM` 형식과 시간 비감소 조건을 검증한 뒤 반영합니다.
 - LLM 제안이 누락되거나 유효하지 않아도 수정 결과는 실패시키지 않고 공용 fallback 분배 정책으로 보정합니다.
 - `planning_preference == SPONTANEOUS`이면 visit_time LLM 제안은 호출하지 않고 section label 기반 값을 사용합니다.

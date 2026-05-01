@@ -40,9 +40,12 @@ CLASSIFIER_SYSTEM_PROMPT = """\
   - UNKNOWN: 수정은 맞지만 유형 불명확
 - target_scope:
   - DAY_LEVEL: 일차 자체(예: "1일차 삭제", "2일차를 3일차로 이동", "날짜 변경")
+  - DAY_PLACES: 날짜는 유지하고 두 일차에 배치된 장소 묶음만 교체(예: "1일차랑 2일차 일정 바꿔줘")
   - ITEM_LEVEL: 일차 내부 장소(visit_sequence/place) 단위
   - UNKNOWN: 단위를 특정할 수 없음
 - "1일차 삭제해줘"는 DAY_LEVEL DELETE입니다.
+- "1일차랑 2일차 일정 바꿔줘"는 DAY_PLACES REPLACE입니다.
+- "2일차 첫 번째 장소를 1일차 마지막으로 옮겨줘"는 ITEM_LEVEL MOVE입니다.
 - "1일차 2번째 방문지 삭제해줘"는 ITEM_LEVEL DELETE입니다.
 - "1일차 방문지 삭제해줘"처럼 대상을 특정하지 못하면 target_scope를 UNKNOWN으로 둡니다.
 - 응답은 JSON만 출력하세요.
@@ -71,30 +74,43 @@ MODIFICATION_SYSTEM_PROMPT = """\
    - REPLACE: 기존 장소를 다른 장소로 교체
    - ADD: 특정 위치에 새 장소 추가
    - REMOVE: 특정 장소 삭제
-   - MOVE: 같은 Day 내 장소 순서 변경
+   - MOVE: 장소 순서/위치 이동. 출발 Day와 도착 Day가 달라도 MOVE로 분류
 
-2. **Entity Linking**
+2. **Target Scope 분류**
+   - ITEM: 장소 1개를 추가/삭제/교체/이동
+   - DAY_PLACES: 두 일차의 places 배열만 서로 교체. day_number와 daily_date는 바꾸지 않음
+   - "1일차랑 2일차 일정 바꿔줘"는 op=REPLACE, target_scope=DAY_PLACES, target_day=1, destination_day=2
+   - 날짜, 기간, 숙박 수를 바꾸는 요청은 DAY_PLACES가 아닙니다.
+
+3. **Entity Linking**
    - "점심", "저녁", "카페" 등 표현을 아래 매핑 테이블의 (day_number, visit_sequence)로 매핑하세요.
    - "거기", "아까 그거" 등 지시어는 대화 맥락(session_history)을 참고하여 해소하세요.
 
-3. **Search Keyword 추출**
+4. **Search Keyword 추출**
    - REPLACE/ADD 시 Google Places API Text Search(textQuery)에 직접 넣을 검색어를 작성하세요.
+   - 단, target_scope=DAY_PLACES인 REPLACE는 search_keyword를 null로 설정하세요.
    - REMOVE/MOVE 시 search_keyword는 null로 설정하세요.
    - search_keyword 형식은 반드시 "<지역명 또는 동네> <장소명/장소유형>" 입니다.
    - search_keyword에는 target_day의 위치 기반 컨텍스트(지역명)를 반드시 포함하세요.
    - 예시: "서울 성수 브런치 카페", "도쿄 시부야 스시 오마카세"
 
-6. **MOVE 이동 목적지**
+5. **MOVE 이동 목적지**
    - MOVE 시 destination_day(이동 목적지 일자)와 destination_index(이동 목적지 순서)를 반드시 설정하세요.
+   - "마지막으로"는 destination_index를 도착 일자의 마지막 다음 위치로 설정하세요.
+   - "처음으로"는 destination_index=1로 설정하세요.
+   - "점심 뒤로", "카페 다음으로"는 해당 anchor의 다음 visit_sequence로 설정하세요.
+   - "점심 앞으로", "카페 전에"는 해당 anchor의 현재 visit_sequence로 설정하세요.
    - REPLACE/ADD/REMOVE 시 destination_day와 destination_index는 null로 설정하세요.
+   - 단, target_scope=DAY_PLACES인 REPLACE는 destination_day를 설정하고 destination_index는 null로 설정하세요.
    - 단, needs_clarification=true라면 MOVE여도 destination_day와 destination_index는 null이어도 됩니다.
 
-4. **복합 요청 처리**
+6. **복합 요청 처리**
    - 두 가지 이상의 수정이 감지되면 **첫 번째 요청만** 추출하세요.
    - is_compound를 true로 설정하세요.
 
-5. **모호성 감지**
+7. **모호성 감지**
    - 대상을 특정할 수 없으면 needs_clarification을 true로 설정하세요.
+   - anchor가 여러 개라 특정할 수 없으면 needs_clarification을 true로 설정하세요.
    - reasoning에 어떤 부분이 모호한지 구체적으로 작성하세요.
    - 예: "식당 바꿔줘" 인데 식당이 2곳 이상인 경우
 
@@ -127,7 +143,7 @@ class ChatIntentRoute(BaseModel):
         default="UNKNOWN",
         description="수정 요청 액션 분류",
     )
-    target_scope: Literal["DAY_LEVEL", "ITEM_LEVEL", "UNKNOWN"] = Field(
+    target_scope: Literal["DAY_LEVEL", "DAY_PLACES", "ITEM_LEVEL", "UNKNOWN"] = Field(
         default="UNKNOWN",
         description="수정 대상 범위 분류",
     )
@@ -141,6 +157,7 @@ class ChatIntentDraft(BaseModel):
     """
 
     op: ChatOperation
+    target_scope: Literal["ITEM", "DAY_PLACES"] = "ITEM"
     target_day: int = Field(ge=1, default=1)
     target_index: int = Field(ge=1, default=1)
     destination_day: int | None = Field(default=None, ge=1)
@@ -330,6 +347,9 @@ def _ensure_search_keyword_contains_region(
     intent_draft: ChatIntentDraft, day_region_hints: dict[int, str]
 ) -> ChatIntentDraft:
     """REPLACE/ADD 검색어에 지역 힌트를 강제 포함합니다."""
+    if intent_draft.target_scope == "DAY_PLACES":
+        return intent_draft.model_copy(update={"search_keyword": None})
+
     if intent_draft.op not in (ChatOperation.REPLACE, ChatOperation.ADD):
         return intent_draft
 
@@ -373,6 +393,8 @@ def _is_day_or_date_change_request(user_query: str) -> bool:
     text = (user_query or "").strip().lower()
     if not text:
         return False
+    if _is_day_places_swap_request(text):
+        return False
 
     day_tokens = (
         "일차를",
@@ -404,6 +426,107 @@ def _is_day_or_date_change_request(user_query: str) -> bool:
             return True
 
     return False
+
+
+def _extract_day_numbers(user_query: str) -> list[int]:
+    """사용자 요청에서 등장 순서대로 일차 번호를 추출합니다."""
+    return [int(match) for match in re.findall(r"(\d+)\s*일차", user_query or "")]
+
+
+def _is_day_places_swap_request(user_query: str) -> bool:
+    """날짜 변경이 아닌 두 일차의 장소 묶음 교체 요청을 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if len(_extract_day_numbers(text)) < 2:
+        return False
+    if any(token in text for token in ("날짜", "기간", "숙박", "박", "시작일", "종료일")):
+        return False
+    swap_tokens = ("바꿔", "교체", "서로", "맞바꿔", "swap", "switch", "exchange")
+    place_group_tokens = ("일정", "코스", "장소", "방문지", "places", "itinerary", "course")
+    return any(token in text for token in swap_tokens) and any(token in text for token in place_group_tokens)
+
+
+def _day_places_swap_intent(user_query: str) -> ChatIntentDraft | None:
+    """명확한 일차 일정 묶음 교체 요청을 LLM 없이 구조화합니다."""
+    if not _is_day_places_swap_request(user_query):
+        return None
+
+    day_numbers = _extract_day_numbers(user_query)
+    if len(day_numbers) < 2:
+        return None
+
+    return ChatIntentDraft(
+        op=ChatOperation.REPLACE,
+        target_scope="DAY_PLACES",
+        target_day=day_numbers[0],
+        target_index=1,
+        destination_day=day_numbers[1],
+        destination_index=None,
+        search_keyword=None,
+        reasoning="휴리스틱: 두 일차의 장소 일정 묶음 교체 요청",
+    )
+
+
+def _parse_korean_position(text: str) -> int | str | None:
+    """간단한 한국어 순서 표현을 1-based index 또는 anchor 문자열로 변환합니다."""
+    normalized = (text or "").strip().lower()
+    if not normalized:
+        return None
+    if "마지막" in normalized or "끝" in normalized:
+        return "LAST"
+    if "처음" in normalized or "첫" in normalized:
+        return 1
+
+    match = re.search(r"(\d+)\s*(?:번|번째)", normalized)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def _find_day_place_count(itinerary: dict, day_number: int) -> int | None:
+    """일차의 장소 개수를 반환합니다."""
+    for day in itinerary.get("itinerary", []):
+        if day.get("day_number") == day_number:
+            return len(day.get("places", []))
+    return None
+
+
+def _simple_cross_day_move_intent(user_query: str, itinerary: dict) -> ChatIntentDraft | None:
+    """명확한 "N일차 X번째 장소를 M일차 처음/마지막으로" 요청을 휴리스틱으로 구조화합니다."""
+    text = (user_query or "").strip().lower()
+    if not any(token in text for token in ("옮겨", "이동", "보내", "move")):
+        return None
+
+    day_matches = list(re.finditer(r"(\d+)\s*일차", text))
+    if len(day_matches) < 2:
+        return None
+
+    source_day = int(day_matches[0].group(1))
+    destination_day = int(day_matches[1].group(1))
+    source_phrase = text[day_matches[0].end() : day_matches[1].start()]
+    destination_phrase = text[day_matches[1].end() :]
+    source_index = _parse_korean_position(source_phrase)
+    destination_index = _parse_korean_position(destination_phrase)
+
+    if source_index in (None, "LAST"):
+        return None
+    if destination_index == "LAST":
+        destination_count = _find_day_place_count(itinerary, destination_day)
+        if destination_count is None:
+            return None
+        destination_index = destination_count + 1
+    if destination_index is None:
+        destination_index = 1
+
+    return ChatIntentDraft(
+        op=ChatOperation.MOVE,
+        target_scope="ITEM",
+        target_day=source_day,
+        target_index=int(source_index),
+        destination_day=destination_day,
+        destination_index=int(destination_index),
+        search_keyword=None,
+        reasoning="휴리스틱: 일차 간 장소 이동 요청",
+    )
 
 
 def _is_explicit_day_delete_request(user_query: str) -> bool:
@@ -461,6 +584,13 @@ def _classify_intent_route(
         return parser.parse(content)
     except Exception as exc:
         logger.warning("의도 분류 LLM 호출 실패, 휴리스틱으로 대체: %s", exc)
+        if _is_day_places_swap_request(user_query):
+            return ChatIntentRoute(
+                intent_type="MODIFICATION",
+                requested_action="REPLACE",
+                target_scope="DAY_PLACES",
+                reasoning="휴리스틱: 일차 일정 묶음 교체 요청",
+            )
         if _is_day_or_date_change_request(user_query):
             return ChatIntentRoute(
                 intent_type="MODIFICATION",
@@ -605,7 +735,31 @@ def analyze_intent(state: ChatState) -> ChatState:
             "change_summary": "삭제할 일차와 장소 순서를 함께 알려주세요. 예: '1일차 2번째 장소 삭제해줘'",
         }
 
-    if route.target_scope == "DAY_LEVEL" or _is_day_or_date_change_request(user_query):
+    day_places_swap_intent = _day_places_swap_intent(user_query)
+    simple_cross_day_move_intent = _simple_cross_day_move_intent(user_query, current_itinerary)
+
+    if _is_day_or_date_change_request(user_query):
+        _emit_intent_event(
+            "chat_intent_rejected",
+            "warning",
+            "REJECTED",
+            "일차 변경 요청이 거부되었습니다.",
+            [
+                {
+                    "name": "Reason",
+                    "value": "여행 날짜, 기간, 숙박 수 변경은 전체 일정 재구성이 필요합니다.",
+                    "inline": False,
+                }
+            ],
+        )
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "status": ChatStatus.REJECTED,
+            "change_summary": "여행 날짜, 기간, 숙박 수 변경은 전체 일정 재구성이 필요합니다.",
+        }
+
+    if route.target_scope == "DAY_LEVEL" and not (day_places_swap_intent or simple_cross_day_move_intent):
         _emit_intent_event(
             "chat_intent_rejected",
             "warning",
@@ -617,17 +771,19 @@ def analyze_intent(state: ChatState) -> ChatState:
             **state,
             "intent_type": "MODIFICATION",
             "status": ChatStatus.REJECTED,
-            "change_summary": "일차(날짜) 자체는 변경할 수 없습니다. 각 일차 내부 장소 일정만 수정할 수 있어요.",
+            "change_summary": "일차(날짜) 자체는 변경할 수 없습니다. 각 일차에 배치된 장소 일정만 수정할 수 있어요.",
         }
 
     try:
-        intent_draft = _parse_modification_intent(
-            itinerary_table=itinerary_table,
-            history_context=history_context,
-            request_context=request_context_text,
-            day_region_context=day_region_context,
-            user_query=user_query,
-        )
+        intent_draft = day_places_swap_intent or simple_cross_day_move_intent
+        if intent_draft is None:
+            intent_draft = _parse_modification_intent(
+                itinerary_table=itinerary_table,
+                history_context=history_context,
+                request_context=request_context_text,
+                day_region_context=day_region_context,
+                user_query=user_query,
+            )
         intent_draft = _ensure_search_keyword_contains_region(intent_draft, day_region_hints)
         append_job_log(
             "intent_parsed",

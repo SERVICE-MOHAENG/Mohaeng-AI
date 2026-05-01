@@ -14,7 +14,7 @@ ai_action: "editable"
 
 # 배경
 
-채팅 요청은 일반 질문일 수도 있고, 기존 로드맵의 장소를 교체, 추가, 삭제, 이동하는 수정 요청일 수도 있습니다.
+채팅 요청은 일반 질문일 수도 있고, 기존 로드맵의 장소를 교체, 추가, 삭제, 이동하거나 일차 간 장소/일정 묶음을 재배치하는 수정 요청일 수도 있습니다.
 Mohaeng-AI는 최신 로드맵과 사용자 발화를 받아 의도를 분석하고, 필요한 경우 Google Places 검색과 visit time 재계산을 수행합니다.
 
 # 본문
@@ -135,6 +135,8 @@ Mohaeng-AI는 최신 로드맵과 사용자 발화를 받아 의도를 분석하
 `modified_itinerary.itinerary[].places[].place_category`는 Mohaeng 장소 대분류 코드입니다.
 채팅 수정으로 추가 또는 교체되는 장소도 Google Places 원본 타입 대신 `place_category`만 최종 응답에 포함합니다.
 `SUCCESS` 콜백의 `modified_itinerary.itinerary[].places`도 같은 공용 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함합니다.
+일차 간 장소 이동과 일차 일정 묶음 교체도 callback payload 형식은 동일하며, `diff_keys`는 기존 `dayN_placeM` 장소 카드 key 형식만 사용합니다.
+일차 일정 묶음 교체 시 `day_number`와 `daily_date`는 유지되고 `places` 배열만 서로 교체됩니다.
 
 일반 대화, 추가 확인, 반려 콜백은 `modified_itinerary`가 `null`입니다.
 
