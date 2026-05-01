@@ -210,15 +210,21 @@ async def mutate(state: ChatState) -> ChatState:
 
     elif op == ChatOperation.MOVE:
         if target_scope == "DAY_OPTIMIZE":
-            optimized_places = optimize_daily_route(places)
-            reorder_visit_sequence(optimized_places)
-            day["places"] = optimized_places
-            diff_keys.extend(_build_day_diff_keys(day))
             if any(_has_missing_coordinate(place) for place in places):
                 warnings.append("일부 장소 좌표가 없어 해당 위치는 기존 순서를 유지했습니다.")
-            change_summary = (
-                f"{target_day_num}일차의 식사 일정은 유지하고, 나머지 장소 순서를 이동거리 기준으로 다시 정리했습니다."
-            )
+                day["places"] = places
+                change_summary = (
+                    f"{target_day_num}일차 동선 최적화를 시도했지만 일부 장소 좌표가 없어 기존 순서를 유지했습니다."
+                )
+            else:
+                optimized_places = optimize_daily_route(places)
+                reorder_visit_sequence(optimized_places)
+                day["places"] = optimized_places
+                change_summary = (
+                    f"{target_day_num}일차의 식사 일정은 유지하고, "
+                    "나머지 장소 순서를 이동거리 기준으로 다시 정리했습니다."
+                )
+            diff_keys.extend(_build_day_diff_keys(day))
         else:
             dest_day_num = intent.get("destination_day", target_day_num)
             dest_index = max(1, intent.get("destination_index", 1))

@@ -230,6 +230,7 @@ def test_mutate_day_optimize_keeps_order_when_coordinates_are_missing() -> None:
 
     assert [place["place_id"] for place in places] == ["A", "B", "C"]
     assert "좌표" in result["warnings"][0]
+    assert "기존 순서를 유지" in result["change_summary"]
 
 
 def test_analyze_intent_structures_clear_day_places_swap_without_llm(monkeypatch) -> None:
@@ -293,6 +294,24 @@ def test_analyze_intent_requests_clarification_for_ambiguous_day_optimize(monkey
     assert "일차" in result["change_summary"]
 
 
+def test_analyze_intent_keeps_general_chat_for_route_question_without_optimize_verb(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2)),
+            "user_query": "이 일정 동선이 왜 이렇게 됐어?",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["intent_type"] == "GENERAL_CHAT"
+
+
 def test_analyze_intent_rejects_multi_day_or_global_optimize_request(monkeypatch) -> None:
     def _raise(*args, **kwargs):
         raise RuntimeError("LLM unavailable")
@@ -310,6 +329,26 @@ def test_analyze_intent_rejects_multi_day_or_global_optimize_request(monkeypatch
 
     assert result["status"] == ChatStatus.REJECTED
     assert "전체 일정 동선 최적화" in result["change_summary"]
+
+
+def test_analyze_intent_structures_english_day_optimize_without_llm(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2, 2)),
+            "user_query": "optimize route for first day",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["intent"]["op"] == "MOVE"
+    assert result["intent"]["target_scope"] == "DAY_OPTIMIZE"
+    assert result["intent"]["target_day"] == 1
 
 
 def test_analyze_intent_rejects_date_change_request(monkeypatch) -> None:

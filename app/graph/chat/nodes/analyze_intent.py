@@ -385,14 +385,12 @@ def _has_modification_keyword(user_query: str) -> bool:
         "이동",
         "순서",
         "최적화",
-        "동선",
-        "이동거리",
         "replace",
         "add",
         "remove",
         "move",
         "optimize",
-        "route",
+        "reorder",
     )
     normalized = user_query.lower()
     return any(keyword in normalized for keyword in keywords)
@@ -404,16 +402,27 @@ def _has_day_optimize_keyword(user_query: str) -> bool:
     if not text:
         return False
 
-    optimize_tokens = (
+    verb_tokens = (
         "최적화",
+        "정리해줘",
+        "재정렬",
+        "줄여줘",
+        "optimize",
+        "reorder",
+        "reduce",
+    )
+    target_tokens = (
         "동선",
         "이동거리",
+        "일정",
+        "코스",
         "동선 정리",
         "경로 정리",
-        "optimize",
         "route",
+        "schedule",
+        "itinerary",
     )
-    return any(token in text for token in optimize_tokens)
+    return any(token in text for token in verb_tokens) and any(token in text for token in target_tokens)
 
 
 def _is_global_day_optimize_request(user_query: str, itinerary: dict | None = None) -> bool:
@@ -530,6 +539,9 @@ def _extract_day_references(user_query: str, itinerary: dict | None = None) -> l
     for match in re.finditer(r"(\d+)\s*일차", text):
         refs.append((int(match.group(1)), match.start()))
 
+    for match in re.finditer(r"\bday\s*(\d+)\b", text, re.IGNORECASE):
+        refs.append((int(match.group(1)), match.start()))
+
     total_days = len((itinerary or {}).get("itinerary", []))
     relative_patterns: list[tuple[re.Pattern[str], int | None]] = [
         (re.compile(r"첫\s*날|첫날|첫\s*번째\s*날|첫번째\s*날"), 1),
@@ -541,6 +553,27 @@ def _extract_day_references(user_query: str, itinerary: dict | None = None) -> l
             if default_day is None:
                 continue
             refs.append((default_day, match.start()))
+
+    english_ordinals = {
+        "first": 1,
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+        "sixth": 6,
+        "seventh": 7,
+        "eighth": 8,
+        "ninth": 9,
+        "tenth": 10,
+    }
+    for ordinal, day_number in english_ordinals.items():
+        pattern = re.compile(rf"\b{ordinal}\s+day\b", re.IGNORECASE)
+        for match in pattern.finditer(text):
+            refs.append((day_number, match.start()))
+
+    if total_days:
+        for match in re.finditer(r"\blast\s+day\b", text, re.IGNORECASE):
+            refs.append((total_days, match.start()))
 
     refs.sort(key=lambda item: item[1])
     return refs
