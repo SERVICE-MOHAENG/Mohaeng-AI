@@ -2,42 +2,6 @@
 .git
 .gitignore
 
-# Github
-.github/
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Local virtualenv (절대 복사하면 안 됨)
-.venv/
-venv/
-
-# Test / dev
-tests/
-.coverage
-.pytest_cache/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Logs
-*.log
-
-# OS junk
-.DS_Store
-Thumbs.db
-
-# Env / secrets
-.env
-.env.*
-*.pem
-*.key
-
 # Docker itself
 Dockerfile
 .dockerignore
@@ -50,3 +14,22 @@ Dockerfile
 
 # Docs
 docs/
+
+# Local tooling
+.vscode/
+.idea/
+
+# Generated project artifacts
+artifacts/
+tools/
+AGENTS.md
+README.md
+LICENSE.md
+docker-compose.yml
+
+# Temp files
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
