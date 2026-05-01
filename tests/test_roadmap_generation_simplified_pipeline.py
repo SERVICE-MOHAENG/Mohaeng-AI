@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
-from app.graph.roadmap.nodes.finalize import _prepare_final_context, _visit_time_from_section
+from langchain_core.output_parsers import PydanticOutputParser
+
+from app.graph.roadmap.nodes.finalize import (
+    _build_summary_prompt_messages,
+    _prepare_final_context,
+    _visit_time_from_section,
+)
+from app.graph.roadmap.nodes.skeleton import _build_segment_prompt
 from app.graph.roadmap.workflow import compiled_roadmap_graph
+from app.schemas.course import CourseRequest, CourseResponseLLMOutput, RegionDateRange
+from app.schemas.skeleton import SkeletonPlan
 
 
 def _base_course_request() -> dict:
@@ -229,3 +238,51 @@ def test_prepare_final_context_uses_sequence_labels_for_spontaneous_visit_time()
     place = daily_places[0]["places"][0]
     assert place["place_category"] == "FOOD"
     assert place["visit_time"] == "MORNING"
+
+
+def test_segment_prompt_prioritizes_user_notes_when_present() -> None:
+    request = CourseRequest.model_validate(
+        {
+            **_base_course_request(),
+            "notes": "조용한 동선으로 구성하고 붐비는 관광지는 제외해 주세요.",
+        }
+    )
+    segment = RegionDateRange.model_validate(request.regions[0].model_dump())
+    parser = PydanticOutputParser(pydantic_object=SkeletonPlan)
+
+    messages = _build_segment_prompt(
+        request=request,
+        segment=segment,
+        segment_days=2,
+        slot_min=4,
+        slot_max=5,
+        slot_targets=[5, 4],
+        parser=parser,
+    )
+
+    system_content = messages[0].content
+    user_content = messages[1].content
+
+    assert "최우선 사용자 메모" in user_content
+    assert "조용한 동선으로 구성하고 붐비는 관광지는 제외해 주세요." in user_content
+    assert "다른 일반 선호값보다 우선해서 해석" in system_content
+    assert "일반 선호보다 먼저 반영" in user_content
+
+
+def test_finalize_summary_prompt_prioritizes_user_notes() -> None:
+    parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
+
+    messages = _build_summary_prompt_messages(
+        course_request_payload={**_base_course_request(), "notes": "전통시장과 로컬 식당을 꼭 포함해 주세요."},
+        itinerary_context="\nDay 1 (2026-02-01):\n- #1 09:00 경복궁",
+        priority_notes="전통시장과 로컬 식당을 꼭 포함해 주세요.",
+        parser=parser,
+    )
+
+    system_content = messages[0].content
+    user_content = messages[1].content
+
+    assert "최우선 사용자 메모" in user_content
+    assert "전통시장과 로컬 식당을 꼭 포함해 주세요." in user_content
+    assert "title, summary, tags, llm_commentary 전반에서 가장 먼저 반영" in system_content
+    assert "가장 중요한 제약으로 간주" in user_content
