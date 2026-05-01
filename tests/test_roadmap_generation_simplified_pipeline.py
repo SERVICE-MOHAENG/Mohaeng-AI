@@ -7,7 +7,6 @@ from langchain_core.output_parsers import PydanticOutputParser
 from app.graph.roadmap.nodes.finalize import (
     _build_summary_prompt_messages,
     _prepare_final_context,
-    _visit_time_from_section,
 )
 from app.graph.roadmap.nodes.skeleton import _build_segment_prompt
 from app.graph.roadmap.workflow import compiled_roadmap_graph
@@ -45,16 +44,6 @@ def test_roadmap_workflow_skips_place_name_normalization() -> None:
     assert "normalize_place_names" not in node_names
     assert ("generate_skeleton", "fetch_places_from_slots") in edges
     assert ("fetch_places_from_slots", "synthesize_final_roadmap") in edges
-
-
-def test_visit_time_from_section_uses_static_hhmm_mapping() -> None:
-    assert _visit_time_from_section("MORNING") == "09:00"
-    assert _visit_time_from_section("LUNCH") == "12:00"
-    assert _visit_time_from_section("AFTERNOON") == "14:00"
-    assert _visit_time_from_section("DINNER") == "18:00"
-    assert _visit_time_from_section("EVENING") == "20:00"
-    assert _visit_time_from_section("NIGHT") == "22:00"
-    assert _visit_time_from_section("unknown") == "09:00"
 
 
 def test_prepare_final_context_uses_original_place_name_and_visit_time_policy() -> None:
@@ -204,7 +193,7 @@ def test_prepare_final_context_reorders_places_and_recalculates_planned_visit_ti
     assert "C" in itinerary_context
 
 
-def test_prepare_final_context_uses_sequence_labels_for_spontaneous_visit_time() -> None:
+def test_prepare_final_context_uses_hhmm_baseline_for_spontaneous_visit_time() -> None:
     request = _base_course_request()
     request["planning_preference"] = "SPONTANEOUS"
     state = {
@@ -237,7 +226,7 @@ def test_prepare_final_context_uses_sequence_labels_for_spontaneous_visit_time()
 
     place = daily_places[0]["places"][0]
     assert place["place_category"] == "FOOD"
-    assert place["visit_time"] == "MORNING"
+    assert place["visit_time"] == "09:00"
 
 
 def test_segment_prompt_prioritizes_user_notes_when_present() -> None:

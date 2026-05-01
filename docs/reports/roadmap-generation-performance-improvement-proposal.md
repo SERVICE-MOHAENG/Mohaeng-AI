@@ -1,6 +1,6 @@
 ---
 title: "로드맵 생성 시간 개선안 보고"
-status: "review"
+status: "approved"
 author: "@codex"
 created_at: 2026-04-28
 tags: [reports, roadmap, generation, performance, proposal]
@@ -36,9 +36,8 @@ ai_action: "editable"
 
 - 장소명 정규화 단계는 제거한다.
 - 한국어 정보가 없는 장소는 영어 또는 현지어 원본명이 실제 간판명과 일치할 가능성이 높으므로 Google Places 원본명을 유지한다.
-- 방문 시간 계산 단계는 제거한다.
-- 방문 시간은 skeleton section을 기준으로 `MORNING=09:00`, `LUNCH=12:00` 같은 단순 매핑을 사용한다.
-- 목표는 정확한 이동/체류 시간이 아니라 대략적인 시간대 제공이다.
++ 방문 시간 계산 단계는 유지한다. (2026-05-14 결정: 생성/수정 모두 LLM 기반 시간 추론 적용, 30분 단위 제한)
++ 목표는 성능 저하를 감수하더라도 사용자 성향에 맞는 자연스럽고 깔끔한 방문 시각 제공이다.
 
 ## 1. 장소명 정규화 제거
 
@@ -52,11 +51,9 @@ ai_action: "editable"
 ## 2. 방문 시간 계산 제거
 
 - 대상: `synthesize_final_roadmap`
-- 내용: 방문 시간 제안 LLM과 이동/체류 시간 계산을 제거하고 section 기반 정적 시각을 사용한다.
-- 구현 방식: `MORNING=09:00`, `LUNCH=12:00`, `AFTERNOON=14:00`, `DINNER=18:00`, `EVENING=20:00`, `NIGHT=22:00`으로 매핑한다.
-- 예상 효과: 평균 73.300초 병목을 줄일 수 있다.
-- 리스크: 방문 시간이 정밀하지 않고 같은 section의 장소가 같은 시간으로 표시될 수 있다.
-- 필요 테스트: `CourseResponse` 스키마 유지, description/visit_time 누락 방지, PLANNED/SPONTANEOUS 출력 유지.
++ 내용: 반려됨. 성능보다 결과물의 품질(현실적인 시각 배치)을 우선하여 LLM 호출을 유지하기로 함.
++ 상태: **REJECTED**
++ 사유: 정적 매핑은 동선 최적화 결과와 어긋나는 경우가 많아 사용자 경험을 저해함.
 
 ## 3. Timeout 정책 분리 및 stage 관측성 강화
 
@@ -86,7 +83,7 @@ ai_action: "editable"
 1차 개선으로 다음 2개를 적용한다.
 
 1. `normalize_place_names` 제거
-2. 방문 시간 계산 제거 및 section 기반 정적 매핑 적용
+2. (추가) 생성 단계에서도 `propose_visit_times_for_days`를 통한 LLM 시간 제안 적용
 
 이 조합은 가장 큰 병목 2개를 직접 줄인다.
 `fetch_places_from_slots`와 skeleton 경량화는 1차 개선 후 재측정 결과를 보고 추가 적용 여부를 결정하는 것이 안전하다.

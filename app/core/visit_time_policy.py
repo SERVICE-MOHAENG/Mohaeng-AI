@@ -104,6 +104,17 @@ def _normalize_output_mode(output_mode: VisitTimeOutputMode | str) -> VisitTimeO
         return VisitTimeOutputMode.HHMM
 
 
+def _build_baseline_minutes(total_count: int, start_minutes: int) -> list[int]:
+    """장소 수에 맞춰 하루 종료 시각까지 균등하게 시간을 배분합니다."""
+    if total_count <= 0:
+        return []
+    if total_count == 1:
+        return [start_minutes]
+
+    step = max(1, (_FALLBACK_END_MINUTES - start_minutes) // total_count)
+    return [min(start_minutes + step * index, _MAX_VISIT_TIME_MINUTES) for index in range(total_count)]
+
+
 def build_visit_time_policy_config(settings: Settings | None = None) -> VisitTimePolicyConfig:
     """설정값으로 visit_time 정책 구성을 만듭니다."""
     resolved_settings = settings or get_settings()
@@ -147,17 +158,6 @@ def _parse_valid_visit_time(value: str | None) -> int | None:
     return parsed
 
 
-def _fallback_minutes_for_position(index: int, total_count: int, config: VisitTimePolicyConfig) -> int:
-    start = max(_MIN_VISIT_TIME_MINUTES, min(config.start_minutes, _MAX_VISIT_TIME_MINUTES))
-    count = max(1, total_count)
-    if count == 1:
-        return start
-
-    available_minutes = max(0, _FALLBACK_END_MINUTES - start)
-    step = max(1, available_minutes // count)
-    return min(_MAX_VISIT_TIME_MINUTES, start + max(0, index) * step)
-
-
 def apply_visit_time_policy(
     places: list[dict],
     *,
@@ -172,11 +172,11 @@ def apply_visit_time_policy(
 
     resolved_config = config or build_visit_time_policy_config()
     resolved_output_mode = _normalize_output_mode(output_mode)
-    proposals_provided = llm_proposals_by_sequence is not None
+    proposals_provided = llm_proposals_by_sequence is not None and resolved_output_mode == VisitTimeOutputMode.HHMM
     proposals = llm_proposals_by_sequence or {}
     warnings: list[str] = []
     previous_minutes: int | None = None
-    total_count = len(places)
+    baseline_minutes = _build_baseline_minutes(len(places), resolved_config.start_minutes)
 
     for index, place in enumerate(places):
         sequence_raw = place.get("visit_sequence")
@@ -186,7 +186,7 @@ def apply_visit_time_policy(
             sequence = index + 1
 
         assigned_time: int | None = None
-        if resolved_output_mode == VisitTimeOutputMode.HHMM and proposals_provided:
+        if proposals_provided:
             proposed_time = proposals.get(sequence)
             proposed_minutes = _parse_valid_visit_time(proposed_time)
             if proposed_time and proposed_minutes is None:
@@ -204,7 +204,7 @@ def apply_visit_time_policy(
                 warnings.append(f"day={day_number} sequence={sequence} missing_visit_time; fallback applied")
 
         if assigned_time is None:
-            assigned_time = _fallback_minutes_for_position(index, total_count, resolved_config)
+            assigned_time = baseline_minutes[index]
 
         if previous_minutes is not None and assigned_time < previous_minutes:
             assigned_time = previous_minutes
