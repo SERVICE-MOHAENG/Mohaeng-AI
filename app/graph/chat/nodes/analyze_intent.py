@@ -433,10 +433,34 @@ def _extract_day_numbers(user_query: str) -> list[int]:
     return [int(match) for match in re.findall(r"(\d+)\s*일차", user_query or "")]
 
 
-def _is_day_places_swap_request(user_query: str) -> bool:
+def _extract_day_references(user_query: str, itinerary: dict | None = None) -> list[tuple[int, int]]:
+    """사용자 요청에서 등장 순서대로 일차 참조를 추출합니다."""
+    text = user_query or ""
+    refs: list[tuple[int, int]] = []
+
+    for match in re.finditer(r"(\d+)\s*일차", text):
+        refs.append((int(match.group(1)), match.start()))
+
+    total_days = len((itinerary or {}).get("itinerary", []))
+    relative_patterns: list[tuple[re.Pattern[str], int | None]] = [
+        (re.compile(r"첫\s*날|첫날|첫\s*번째\s*날|첫번째\s*날"), 1),
+        (re.compile(r"마지막\s*날|마지막날|끝\s*날|끝날"), total_days or None),
+    ]
+
+    for pattern, default_day in relative_patterns:
+        for match in pattern.finditer(text):
+            if default_day is None:
+                continue
+            refs.append((default_day, match.start()))
+
+    refs.sort(key=lambda item: item[1])
+    return refs
+
+
+def _is_day_places_swap_request(user_query: str, itinerary: dict | None = None) -> bool:
     """날짜 변경이 아닌 두 일차의 장소 묶음 교체 요청을 감지합니다."""
     text = (user_query or "").strip().lower()
-    if len(_extract_day_numbers(text)) < 2:
+    if len(_extract_day_references(text, itinerary)) < 2:
         return False
     if any(token in text for token in ("날짜", "기간", "숙박", "시작일", "종료일")):
         return False
@@ -447,21 +471,21 @@ def _is_day_places_swap_request(user_query: str) -> bool:
     return any(token in text for token in swap_tokens) and any(token in text for token in place_group_tokens)
 
 
-def _day_places_swap_intent(user_query: str) -> ChatIntentDraft | None:
+def _day_places_swap_intent(user_query: str, itinerary: dict | None = None) -> ChatIntentDraft | None:
     """명확한 일차 일정 묶음 교체 요청을 LLM 없이 구조화합니다."""
-    if not _is_day_places_swap_request(user_query):
+    if not _is_day_places_swap_request(user_query, itinerary):
         return None
 
-    day_numbers = _extract_day_numbers(user_query)
-    if len(day_numbers) < 2:
+    day_refs = _extract_day_references(user_query, itinerary)
+    if len(day_refs) < 2:
         return None
 
     return ChatIntentDraft(
         op=ChatOperation.REPLACE,
         target_scope="DAY_PLACES",
-        target_day=day_numbers[0],
+        target_day=day_refs[0][0],
         target_index=1,
-        destination_day=day_numbers[1],
+        destination_day=day_refs[1][0],
         destination_index=None,
         search_keyword=None,
         reasoning="휴리스틱: 두 일차의 장소 일정 묶음 교체 요청",
@@ -498,18 +522,25 @@ def _simple_cross_day_move_intent(user_query: str, itinerary: dict) -> ChatInten
     if not any(token in text for token in ("옮겨", "이동", "보내", "move")):
         return None
 
-    day_matches = list(re.finditer(r"(\d+)\s*일차", text))
-    if len(day_matches) < 2:
+    day_refs = _extract_day_references(text, itinerary)
+    if len(day_refs) < 2:
         return None
 
-    source_day = int(day_matches[0].group(1))
-    destination_day = int(day_matches[1].group(1))
-    source_phrase = text[day_matches[0].end() : day_matches[1].start()]
-    destination_phrase = text[day_matches[1].end() :]
+    source_day = day_refs[0][0]
+    destination_day = day_refs[1][0]
+    source_end = text.find("일차", day_refs[0][1]) + len("일차")
+    destination_start = day_refs[1][1]
+    source_phrase = text[source_end:destination_start]
+    destination_phrase = text[destination_start:]
     source_index = _parse_korean_position(source_phrase)
     destination_index = _parse_korean_position(destination_phrase)
 
-    if source_index in (None, "LAST"):
+    if source_index == "LAST":
+        source_count = _find_day_place_count(itinerary, source_day)
+        if source_count is None:
+            return None
+        source_index = source_count
+    if source_index is None:
         return None
     if destination_index == "LAST":
         destination_count = _find_day_place_count(itinerary, destination_day)
@@ -517,7 +548,17 @@ def _simple_cross_day_move_intent(user_query: str, itinerary: dict) -> ChatInten
             return None
         destination_index = destination_count + 1
     if destination_index is None:
-        destination_index = 1
+        return ChatIntentDraft(
+            op=ChatOperation.MOVE,
+            target_scope="ITEM",
+            target_day=source_day,
+            target_index=int(source_index),
+            destination_day=destination_day,
+            destination_index=None,
+            search_keyword=None,
+            reasoning="이동 목적지 위치가 모호합니다.",
+            needs_clarification=True,
+        )
 
     return ChatIntentDraft(
         op=ChatOperation.MOVE,
@@ -737,7 +778,7 @@ def analyze_intent(state: ChatState) -> ChatState:
             "change_summary": "삭제할 일차와 장소 순서를 함께 알려주세요. 예: '1일차 2번째 장소 삭제해줘'",
         }
 
-    day_places_swap_intent = _day_places_swap_intent(user_query)
+    day_places_swap_intent = _day_places_swap_intent(user_query, current_itinerary)
     simple_cross_day_move_intent = _simple_cross_day_move_intent(user_query, current_itinerary)
 
     if _is_day_or_date_change_request(user_query):

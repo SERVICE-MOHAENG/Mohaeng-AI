@@ -169,3 +169,43 @@ def test_analyze_intent_rejects_date_change_request(monkeypatch) -> None:
 
     assert result["status"] == ChatStatus.REJECTED
     assert "재구성" in result["change_summary"]
+
+
+def test_analyze_intent_structures_relative_day_swap_without_llm(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2, 2)),
+            "user_query": "첫날 코스와 마지막 날 코스를 서로 바꿔줘",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["intent"]["op"] == "REPLACE"
+    assert result["intent"]["target_scope"] == "DAY_PLACES"
+    assert result["intent"]["target_day"] == 1
+    assert result["intent"]["destination_day"] == 3
+
+
+def test_analyze_intent_requests_clarification_when_destination_position_is_missing(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary(),
+            "user_query": "2일차 첫 번째 장소를 1일차로 옮겨줘",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["status"] == ChatStatus.ASK_CLARIFICATION
+    assert "모호" in result["change_summary"] or "알려주세요" in result["change_summary"]
