@@ -133,7 +133,7 @@ NestJS는 현재 구조대로 기존 `CourseDay`와 `CoursePlace`를 삭제한 �
 | 영역 | 변경 방향 |
 | --- | --- |
 | `analyze_intent` | 일차 간 장소 이동과 일차 일정 묶음 교체를 정책상 거부하지 않도록 의도 분류 확장 |
-| `ChatIntent` | 필요하면 일차 묶음 교체를 표현할 operation 또는 보조 필드 추가 |
+| `ChatIntent` | 일차 묶음 교체를 표현하는 `target_scope` 보조 필드 사용 |
 | `mutate` | 일차 간 `MOVE`와 day places swap을 실제 수정으로 처리 |
 | `propose_visit_time` | 영향을 받은 모든 일차를 visit time proposal 대상으로 포함 |
 | `cascade` | 영향을 받은 모든 일차에 visit time policy 적용 및 스키마 검증 |
@@ -142,18 +142,18 @@ NestJS는 현재 구조대로 기존 `CourseDay`와 `CoursePlace`를 삭제한 �
 
 ### Intent 표현 결정
 
-일차 일정 묶음 교체를 위해 새로운 intent 모델이나 새 `ChatOperation`을 만들지는 않습니다.
-기존 `ChatIntent` 구조와 `ChatOperation` 중심 흐름을 유지하되, `ChatIntent` 내부에 보조 scope 필드를 두어 장소 단위 교체와 일차 일정 묶음 교체를 구분합니다.
+일차 일정 묶음 교체를 위해 새로운 intent 모델이나 새 `ChatOperation`을 만들지 않습니다.
+기존 `ChatIntent` 구조와 `ChatOperation` 중심 흐름을 유지하되, `ChatIntent` 내부에 `target_scope` 보조 필드를 두어 장소 단위 교체와 일차 일정 묶음 교체를 구분합니다.
 이 필드는 Mohaeng-AI 내부 그래프 상태에서만 사용하며, BE callback 계약에는 포함하지 않습니다.
 
-권장 표현은 다음과 같습니다.
+표현은 다음처럼 고정합니다.
 
 | 의도 | `op` | 보조 scope | 필수 필드 | 해석 |
 | --- | --- | --- | --- | --- |
 | 장소 단위 교체 | `REPLACE` | `ITEM` | `target_day`, `target_index`, `search_keyword` | 대상 장소를 Google Places 기반 새 장소로 교체 |
 | 일차 일정 묶음 교체 | `REPLACE` | `DAY_PLACES` | `target_day`, `destination_day` | 두 일차의 `places` 묶음을 서로 교체 |
 
-보조 scope 필드명은 구현 시 `target_scope` 또는 `replace_scope` 중 하나로 정하되, 기존 classifier의 `DAY_LEVEL` 의미와 혼동되지 않도록 `DAY_PLACES` 값을 사용합니다.
+보조 scope 필드명은 `target_scope`로 고정합니다. 기존 classifier의 `DAY_LEVEL` 의미와 혼동되지 않도록 `DAY_PLACES` 값을 사용합니다.
 `DAY_LEVEL`은 날짜, 기간, 일차 삭제처럼 로드맵 구조를 바꾸는 요청을 뜻하고, `DAY_PLACES`는 날짜를 유지한 채 해당 일차에 배치된 장소 묶음만 바꾸는 요청을 뜻합니다.
 
 ### diff_keys 표현 결정
@@ -199,7 +199,7 @@ anchor가 여러 개라 대상을 특정할 수 없으면 `ASK_CLARIFICATION`으
 
 현재 확인한 BE 구조에서는 필수 변경이 없습니다.
 
-BE는 `IntentStatusType`이 `SUCCESS`이고 `modifiedItinerary`가 존재하면 `TravelCourse`를 전체 스냅샷 기준으로 재작성합니다.
+BE는 `IntentStatusType`이 `SUCCESS`이고 `modified_itinerary`가 존재하면 `TravelCourse`를 전체 스냅샷 기준으로 재작성합니다.
 따라서 Mohaeng-AI가 위 payload 조건을 지키면, 일차 간 장소 이동과 일차 일정 묶음 교체를 기존 callback 구조로 저장할 수 있습니다.
 
 다만 BE 관점의 주의사항은 다음과 같습니다.

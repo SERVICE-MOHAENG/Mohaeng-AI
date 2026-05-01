@@ -438,7 +438,9 @@ def _is_day_places_swap_request(user_query: str) -> bool:
     text = (user_query or "").strip().lower()
     if len(_extract_day_numbers(text)) < 2:
         return False
-    if any(token in text for token in ("날짜", "기간", "숙박", "박", "시작일", "종료일")):
+    if any(token in text for token in ("날짜", "기간", "숙박", "시작일", "종료일")):
+        return False
+    if re.search(r"\d+\s*박(\s*\d+\s*일)?", text):
         return False
     swap_tokens = ("바꿔", "교체", "서로", "맞바꿔", "swap", "switch", "exchange")
     place_group_tokens = ("일정", "코스", "장소", "방문지", "places", "itinerary", "course")
