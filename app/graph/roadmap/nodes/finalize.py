@@ -27,20 +27,9 @@ from app.core.visit_time_policy import (
 from app.graph.roadmap.state import RoadmapState
 from app.graph.roadmap.utils import build_slot_key, strip_code_fence
 from app.schemas.course import CourseRequest, CourseResponseLLMOutput
-from app.schemas.enums import PlanningPreference
 from app.services.webhook_notification import notify_pipeline_event
 
 logger = get_logger(__name__)
-
-_SECTION_VISIT_TIME_MAP = {
-    "MORNING": "09:00",
-    "LUNCH": "12:00",
-    "AFTERNOON": "14:00",
-    "DINNER": "18:00",
-    "EVENING": "20:00",
-    "NIGHT": "22:00",
-}
-_DEFAULT_VISIT_TIME = "09:00"
 
 
 async def _notify_pipeline_event_best_effort(**kwargs) -> None:
@@ -105,30 +94,17 @@ def _fallback_grace_timeout(timeout_seconds: int) -> int:
     return max(1, int(timeout_seconds) * 2)
 
 
-def _visit_time_from_section(section: str | None) -> str:
-    """스켈레톤 section을 대략적인 방문 시각으로 변환합니다."""
-    key = str(section or "").strip().upper()
-    return _SECTION_VISIT_TIME_MAP.get(key, _DEFAULT_VISIT_TIME)
-
-
-def _resolve_visit_time_output_mode(planning_preference: PlanningPreference) -> VisitTimeOutputMode:
-    if planning_preference == PlanningPreference.PLANNED:
-        return VisitTimeOutputMode.HHMM
-    return VisitTimeOutputMode.SECTION_EN
-
-
-async def _apply_route_and_visit_time_policy(daily_places: list[dict], course_request: CourseRequest) -> list[dict]:
+async def _apply_route_and_visit_time_policy(
+    daily_places: list[dict],
+    *,
+    llm_proposals_by_day: dict[int, dict[int, str]] | None = None,
+) -> list[dict]:
     """일자별 장소 순서를 최적화하고 visit_sequence/visit_time을 재계산합니다."""
-    output_mode = _resolve_visit_time_output_mode(course_request.planning_preference)
     policy_config = build_visit_time_policy_config()
     total_before = sum(len(day.get("places", [])) for day in daily_places)
     changed_days: list[int] = []
     warnings: list[str] = []
-
-    # 계획형(PLANNED)일 때만 LLM을 통해 정밀 방문 시각 제안을 받음
-    llm_proposals = {}
-    if course_request.planning_preference == PlanningPreference.PLANNED:
-        llm_proposals = await propose_visit_times_for_days(daily_places)
+    llm_proposals: dict[int, dict[int, str]] = llm_proposals_by_day or {}
 
     for day in daily_places:
         places = day.get("places", [])
@@ -154,7 +130,7 @@ async def _apply_route_and_visit_time_policy(daily_places: list[dict], course_re
             optimized_places,
             day_number=day_number,
             config=policy_config,
-            output_mode=output_mode,
+            output_mode=VisitTimeOutputMode.HHMM,
             llm_proposals_by_sequence=llm_proposals.get(day_number),
         )
         day["places"] = resolved_places
@@ -163,7 +139,7 @@ async def _apply_route_and_visit_time_policy(daily_places: list[dict], course_re
     append_job_log(
         "route_optimize",
         f"days_changed={changed_days} total_places={total_before} "
-        f"visit_time_mode={output_mode.value} warnings={len(warnings)}",
+        f"visit_time_mode={VisitTimeOutputMode.HHMM.value} warnings={len(warnings)}",
     )
     return daily_places
 
@@ -240,7 +216,6 @@ def _prepare_final_context(
                         or resolve_place_category(place.get("primary_type"), place.get("types") or []).value,
                         "description": f"{display_name}에서 즐기는 대표 활동입니다.",
                         "visit_sequence": visit_sequence_counter,
-                        "visit_time": _visit_time_from_section(section),
                         "section": section,
                     }
                 )
@@ -251,7 +226,6 @@ def _prepare_final_context(
         )
 
     policy_config = build_visit_time_policy_config()
-    output_mode = _resolve_visit_time_output_mode(course_request.planning_preference)
     for day in daily_places_for_schema:
         places = day.get("places", [])
         if not places:
@@ -260,18 +234,15 @@ def _prepare_final_context(
         day_number = day.get("day_number", 1)
         optimized_places = optimize_daily_route(places)
         for index, place in enumerate(optimized_places, start=1):
-            section = place.get("section")
             place["visit_sequence"] = index
             place.pop("visit_time", None)
-            if section and is_food_anchor(place):
-                place["section_hint"] = section
             place.pop("section", None)
 
         resolved_places, _warnings = apply_visit_time_policy(
             optimized_places,
             day_number=day_number,
             config=policy_config,
-            output_mode=output_mode,
+            output_mode=VisitTimeOutputMode.HHMM,
         )
         day["places"] = resolved_places
 
@@ -446,7 +417,12 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         itinerary_context, daily_places = _prepare_final_context(state)
         course_request = CourseRequest.model_validate(state["course_request"])
         daily_places = await _fill_place_descriptions_with_llm(daily_places)
-        daily_places = await _apply_route_and_visit_time_policy(daily_places, course_request)
+        visit_time_proposals = await propose_visit_times_for_days(daily_places)
+        daily_places = await _apply_route_and_visit_time_policy(
+            daily_places,
+            llm_proposals_by_day=visit_time_proposals,
+            output_mode=VisitTimeOutputMode.HHMM,
+        )
         itinerary_context = _build_itinerary_context(daily_places)
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
         append_job_log("finalize_desc", f"place_descriptions_filled={desc_count}")
