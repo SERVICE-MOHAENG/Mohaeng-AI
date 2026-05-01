@@ -131,6 +131,108 @@ def test_mutate_swaps_day_places_without_changing_day_metadata() -> None:
     assert result["diff_keys"] == ["day1_place1", "day1_place2", "day2_place1", "day2_place2"]
 
 
+def test_mutate_optimizes_single_day_route_and_marks_all_places() -> None:
+    itinerary = _itinerary((4,))
+    day = itinerary["itinerary"][0]
+    day["places"] = [
+        {
+            **_place(1, 1),
+            "place_name": "museum",
+            "place_id": "museum",
+            "place_category": "CULTURE",
+            "latitude": 37.5000,
+            "longitude": 127.0000,
+        },
+        {
+            **_place(1, 2),
+            "place_name": "far park",
+            "place_id": "far-park",
+            "place_category": "NATURE",
+            "latitude": 37.5000,
+            "longitude": 127.0900,
+        },
+        {
+            **_place(1, 3),
+            "place_name": "lunch",
+            "place_id": "lunch",
+            "place_category": "FOOD",
+            "latitude": 37.5000,
+            "longitude": 127.0200,
+        },
+        {
+            **_place(1, 4),
+            "place_name": "near gallery",
+            "place_id": "near-gallery",
+            "place_category": "ATTRACTION",
+            "latitude": 37.5000,
+            "longitude": 127.0300,
+        },
+    ]
+    state = {
+        "current_itinerary": itinerary,
+        "intent": {
+            "op": "MOVE",
+            "target_scope": "DAY_OPTIMIZE",
+            "target_day": 1,
+            "target_index": 1,
+            "destination_day": None,
+            "destination_index": None,
+            "search_keyword": None,
+            "reasoning": "테스트",
+            "is_compound": False,
+            "needs_clarification": False,
+        },
+    }
+
+    result = asyncio.run(mutate(state))
+    places = result["modified_itinerary"]["itinerary"][0]["places"]
+
+    assert [place["place_id"] for place in places] == ["far-park", "museum", "lunch", "near-gallery"]
+    assert [place["visit_sequence"] for place in places] == [1, 2, 3, 4]
+    assert result["diff_keys"] == ["day1_place1", "day1_place2", "day1_place3", "day1_place4"]
+    assert "식사 일정은 유지" in result["change_summary"]
+    assert places[2]["place_category"] == "FOOD"
+
+
+def test_mutate_day_optimize_keeps_order_when_coordinates_are_missing() -> None:
+    itinerary = _itinerary((3,))
+    day = itinerary["itinerary"][0]
+    day["places"] = [
+        {**_place(1, 1), "place_name": "A", "place_id": "A", "place_category": "ATTRACTION"},
+        {
+            **_place(1, 2),
+            "place_name": "B",
+            "place_id": "B",
+            "place_category": "ATTRACTION",
+            "latitude": None,
+            "longitude": None,
+        },
+        {**_place(1, 3), "place_name": "C", "place_id": "C", "place_category": "ATTRACTION"},
+    ]
+    state = {
+        "current_itinerary": itinerary,
+        "intent": {
+            "op": "MOVE",
+            "target_scope": "DAY_OPTIMIZE",
+            "target_day": 1,
+            "target_index": 1,
+            "destination_day": None,
+            "destination_index": None,
+            "search_keyword": None,
+            "reasoning": "테스트",
+            "is_compound": False,
+            "needs_clarification": False,
+        },
+    }
+
+    result = asyncio.run(mutate(state))
+    places = result["modified_itinerary"]["itinerary"][0]["places"]
+
+    assert [place["place_id"] for place in places] == ["A", "B", "C"]
+    assert "좌표" in result["warnings"][0]
+    assert "기존 순서를 유지" in result["change_summary"]
+
+
 def test_analyze_intent_structures_clear_day_places_swap_without_llm(monkeypatch) -> None:
     def _raise(*args, **kwargs):
         raise RuntimeError("LLM unavailable")
@@ -150,6 +252,103 @@ def test_analyze_intent_structures_clear_day_places_swap_without_llm(monkeypatch
     assert result["intent"]["target_scope"] == "DAY_PLACES"
     assert result["intent"]["target_day"] == 1
     assert result["intent"]["destination_day"] == 2
+
+
+def test_analyze_intent_structures_day_optimize_without_llm(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((4, 2)),
+            "user_query": "1일차 전체 일정 최적화해줘",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["intent"]["op"] == "MOVE"
+    assert result["intent"]["target_scope"] == "DAY_OPTIMIZE"
+    assert result["intent"]["target_day"] == 1
+    assert result["intent"]["destination_day"] is None
+
+
+def test_analyze_intent_requests_clarification_for_ambiguous_day_optimize(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2)),
+            "user_query": "동선 정리해줘",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["status"] == ChatStatus.ASK_CLARIFICATION
+    assert "일차" in result["change_summary"]
+
+
+def test_analyze_intent_keeps_general_chat_for_route_question_without_optimize_verb(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2)),
+            "user_query": "이 일정 동선이 왜 이렇게 됐어?",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["intent_type"] == "GENERAL_CHAT"
+
+
+def test_analyze_intent_rejects_multi_day_or_global_optimize_request(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2)),
+            "user_query": "전체 일정 최적화해줘",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["status"] == ChatStatus.REJECTED
+    assert "전체 일정 동선 최적화" in result["change_summary"]
+
+
+def test_analyze_intent_structures_english_day_optimize_without_llm(monkeypatch) -> None:
+    def _raise(*args, **kwargs):
+        raise RuntimeError("LLM unavailable")
+
+    monkeypatch.setattr(analyze_module, "invoke", _raise)
+
+    result = analyze_module.analyze_intent(
+        {
+            "current_itinerary": _itinerary((2, 2, 2)),
+            "user_query": "optimize route for first day",
+            "session_history": [],
+            "request_context": {},
+        }
+    )
+
+    assert result["intent"]["op"] == "MOVE"
+    assert result["intent"]["target_scope"] == "DAY_OPTIMIZE"
+    assert result["intent"]["target_day"] == 1
 
 
 def test_analyze_intent_rejects_date_change_request(monkeypatch) -> None:

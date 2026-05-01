@@ -41,10 +41,12 @@ CLASSIFIER_SYSTEM_PROMPT = """\
 - target_scope:
   - DAY_LEVEL: 일차 자체(예: "1일차 삭제", "2일차를 3일차로 이동", "날짜 변경")
   - DAY_PLACES: 날짜는 유지하고 두 일차에 배치된 장소 묶음만 교체(예: "1일차랑 2일차 일정 바꿔줘")
+  - DAY_OPTIMIZE: 단일 일차의 전체 동선을 재정렬(예: "1일차 전체 일정 최적화해줘")
   - ITEM_LEVEL: 일차 내부 장소(visit_sequence/place) 단위
   - UNKNOWN: 단위를 특정할 수 없음
 - "1일차 삭제해줘"는 DAY_LEVEL DELETE입니다.
 - "1일차랑 2일차 일정 바꿔줘"는 DAY_PLACES REPLACE입니다.
+- "1일차 전체 일정 최적화해줘"는 DAY_OPTIMIZE MOVE입니다.
 - "2일차 첫 번째 장소를 1일차 마지막으로 옮겨줘"는 ITEM_LEVEL MOVE입니다.
 - "1일차 2번째 방문지 삭제해줘"는 ITEM_LEVEL DELETE입니다.
 - "1일차 방문지 삭제해줘"처럼 대상을 특정하지 못하면 target_scope를 UNKNOWN으로 둡니다.
@@ -79,7 +81,9 @@ MODIFICATION_SYSTEM_PROMPT = """\
 2. **Target Scope 분류**
    - ITEM: 장소 1개를 추가/삭제/교체/이동
    - DAY_PLACES: 두 일차의 places 배열만 서로 교체. day_number와 daily_date는 바꾸지 않음
+   - DAY_OPTIMIZE: 단일 일차의 전체 장소 순서를 route optimization 정책으로 재배치
    - "1일차랑 2일차 일정 바꿔줘"는 op=REPLACE, target_scope=DAY_PLACES, target_day=1, destination_day=2
+   - "1일차 전체 일정 최적화해줘"는 op=MOVE, target_scope=DAY_OPTIMIZE, target_day=1
    - 날짜, 기간, 숙박 수를 바꾸는 요청은 DAY_PLACES가 아닙니다.
 
 3. **Entity Linking**
@@ -96,6 +100,7 @@ MODIFICATION_SYSTEM_PROMPT = """\
 
 5. **MOVE 이동 목적지**
    - MOVE 시 destination_day(이동 목적지 일자)와 destination_index(이동 목적지 순서)를 반드시 설정하세요.
+   - 단, target_scope=DAY_OPTIMIZE인 MOVE는 destination_day와 destination_index를 null로 설정하세요.
    - "마지막으로"는 destination_index를 도착 일자의 마지막 다음 위치로 설정하세요.
    - "처음으로"는 destination_index=1로 설정하세요.
    - "점심 뒤로", "카페 다음으로"는 해당 anchor의 다음 visit_sequence로 설정하세요.
@@ -143,7 +148,7 @@ class ChatIntentRoute(BaseModel):
         default="UNKNOWN",
         description="수정 요청 액션 분류",
     )
-    target_scope: Literal["DAY_LEVEL", "DAY_PLACES", "ITEM_LEVEL", "UNKNOWN"] = Field(
+    target_scope: Literal["DAY_LEVEL", "DAY_PLACES", "DAY_OPTIMIZE", "ITEM_LEVEL", "UNKNOWN"] = Field(
         default="UNKNOWN",
         description="수정 대상 범위 분류",
     )
@@ -157,7 +162,7 @@ class ChatIntentDraft(BaseModel):
     """
 
     op: ChatOperation
-    target_scope: Literal["ITEM", "DAY_PLACES"] = "ITEM"
+    target_scope: Literal["ITEM", "DAY_PLACES", "DAY_OPTIMIZE"] = "ITEM"
     target_day: int = Field(ge=1, default=1)
     target_index: int = Field(ge=1, default=1)
     destination_day: int | None = Field(default=None, ge=1)
@@ -379,13 +384,106 @@ def _has_modification_keyword(user_query: str) -> bool:
         "옮겨",
         "이동",
         "순서",
+        "최적화",
         "replace",
         "add",
         "remove",
         "move",
+        "optimize",
+        "reorder",
     )
     normalized = user_query.lower()
     return any(keyword in normalized for keyword in keywords)
+
+
+def _has_day_optimize_keyword(user_query: str) -> bool:
+    """동선 최적화 요청을 가리키는 핵심 키워드를 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if not text:
+        return False
+
+    verb_tokens = (
+        "최적화",
+        "정리해줘",
+        "재정렬",
+        "줄여줘",
+        "optimize",
+        "reorder",
+        "reduce",
+    )
+    target_tokens = (
+        "동선",
+        "이동거리",
+        "일정",
+        "코스",
+        "동선 정리",
+        "경로 정리",
+        "route",
+        "schedule",
+        "itinerary",
+    )
+    return any(token in text for token in verb_tokens) and any(token in text for token in target_tokens)
+
+
+def _is_global_day_optimize_request(user_query: str, itinerary: dict | None = None) -> bool:
+    """전체 일정 또는 여러 일차를 한 번에 최적화하려는 요청을 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if not _has_day_optimize_keyword(text):
+        return False
+
+    day_refs = _extract_day_references(text, itinerary)
+    if len(day_refs) >= 2:
+        return True
+
+    global_tokens = (
+        "전체 일정",
+        "전 일정",
+        "모든 일정",
+        "전체 코스",
+        "전체 동선",
+        "여행 전체",
+        "all days",
+        "entire itinerary",
+        "whole itinerary",
+    )
+    if not day_refs and any(token in text for token in global_tokens):
+        return True
+
+    return False
+
+
+def _is_ambiguous_day_optimize_request(user_query: str, itinerary: dict | None = None) -> bool:
+    """동선 최적화 의도는 있으나 대상 일차가 없는 요청을 감지합니다."""
+    text = (user_query or "").strip().lower()
+    if not _has_day_optimize_keyword(text):
+        return False
+    if _is_global_day_optimize_request(text, itinerary):
+        return False
+    return len(_extract_day_references(text, itinerary)) == 0
+
+
+def _day_optimize_intent(user_query: str, itinerary: dict | None = None) -> ChatIntentDraft | None:
+    """명확한 단일 일차 동선 최적화 요청을 LLM 없이 구조화합니다."""
+    text = (user_query or "").strip()
+    if not _has_day_optimize_keyword(text):
+        return None
+    if _is_global_day_optimize_request(text, itinerary) or _is_ambiguous_day_optimize_request(text, itinerary):
+        return None
+
+    day_refs = _extract_day_references(text, itinerary)
+    if len(day_refs) != 1:
+        return None
+
+    return ChatIntentDraft(
+        op=ChatOperation.MOVE,
+        target_scope="DAY_OPTIMIZE",
+        target_day=day_refs[0][0],
+        target_index=1,
+        destination_day=None,
+        destination_index=None,
+        search_keyword=None,
+        reasoning="휴리스틱: 단일 일차 동선 최적화 요청",
+    )
 
 
 def _is_day_or_date_change_request(user_query: str) -> bool:
@@ -441,6 +539,9 @@ def _extract_day_references(user_query: str, itinerary: dict | None = None) -> l
     for match in re.finditer(r"(\d+)\s*일차", text):
         refs.append((int(match.group(1)), match.start()))
 
+    for match in re.finditer(r"\bday\s*(\d+)\b", text, re.IGNORECASE):
+        refs.append((int(match.group(1)), match.start()))
+
     total_days = len((itinerary or {}).get("itinerary", []))
     relative_patterns: list[tuple[re.Pattern[str], int | None]] = [
         (re.compile(r"첫\s*날|첫날|첫\s*번째\s*날|첫번째\s*날"), 1),
@@ -452,6 +553,27 @@ def _extract_day_references(user_query: str, itinerary: dict | None = None) -> l
             if default_day is None:
                 continue
             refs.append((default_day, match.start()))
+
+    english_ordinals = {
+        "first": 1,
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+        "sixth": 6,
+        "seventh": 7,
+        "eighth": 8,
+        "ninth": 9,
+        "tenth": 10,
+    }
+    for ordinal, day_number in english_ordinals.items():
+        pattern = re.compile(rf"\b{ordinal}\s+day\b", re.IGNORECASE)
+        for match in pattern.finditer(text):
+            refs.append((day_number, match.start()))
+
+    if total_days:
+        for match in re.finditer(r"\blast\s+day\b", text, re.IGNORECASE):
+            refs.append((total_days, match.start()))
 
     refs.sort(key=lambda item: item[1])
     return refs
@@ -605,6 +727,7 @@ def _is_ambiguous_day_item_delete_request(user_query: str) -> bool:
 
 
 def _classify_intent_route(
+    itinerary: dict,
     itinerary_table: str,
     history_context: str,
     request_context: str,
@@ -627,6 +750,13 @@ def _classify_intent_route(
         return parser.parse(content)
     except Exception as exc:
         logger.warning("의도 분류 LLM 호출 실패, 휴리스틱으로 대체: %s", exc)
+        if _day_optimize_intent(user_query, itinerary):
+            return ChatIntentRoute(
+                intent_type="MODIFICATION",
+                requested_action="MOVE",
+                target_scope="DAY_OPTIMIZE",
+                reasoning="휴리스틱: 단일 일차 동선 최적화 요청",
+            )
         if _is_day_places_swap_request(user_query):
             return ChatIntentRoute(
                 intent_type="MODIFICATION",
@@ -747,12 +877,30 @@ def analyze_intent(state: ChatState) -> ChatState:
     day_region_hints = _build_day_region_hints(current_itinerary)
     day_region_context = _format_day_region_context(day_region_hints)
 
-    route = _classify_intent_route(itinerary_table, history_context, request_context_text, user_query)
+    route = _classify_intent_route(
+        current_itinerary, itinerary_table, history_context, request_context_text, user_query
+    )
     append_job_log(
         "analyze_intent",
         f"type={route.intent_type} action={route.requested_action} scope={route.target_scope}",
     )
-    if route.intent_type == "GENERAL_CHAT":
+    day_optimize_intent = _day_optimize_intent(user_query, current_itinerary)
+    day_places_swap_intent = _day_places_swap_intent(user_query, current_itinerary)
+    simple_cross_day_move_intent = _simple_cross_day_move_intent(user_query, current_itinerary)
+    has_heuristic_modification_signal = any(
+        (
+            day_optimize_intent is not None,
+            day_places_swap_intent is not None,
+            simple_cross_day_move_intent is not None,
+            _is_global_day_optimize_request(user_query, current_itinerary),
+            _is_ambiguous_day_optimize_request(user_query, current_itinerary),
+            _is_day_or_date_change_request(user_query),
+            _is_explicit_day_delete_request(user_query),
+            _is_ambiguous_day_item_delete_request(user_query),
+        )
+    )
+
+    if route.intent_type == "GENERAL_CHAT" and not has_heuristic_modification_signal:
         return {**state, "intent_type": "GENERAL_CHAT"}
 
     if route.requested_action == "DELETE" and route.target_scope == "DAY_LEVEL":
@@ -778,8 +926,23 @@ def analyze_intent(state: ChatState) -> ChatState:
             "change_summary": "삭제할 일차와 장소 순서를 함께 알려주세요. 예: '1일차 2번째 장소 삭제해줘'",
         }
 
-    day_places_swap_intent = _day_places_swap_intent(user_query, current_itinerary)
-    simple_cross_day_move_intent = _simple_cross_day_move_intent(user_query, current_itinerary)
+    if _is_global_day_optimize_request(user_query, current_itinerary):
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "status": ChatStatus.REJECTED,
+            "change_summary": (
+                "여러 일차나 전체 일정 동선 최적화는 아직 지원하지 않습니다. 최적화할 한 개의 일차를 지정해 주세요."
+            ),
+        }
+
+    if _is_ambiguous_day_optimize_request(user_query, current_itinerary):
+        return {
+            **state,
+            "intent_type": "MODIFICATION",
+            "status": ChatStatus.ASK_CLARIFICATION,
+            "change_summary": "동선을 최적화할 일차를 알려주세요. 예: '1일차 전체 일정 최적화해줘'",
+        }
 
     if _is_day_or_date_change_request(user_query):
         _emit_intent_event(
@@ -818,7 +981,7 @@ def analyze_intent(state: ChatState) -> ChatState:
         }
 
     try:
-        intent_draft = day_places_swap_intent or simple_cross_day_move_intent
+        intent_draft = day_optimize_intent or day_places_swap_intent or simple_cross_day_move_intent
         if intent_draft is None:
             intent_draft = _parse_modification_intent(
                 itinerary_table=itinerary_table,

@@ -9,6 +9,7 @@ from app.core.geo import GeoRectangle
 from app.core.job_log_context import append_job_log
 from app.core.llm_router import Stage, invoke
 from app.core.logger import get_logger
+from app.core.route_optimizer import optimize_daily_route
 from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat.nodes.analyze_intent import extract_region_hint_from_address
 from app.graph.chat.state import ChatState
@@ -82,6 +83,15 @@ def _build_day_diff_keys(day: dict) -> list[str]:
     return [build_diff_key(day_number, index) for index in range(1, len(day.get("places", [])) + 1)]
 
 
+def _has_missing_coordinate(place: dict) -> bool:
+    lat = place.get("latitude")
+    lon = place.get("longitude")
+    try:
+        return lat is None or lon is None or not (-90 <= float(lat) <= 90 and -180 <= float(lon) <= 180)
+    except (TypeError, ValueError):
+        return True
+
+
 def _sort_diff_keys(diff_keys: list[str]) -> list[str]:
     """diff key를 day, place 순서로 정렬하고 중복을 제거합니다."""
     parsed: list[tuple[int, int, str]] = []
@@ -130,7 +140,10 @@ async def mutate(state: ChatState) -> ChatState:
     places = day.get("places", [])
     target_pos = target_index - 1
 
-    if op in (ChatOperation.REPLACE, ChatOperation.REMOVE, ChatOperation.MOVE) and target_scope != "DAY_PLACES":
+    if op in (ChatOperation.REPLACE, ChatOperation.REMOVE, ChatOperation.MOVE) and target_scope not in (
+        "DAY_PLACES",
+        "DAY_OPTIMIZE",
+    ):
         if target_pos < 0 or target_pos >= len(places):
             return {**state, "error": f"{target_day_num}일차의 {target_index}번째 장소가 없습니다."}
 
@@ -196,50 +209,67 @@ async def mutate(state: ChatState) -> ChatState:
         change_summary = f"{target_day_num}일차 {target_index}번째 장소를 삭제했습니다."
 
     elif op == ChatOperation.MOVE:
-        dest_day_num = intent.get("destination_day", target_day_num)
-        dest_index = max(1, intent.get("destination_index", 1))
-        dest_pos = dest_index - 1
-
-        if dest_day_num == target_day_num:
-            moved = places.pop(target_pos)
-            dest_pos = min(dest_pos, len(places))
-            places.insert(dest_pos, moved)
-            reorder_visit_sequence(places)
-            diff_keys.append(build_diff_key(target_day_num, dest_pos + 1))
-            change_summary = f"{target_day_num}일차 {target_index}번째 장소를 {dest_pos + 1}번째로 옮겼습니다."
-        else:
-            dest_day = _find_day(itinerary, dest_day_num)
-            if not dest_day:
-                return {**state, "error": f"{dest_day_num}일차를 찾을 수 없습니다."}
-            dest_places = dest_day.get("places", [])
-            if len(places) <= _MIN_PLACES_PER_DAY:
-                return {
-                    **state,
-                    "status": ChatStatus.REJECTED,
-                    "change_summary": "출발 일차에는 최소 1개 장소가 남아 있어야 합니다.",
-                }
-            if len(dest_places) >= _MAX_PLACES_PER_DAY:
-                return {
-                    **state,
-                    "status": ChatStatus.REJECTED,
-                    "change_summary": "도착 일차에는 최대 10개 장소까지만 배치할 수 있습니다.",
-                }
-            moved = places.pop(target_pos)
-            reorder_visit_sequence(places)
-            dest_pos = min(dest_pos, len(dest_places))
-            dest_places.insert(dest_pos, moved)
-            reorder_visit_sequence(dest_places)
-            dest_day["places"] = dest_places
+        if target_scope == "DAY_OPTIMIZE":
+            if any(_has_missing_coordinate(place) for place in places):
+                warnings.append("일부 장소 좌표가 없어 해당 위치는 기존 순서를 유지했습니다.")
+                day["places"] = places
+                change_summary = (
+                    f"{target_day_num}일차 동선 최적화를 시도했지만 일부 장소 좌표가 없어 기존 순서를 유지했습니다."
+                )
+            else:
+                optimized_places = optimize_daily_route(places)
+                reorder_visit_sequence(optimized_places)
+                day["places"] = optimized_places
+                change_summary = (
+                    f"{target_day_num}일차의 식사 일정은 유지하고, "
+                    "나머지 장소 순서를 이동거리 기준으로 다시 정리했습니다."
+                )
             diff_keys.extend(_build_day_diff_keys(day))
-            diff_keys.extend(_build_day_diff_keys(dest_day))
-            change_summary = (
-                f"{target_day_num}일차 {target_index}번째 장소를 "
-                f"{dest_day_num}일차 {dest_pos + 1}번째 위치로 옮겼습니다."
-            )
+        else:
+            dest_day_num = intent.get("destination_day", target_day_num)
+            dest_index = max(1, intent.get("destination_index", 1))
+            dest_pos = dest_index - 1
+
+            if dest_day_num == target_day_num:
+                moved = places.pop(target_pos)
+                dest_pos = min(dest_pos, len(places))
+                places.insert(dest_pos, moved)
+                reorder_visit_sequence(places)
+                diff_keys.append(build_diff_key(target_day_num, dest_pos + 1))
+                change_summary = f"{target_day_num}일차 {target_index}번째 장소를 {dest_pos + 1}번째로 옮겼습니다."
+            else:
+                dest_day = _find_day(itinerary, dest_day_num)
+                if not dest_day:
+                    return {**state, "error": f"{dest_day_num}일차를 찾을 수 없습니다."}
+                dest_places = dest_day.get("places", [])
+                if len(places) <= _MIN_PLACES_PER_DAY:
+                    return {
+                        **state,
+                        "status": ChatStatus.REJECTED,
+                        "change_summary": "출발 일차에는 최소 1개 장소가 남아 있어야 합니다.",
+                    }
+                if len(dest_places) >= _MAX_PLACES_PER_DAY:
+                    return {
+                        **state,
+                        "status": ChatStatus.REJECTED,
+                        "change_summary": "도착 일차에는 최대 10개 장소까지만 배치할 수 있습니다.",
+                    }
+                moved = places.pop(target_pos)
+                reorder_visit_sequence(places)
+                dest_pos = min(dest_pos, len(dest_places))
+                dest_places.insert(dest_pos, moved)
+                reorder_visit_sequence(dest_places)
+                dest_day["places"] = dest_places
+                diff_keys.extend(_build_day_diff_keys(day))
+                diff_keys.extend(_build_day_diff_keys(dest_day))
+                change_summary = (
+                    f"{target_day_num}일차 {target_index}번째 장소를 "
+                    f"{dest_day_num}일차 {dest_pos + 1}번째 위치로 옮겼습니다."
+                )
     else:
         change_summary = "요청한 수정 작업을 처리했습니다."
 
-    if target_scope != "DAY_PLACES":
+    if target_scope not in ("DAY_PLACES", "DAY_OPTIMIZE"):
         day["places"] = places
     diff_keys = _sort_diff_keys(diff_keys)
     diff_str = ",".join(diff_keys)
