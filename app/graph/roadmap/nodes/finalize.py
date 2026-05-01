@@ -421,7 +421,6 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         daily_places = await _apply_route_and_visit_time_policy(
             daily_places,
             llm_proposals_by_day=visit_time_proposals,
-            output_mode=VisitTimeOutputMode.HHMM,
         )
         itinerary_context = _build_itinerary_context(daily_places)
         desc_count = sum(1 for d in daily_places for p in d.get("places", []) if p.get("description"))
