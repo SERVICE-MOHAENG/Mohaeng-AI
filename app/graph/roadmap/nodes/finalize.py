@@ -46,18 +46,53 @@ async def _notify_pipeline_event_best_effort(**kwargs) -> None:
         )
 
 
-def _select_place_in_region(places: list[dict], region_bbox: GeoRectangle | None) -> dict | None:
-    """bbox 내 첫 번째 장소를 반환합니다. bbox 내 장소가 없으면 None을 반환합니다."""
+def _place_dedupe_key(place: dict) -> str | None:
+    """장소 중복 제거용 키를 생성합니다."""
+    place_id = str(place.get("place_id") or "").strip()
+    if place_id:
+        return f"id:{place_id}"
+
+    name = str(place.get("display_name") or place.get("name") or place.get("place_name") or "").strip()
+    address = str(place.get("address") or "").strip()
+    normalized_name = " ".join(name.split()).lower()
+    normalized_address = " ".join(address.split()).lower()
+    if normalized_name or normalized_address:
+        return f"name:{normalized_name}|address:{normalized_address}"
+    return None
+
+
+def _select_place_in_region(
+    places: list[dict],
+    region_bbox: GeoRectangle | None,
+    used_place_keys: set[str],
+) -> tuple[dict | None, str | None, bool]:
+    """bbox 내에서 아직 쓰이지 않은 첫 번째 장소를 반환합니다."""
     if not places:
-        return None
+        return None, None, False
     if not region_bbox:
-        return places[0]
+        for place in places:
+            place_key = _place_dedupe_key(place)
+            if place_key and place_key not in used_place_keys:
+                return place, place_key, False
+        fallback_place = places[0]
+        fallback_key = _place_dedupe_key(fallback_place)
+        return fallback_place, fallback_key, bool(fallback_key and fallback_key in used_place_keys)
+
+    fallback_place: dict | None = None
+    fallback_key: str | None = None
     for place in places:
         geometry = place.get("geometry") or {}
         lat = geometry.get("latitude")
         lng = geometry.get("longitude")
         if lat is not None and lng is not None and region_bbox.contains(lat, lng):
-            return place
+            place_key = _place_dedupe_key(place)
+            if place_key and place_key not in used_place_keys:
+                return place, place_key, False
+            if fallback_place is None:
+                fallback_place = place
+                fallback_key = place_key
+    if fallback_place is not None:
+        return fallback_place, fallback_key, bool(fallback_key and fallback_key in used_place_keys)
     logger.warning(
         "No place found within region bbox: candidate_count=%d bbox=(%s,%s)-(%s,%s)",
         len(places),
@@ -66,7 +101,7 @@ def _select_place_in_region(places: list[dict], region_bbox: GeoRectangle | None
         region_bbox.max_lat,
         region_bbox.max_lng,
     )
-    return None
+    return None, None, False
 
 
 class PlaceDetailSlot(BaseModel):
@@ -177,6 +212,8 @@ def _prepare_final_context(
         raise ValueError(f"CourseRequest 모델 유효성 검증에 실패했습니다: {exc}") from exc
 
     daily_places_for_schema = []
+    used_place_keys: set[str] = set()
+    duplicate_fallback_count = 0
     for day_plan in skeleton_plan:
         day_number = day_plan["day_number"]
         day_region = day_plan.get("region")
@@ -189,9 +226,13 @@ def _prepare_final_context(
             slot_key = build_slot_key(day_number, i)
             places = fetched_places.get(slot_key, [])
             if places:
-                place = _select_place_in_region(places, day_region_bbox)
+                place, place_key, duplicate_fallback = _select_place_in_region(places, day_region_bbox, used_place_keys)
                 if place is None:
                     continue
+                if place_key:
+                    used_place_keys.add(place_key)
+                if duplicate_fallback:
+                    duplicate_fallback_count += 1
                 section = slot.get("section")
                 display_name = place.get("display_name") or place["name"]
 
@@ -245,6 +286,9 @@ def _prepare_final_context(
             output_mode=VisitTimeOutputMode.HHMM,
         )
         day["places"] = resolved_places
+
+    if duplicate_fallback_count:
+        append_job_log("route_dedupe", f"duplicate_fallback_count={duplicate_fallback_count}")
 
     return _build_itinerary_context(daily_places_for_schema), daily_places_for_schema
 

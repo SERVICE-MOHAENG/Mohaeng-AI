@@ -229,6 +229,72 @@ def test_prepare_final_context_uses_hhmm_baseline_for_spontaneous_visit_time() -
     assert place["visit_time"] == "09:00"
 
 
+def test_prepare_final_context_skips_duplicate_place_ids_across_days() -> None:
+    state = {
+        "course_request": {
+            **_base_course_request(),
+            "end_date": "2026-02-02",
+        },
+        "trip_days": 2,
+        "slot_min": 1,
+        "slot_max": 1,
+        "skeleton_plan": [
+            {
+                "day_number": 1,
+                "region": "SEOUL",
+                "slots": [{"section": "MORNING", "area": "중심가", "keyword": "museum"}],
+            },
+            {
+                "day_number": 2,
+                "region": "SEOUL",
+                "slots": [{"section": "MORNING", "area": "중심가", "keyword": "museum"}],
+            },
+        ],
+        "fetched_places": {
+            "day1_slot0": [
+                {
+                    "place_id": "place-1",
+                    "name": "A",
+                    "address": "서울 종로구",
+                    "geometry": {"latitude": 37.5796, "longitude": 126.977},
+                    "primary_type": "museum",
+                    "types": ["museum"],
+                },
+                {
+                    "place_id": "place-2",
+                    "name": "B",
+                    "address": "서울 종로구",
+                    "geometry": {"latitude": 37.58, "longitude": 126.978},
+                    "primary_type": "park",
+                    "types": ["park"],
+                },
+            ],
+            "day2_slot0": [
+                {
+                    "place_id": "place-1",
+                    "name": "A",
+                    "address": "서울 종로구",
+                    "geometry": {"latitude": 37.5796, "longitude": 126.977},
+                    "primary_type": "museum",
+                    "types": ["museum"],
+                },
+                {
+                    "place_id": "place-2",
+                    "name": "B",
+                    "address": "서울 종로구",
+                    "geometry": {"latitude": 37.58, "longitude": 126.978},
+                    "primary_type": "park",
+                    "types": ["park"],
+                },
+            ],
+        },
+    }
+
+    _, daily_places = _prepare_final_context(state)
+
+    assert [place["place_id"] for day in daily_places for place in day["places"]] == ["place-1", "place-2"]
+
+
 def test_segment_prompt_prioritizes_user_notes_when_present() -> None:
     request = CourseRequest.model_validate(
         {
@@ -256,6 +322,8 @@ def test_segment_prompt_prioritizes_user_notes_when_present() -> None:
     assert "조용한 동선으로 구성하고 붐비는 관광지는 제외해 주세요." in user_content
     assert "다른 일반 선호값보다 우선해서 해석" in system_content
     assert "일반 선호보다 먼저 반영" in user_content
+    assert "동일 place_id" in system_content
+    assert "동일 place_id" in user_content
 
 
 def test_finalize_summary_prompt_prioritizes_user_notes() -> None:
