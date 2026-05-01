@@ -147,17 +147,6 @@ def _parse_valid_visit_time(value: str | None) -> int | None:
     return parsed
 
 
-def _fallback_minutes_for_position(index: int, total_count: int, config: VisitTimePolicyConfig) -> int:
-    start = max(_MIN_VISIT_TIME_MINUTES, min(config.start_minutes, _MAX_VISIT_TIME_MINUTES))
-    count = max(1, total_count)
-    if count == 1:
-        return start
-
-    available_minutes = max(0, _FALLBACK_END_MINUTES - start)
-    step = max(1, available_minutes // count)
-    return min(_MAX_VISIT_TIME_MINUTES, start + max(0, index) * step)
-
-
 def apply_visit_time_policy(
     places: list[dict],
     *,
@@ -186,7 +175,7 @@ def apply_visit_time_policy(
             sequence = index + 1
 
         assigned_time: int | None = None
-        if resolved_output_mode == VisitTimeOutputMode.HHMM and proposals_provided:
+        if proposals_provided:
             proposed_time = proposals.get(sequence)
             proposed_minutes = _parse_valid_visit_time(proposed_time)
             if proposed_time and proposed_minutes is None:
@@ -204,7 +193,8 @@ def apply_visit_time_policy(
                 warnings.append(f"day={day_number} sequence={sequence} missing_visit_time; fallback applied")
 
         if assigned_time is None:
-            assigned_time = _fallback_minutes_for_position(index, total_count, resolved_config)
+            # 산술적 배분 대신 시작 시각 또는 이전 시각 유지 (최후의 보루)
+            assigned_time = previous_minutes if previous_minutes is not None else resolved_config.start_minutes
 
         if previous_minutes is not None and assigned_time < previous_minutes:
             assigned_time = previous_minutes

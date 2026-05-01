@@ -131,9 +131,9 @@ LLM은 특정 상호명 대신 `section`, `area`, `keyword` 중심의 검색용 
 - 설명 생성 실패 또는 타임아웃 시 기본 설명을 적용합니다.
 - 최적화된 순서 기준으로 `visit_sequence`를 1부터 다시 부여합니다.
 - `visit_time`은 최종 `visit_sequence`와 `planning_preference` 기준으로 `app/core/visit_time_policy.py` 정책을 적용해 재계산합니다.
-- 로드맵 생성 파이프라인은 별도 visit_time LLM 제안을 호출하지 않고, 공용 fallback 분배 정책으로 `08:00` 이상 `24:00` 이하의 값을 생성합니다.
-- `planning_preference == PLANNED`이면 fallback 분배 결과를 `HH:MM`으로 출력합니다.
-- `planning_preference == SPONTANEOUS`이면 fallback 분배 결과를 `MORNING`/`LUNCH` 같은 section label로 변환해 출력합니다.
+- `planning_preference == PLANNED`인 경우 로드맵 생성 및 수정 파이프라인 모두 `propose_visit_times_for_days` LLM 제안을 호출하여 `08:00` 이상 `24:00` 이하의 30분 단위(00분, 30분) 방문 시각을 결정합니다.
+- `planning_preference == PLANNED`이면 LLM이 제안한 구체적인 시각을 `HH:MM`으로 출력합니다.
+- `planning_preference == SPONTANEOUS`이면 내부 계산 결과를 `MORNING`/`LUNCH` 같은 section label로 변환해 출력합니다.
 - `visit_time` 재계산은 좌표 기반 이동시간, 체류시간, 자정 초과 검증을 수행하지 않습니다.
 - LLM으로 `title`, `summary`, `tags`, `llm_commentary`를 생성합니다.
 - `next_action_suggestion`은 LLM 결과를 그대로 쓰지 않고 시스템에서 지원 가능한 문장만 안전하게 주입합니다.

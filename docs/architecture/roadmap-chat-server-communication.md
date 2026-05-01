@@ -197,8 +197,8 @@ sequenceDiagram
 - 일차 간 재배치 후 영향을 받은 모든 일차의 `visit_sequence`는 1부터 순차 정렬합니다.
 - `diff_keys`는 기존 장소 카드 단위 형식인 `dayN_placeM`만 사용하며 day 단위 key는 추가하지 않습니다.
 - `planning_preference == PLANNED`이면 수정된 일차에 대해 LLM visit_time 제안을 생성하고, 서버가 `08:00` 이상 `24:00` 이하 `HH:MM` 형식과 시간 비감소 조건을 검증한 뒤 반영합니다.
-- LLM 제안이 누락되거나 유효하지 않아도 수정 결과는 실패시키지 않고 공용 fallback 분배 정책으로 보정합니다.
-- `planning_preference == SPONTANEOUS`이면 visit_time LLM 제안은 호출하지 않고 section label 기반 값을 사용합니다.
+- LLM 제안이 누락되거나 유효하지 않아도 수정 결과는 실패시키지 않고 시간 역전 방지 로직을 거쳐 반영합니다.
+- `planning_preference == SPONTANEOUS`인 경우에는 visit_time LLM 제안을 호출하지 않고, 스켈레톤의 섹션 라벨(SECTION_EN)을 그대로 사용합니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.
 
@@ -210,4 +210,4 @@ sequenceDiagram
 
 # TODO
 
-- NestJS의 채팅 상태 조회와 대화 이력 저장 정책이 확정되면 Client -> NestJS 구간을 보강합니다.
+- NestJS의 채팅 상태 조회와 대화 이력 저장 정책이 확정되면 Client -> NestJS 구간을 보강합
