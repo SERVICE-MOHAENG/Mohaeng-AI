@@ -220,6 +220,7 @@ LLM 제안은 다음 `cascade` 단계에서 형식, 허용 범위, 방문 순서
 
 # 관련 문서
 
+- [로드맵 채팅 수정 정책 확장 결정](../decisions/roadmap-chat-modification-policy.md)
 - [모행 프로젝트 개요](../context/project-overview.md)
 - [로드맵 채팅 API](../api/chat-api.md)
 - [로드맵 채팅 수정 서버 간 통신 구조](../architecture/roadmap-chat-server-communication.md)

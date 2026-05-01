@@ -72,7 +72,7 @@ ai_action: "reference-only"
 | --- | --- | --- | --- |
 | 여행지 추천 | [설문 기반 여행지 추천 기능](specs/recommend-destinations.md), [여행지 추천 API](api/recommend-api.md), [여행지 추천 서버 간 통신 구조](architecture/recommend-server-communication.md) | `app/api/recommend.py`, `app/services/recommend_service.py`, `app/schemas/recommend.py`, `app/schemas/enums.py` | `tests/test_recommend_service.py` |
 | 로드맵 생성 | [로드맵 생성 기능](specs/roadmap-generation.md), [로드맵 생성 API](api/generate-api.md), [로드맵 생성 서버 간 통신 구조](architecture/roadmap-generation-server-communication.md), [로드맵 생성 ADR](decisions/roadmap-generation-ai-pipeline.md) | `app/api/generate.py`, `app/services/generate_service.py`, `app/graph/roadmap/`, `app/services/google_places_service.py`, `app/services/places_service.py`, `app/schemas/generate.py`, `app/schemas/course.py` | `tests/test_roadmap_generation_simplified_pipeline.py` |
-| 로드맵 채팅 수정 | [로드맵 채팅 수정 기능](specs/roadmap-chat-modification.md), [로드맵 채팅 API](api/chat-api.md), [로드맵 채팅 수정 서버 간 통신 구조](architecture/roadmap-chat-server-communication.md) | `app/api/chat.py`, `app/services/chat_service.py`, `app/graph/chat/`, `app/schemas/chat.py`, `app/schemas/course.py` | `tests/test_chat_schema.py` |
+| 로드맵 채팅 수정 | [로드맵 채팅 수정 정책 확장 결정](decisions/roadmap-chat-modification-policy.md), [로드맵 채팅 수정 기능](specs/roadmap-chat-modification.md), [로드맵 채팅 API](api/chat-api.md), [로드맵 채팅 수정 서버 간 통신 구조](architecture/roadmap-chat-server-communication.md) | `app/api/chat.py`, `app/services/chat_service.py`, `app/graph/chat/`, `app/schemas/chat.py`, `app/schemas/course.py` | `tests/test_chat_schema.py` |
 | callback 전송 | 각 기능 API 문서, 각 서버 간 통신 구조 문서 | `app/services/callback_delivery.py`, `app/services/callback_url.py` | `tests/test_callback_delivery.py`, `tests/test_callback_url.py` |
 | readiness / healthcheck | [헬스체크 API](api/health-api.md), [기술 스택](architecture/technology-stack.md) | `app/main.py`, `app/core/readiness.py`, `app/core/config.py` | `tests/test_main.py`, `tests/test_readiness.py` |
 | LLM 모델 라우팅과 알림 | [기술 스택](architecture/technology-stack.md), [AI 개발팀 협업 가이드](guides/collaboration-guide.md) | `app/core/llm_router.py`, `app/services/webhook_notification.py` | `tests/test_llm_router_webhooks.py`, `tests/test_webhook_notification.py` |
@@ -94,7 +94,7 @@ ai_action: "reference-only"
 | --- | --- | --- | --- | --- |
 | 여행지 추천 | [시장 문제와 타겟 사용자](context/market-and-target-users.md) | [설문 기반 여행지 추천 기능](specs/recommend-destinations.md) | [여행지 추천 API](api/recommend-api.md) | [여행지 추천 서버 간 통신 구조](architecture/recommend-server-communication.md) |
 | 로드맵 생성 | [여행 일정 생성을 위한 AI 파이프라인 및 데이터 소스 선정](decisions/roadmap-generation-ai-pipeline.md) | [로드맵 생성 기능](specs/roadmap-generation.md) | [로드맵 생성 API](api/generate-api.md) | [로드맵 생성 서버 간 통신 구조](architecture/roadmap-generation-server-communication.md) |
-| 로드맵 채팅 수정 | [모행 프로젝트 개요](context/project-overview.md) | [로드맵 채팅 수정 기능](specs/roadmap-chat-modification.md) | [로드맵 채팅 API](api/chat-api.md) | [로드맵 채팅 수정 서버 간 통신 구조](architecture/roadmap-chat-server-communication.md) |
+| 로드맵 채팅 수정 | [로드맵 채팅 수정 정책 확장 결정](decisions/roadmap-chat-modification-policy.md) | [로드맵 채팅 수정 기능](specs/roadmap-chat-modification.md) | [로드맵 채팅 API](api/chat-api.md) | [로드맵 채팅 수정 서버 간 통신 구조](architecture/roadmap-chat-server-communication.md) |
 
 ### API와 운영
 
