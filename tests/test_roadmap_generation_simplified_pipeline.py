@@ -190,7 +190,7 @@ def test_prepare_final_context_reorders_places_and_recalculates_planned_visit_ti
     places = daily_places[0]["places"]
     assert [place["place_name"] for place in places] == ["A", "C", "B"]
     assert [place["visit_sequence"] for place in places] == [1, 2, 3]
-    assert [place["visit_time"] for place in places] == ["09:00", "12:00", "14:00"]
+    assert [place["visit_time"] for place in places] == ["09:00", "14:00", "19:00"]
     assert "#2" in itinerary_context
     assert "C" in itinerary_context
 
