@@ -169,6 +169,7 @@ sequenceDiagram
 - Google Places 요청 기본 타임아웃은 `GOOGLE_PLACES_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 생성 결과의 장소 좌표는 LLM 생성값이 아니라 Google Places 응답값을 사용합니다.
 - 생성 결과의 `place_category`는 Google Places `primaryType`과 `types`를 정적 매핑한 Mohaeng 대분류 코드입니다.
+- 생성 결과의 각 일차는 공용 `DailyItinerary` 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함해야 합니다.
 - 생성 결과의 하루별 장소 순서는 `place_category == FOOD` 장소를 hard anchor로 고정하고, anchor 사이의 비음식 장소만 Haversine 직선거리 기반으로 재정렬한 결과입니다.
 - 동선 최적화는 Mohaeng-AI 내부 결정론적 알고리즘으로 수행하며, Google Routes API나 Distance Matrix API를 호출하지 않습니다.
 - 최종 `visit_sequence`와 `visit_time`은 동선 최적화 후 다시 계산합니다.

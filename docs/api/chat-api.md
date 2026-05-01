@@ -89,6 +89,8 @@ Mohaeng-AI는 최신 로드맵과 사용자 발화를 받아 의도를 분석하
 | `user_query` | string | Yes | 사용자 발화, 최소 1자 |
 | `session_history` | array | No | 최근 대화 맥락 |
 
+`current_itinerary.itinerary[].places`는 공용 `DailyItinerary` 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함해야 합니다.
+
 ## Response
 
 ```json
@@ -132,6 +134,7 @@ Mohaeng-AI는 최신 로드맵과 사용자 발화를 받아 의도를 분석하
 
 `modified_itinerary.itinerary[].places[].place_category`는 Mohaeng 장소 대분류 코드입니다.
 채팅 수정으로 추가 또는 교체되는 장소도 Google Places 원본 타입 대신 `place_category`만 최종 응답에 포함합니다.
+`SUCCESS` 콜백의 `modified_itinerary.itinerary[].places`도 같은 공용 스키마 기준으로 하루 최소 1개, 최대 10개 장소를 포함합니다.
 
 일반 대화, 추가 확인, 반려 콜백은 `modified_itinerary`가 `null`입니다.
 
