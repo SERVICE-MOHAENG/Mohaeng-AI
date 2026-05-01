@@ -253,6 +253,60 @@ def _safe_next_action_suggestions(trip_days: int) -> list[str]:
     return suggestions
 
 
+def _format_priority_notes(notes: str | None) -> str:
+    normalized = str(notes or "").strip()
+    return normalized if normalized else "없음"
+
+
+def _build_summary_prompt_messages(
+    course_request_payload: dict,
+    itinerary_context: str,
+    priority_notes: str,
+    parser: PydanticOutputParser,
+) -> list:
+    system_prompt = (
+        "당신은 전문 여행 플래너입니다. 주어진 여행 정보와 확정된 장소 목록을 바탕으로 "
+        "사용자를 위한 최종 여행 로드맵을 완성하는 역할을 합니다\n"
+        "창의적인 여행 제목과 매력적인 코스가 사용자에게 전달될 수 있도록 설명을 포함하세요\n"
+        "'최우선 사용자 메모'가 있으면 title, summary, tags, llm_commentary 전반에서 가장 먼저 반영하세요\n"
+        "다른 일반 선호와 충돌하면 최우선 사용자 메모를 우선 해석하고, 누락 없이 결과에 드러나게 하세요\n"
+        "출력은 반드시 제공된 JSON 스키마를 엄격히 따라야 합니다"
+    )
+    human_prompt_template = (
+        "## 최우선 사용자 메모\n"
+        "{priority_notes}\n\n"
+        "## 사용자 요청 전체 정보\n"
+        "{course_request}\n\n"
+        "## 확정된 일자별 장소 목록\n"
+        "{itinerary_context}\n\n"
+        "## 생성 작업 가이드\n"
+        "0. '최우선 사용자 메모'가 있으면 가장 중요한 제약으로 간주하고, "
+        "제목/요약/태그/코멘터리에 반복적으로 드러나게 해주세요.\n"
+        "1. '최우선 사용자 메모'와 '사용자 요청 전체 정보'를 참고하여 "
+        "전체 여행을 아우르는 창의적이고 매력적인 `title`을 생성해주세요. "
+        "(반드시 한국어로 작성하되 10자 이내로 간결히 작성하고, 여행지 또는 도시명을 포함해주세요)\n"
+        "2. 로드맵을 한 줄로 요약한 `summary`를 한국어로 작성해주세요. (1문장)\n"
+        "3. 전체 일정에서 연상되는 핵심 키워드 3~5개를 `tags`에 한국어로 작성해주세요.\n"
+        "4. '최우선 사용자 메모', 사용자 요청, 확정된 장소 목록을 모두 고려하여 왜 이 코스가 사용자에게 최적인지 "
+        "설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
+        "5. 사용자가 바로 입력할 수 있는 다음 행동 문장을 `next_action_suggestion` JSON 배열로 작성해주세요. "
+        "(2~3개, 반드시 우리 시스템이 가능한 작업만 포함해야 합니다. "
+        "가능한 작업: 로드맵 생성/재생성/일정 조정 요청, 로드맵 내용에 대한 질문. "
+        "불가능한 작업: 숙소/항공/렌터카/티켓 예약, 결제, 구매, 환전, 보험, 외부 서비스 연동. "
+        "예시 문장은 그대로 출력하지 마세요.)\n\n"
+        "## 출력 형식\n"
+        "{format_instructions}"
+    )
+
+    prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", human_prompt_template)])
+    return prompt.format_messages(
+        priority_notes=priority_notes,
+        course_request=course_request_payload,
+        itinerary_context=itinerary_context,
+        format_instructions=parser.get_format_instructions(),
+    )
+
+
 async def _fill_place_descriptions_with_llm(daily_places: list[dict]) -> list[dict]:
     """LLM을 통해 장소 description을 채웁니다."""
     parser = PydanticOutputParser(pydantic_object=PlaceDetailPlan)
@@ -360,41 +414,14 @@ async def synthesize_final_roadmap(state: RoadmapState) -> RoadmapState:
         append_job_log("finalize_time", f"strategy=visit_time_policy preference={course_request.planning_preference}")
 
         course_request_payload = course_request.model_dump(mode="json")
+        priority_notes = _format_priority_notes(course_request.notes)
 
         parser = PydanticOutputParser(pydantic_object=CourseResponseLLMOutput)
-
-        system_prompt = (
-            "당신은 전문 여행 플래너입니다. 주어진 여행 정보와 확정된 장소 목록을 바탕으로 "
-            "사용자를 위한 최종 여행 로드맵을 완성하는 역할을 합니다\n"
-            "창의적인 여행 제목과 매력적인 코스가 사용자에게 전달될 수 있도록 설명을 포함하세요\n"
-            "출력은 반드시 제공된 JSON 스키마를 엄격히 따라야 합니다"
-        )
-        human_prompt_template = (
-            "## 사용자 요청\n"
-            "{course_request}\n\n"
-            "## 확정된 일자별 장소 목록\n"
-            "{itinerary_context}\n\n"
-            "## 생성 작업 가이드\n"
-            "1. '사용자 요청'을 참고하여 전체 여행을 아우르는 창의적이고 매력적인 `title`을 생성해주세요. "
-            "(반드시 한국어로 작성하되 10자 이내로 간결히 작성하고, 여행지 또는 도시명을 포함해주세요)\n"
-            "2. 로드맵을 한 줄로 요약한 `summary`를 한국어로 작성해주세요. (1문장)\n"
-            "3. 전체 일정에서 연상되는 핵심 키워드 3~5개를 `tags`에 한국어로 작성해주세요.\n"
-            "4. 사용자 요청과 확정된 장소 목록을 모두 고려하여 왜 이 코스가 사용자에게 최적인지 "
-            "설명하는 `llm_commentary`를 작성해주세요. (2-3문장)\n"
-            "5. 사용자가 바로 입력할 수 있는 다음 행동 문장을 `next_action_suggestion` JSON 배열로 작성해주세요. "
-            "(2~3개, 반드시 우리 시스템이 가능한 작업만 포함해야 합니다. "
-            "가능한 작업: 로드맵 생성/재생성/일정 조정 요청, 로드맵 내용에 대한 질문. "
-            "불가능한 작업: 숙소/항공/렌터카/티켓 예약, 결제, 구매, 환전, 보험, 외부 서비스 연동. "
-            "예시 문장은 그대로 출력하지 마세요.)\n\n"
-            "## 출력 형식\n"
-            "{format_instructions}"
-        )
-
-        prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", human_prompt_template)])
-        messages = prompt.format_messages(
-            course_request=course_request_payload,
+        messages = _build_summary_prompt_messages(
+            course_request_payload=course_request_payload,
             itinerary_context=itinerary_context,
-            format_instructions=parser.get_format_instructions(),
+            priority_notes=priority_notes,
+            parser=parser,
         )
 
         timeout_seconds = get_timeout_policy().llm_timeout_seconds

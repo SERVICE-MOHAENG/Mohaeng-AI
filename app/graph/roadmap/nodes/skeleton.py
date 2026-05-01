@@ -80,6 +80,22 @@ def _normalize_text(value: Any) -> str:
     return str(value or "").strip()
 
 
+def _format_priority_notes(notes: Any) -> str:
+    normalized = _normalize_text(notes)
+    return normalized if normalized else "없음"
+
+
+def _build_priority_notes_rules(notes: Any) -> str:
+    normalized = _normalize_text(notes)
+    if not normalized:
+        return "- 최우선 사용자 메모는 없습니다\n"
+    return (
+        "- 아래 '최우선 사용자 메모'는 사용자가 자유 입력으로 남긴 핵심 요구사항입니다\n"
+        "- 다른 일반 선호값보다 우선해서 해석하고, 슬롯 area/keyword에 직접 반영하세요\n"
+        "- 메모와 다른 선호가 충돌하면 메모를 우선하고, 누락 없이 일정 전반에 녹여내세요\n"
+    )
+
+
 def _dedupe_ordered(items: list[str]) -> list[str]:
     seen: set[str] = set()
     deduped: list[str] = []
@@ -290,6 +306,7 @@ def _build_segment_prompt(
     parser: PydanticOutputParser,
 ) -> list:
     slot_targets_text = _format_slot_targets(slot_targets)
+    priority_notes = _format_priority_notes(request.notes)
     system_prompt = (
         "당신은 검색을 위한 여행 일정 스켈레톤을 설계하는 전문 여행 플래너입니다.\n"
         "제약 조건:\n"
@@ -306,8 +323,15 @@ def _build_segment_prompt(
         "- keyword는 8~40자 사이로 작성하고, 한 단어 대신 구체 맥락(활동+대상+분위기)을 포함하세요\n"
         "- 예시: '한강 야경 산책 코스', '로컬 해산물 저녁 식사', '현대미술 전시 관람'\n"
         "- '맛집', '카페', '쇼핑' 같은 단일 범주형 단어만 쓰지 마세요\n"
+        "{priority_notes_rules}"
         "- 출력은 스키마를 정확히 따라야 하며 추가 텍스트는 금지합니다\n"
-    ).format(region=segment.region, slot_min=slot_min, slot_max=slot_max, slot_targets=slot_targets_text)
+    ).format(
+        region=segment.region,
+        slot_min=slot_min,
+        slot_max=slot_max,
+        slot_targets=slot_targets_text,
+        priority_notes_rules=_build_priority_notes_rules(request.notes),
+    )
 
     user_prompt = (
         "여행 정보(지역 구간 기준):\n"
@@ -322,7 +346,9 @@ def _build_segment_prompt(
         "- 목적지 성향: {destination_preference}\n"
         "- 활동 성향: {activity_preference}\n"
         "- 우선순위: {priority_preference}\n"
-        "- 추가 메모: {notes}\n\n"
+        "\n"
+        "## 최우선 사용자 메모\n"
+        "{priority_notes}\n\n"
         "요구사항:\n"
         "- 정확히 {segment_days}일치 DayPlan을 생성하세요\n"
         "- 각 day의 region 필드는 반드시 '{region}' 값이어야 합니다\n"
@@ -330,6 +356,8 @@ def _build_segment_prompt(
         "- 각 day의 슬롯 수는 다음 배분을 정확히 따라야 합니다: {slot_targets}\n"
         "- 각 슬롯은 section, area, keyword를 포함해야 합니다\n"
         "- section은 다음 중 하나여야 합니다 MORNING, LUNCH, AFTERNOON, DINNER, EVENING, NIGHT\n\n"
+        "- '최우선 사용자 메모'가 있으면 모든 day에서 그 의도가 보이도록 슬롯을 설계하세요\n"
+        "- 특히 포함/제외 대상, 분위기, 속도감, 동선 톤 같은 자유 입력 요구를 일반 선호보다 먼저 반영하세요\n\n"
         "{format_instructions}"
     )
 
@@ -350,7 +378,7 @@ def _build_segment_prompt(
         destination_preference=request.destination_preference,
         activity_preference=request.activity_preference,
         priority_preference=request.priority_preference,
-        notes=request.notes or "none",
+        priority_notes=priority_notes,
         slot_min=slot_min,
         slot_max=slot_max,
         slot_targets=slot_targets_text,
@@ -370,6 +398,7 @@ def _build_repair_prompt(
     validation_errors: list[str],
 ) -> list:
     slot_targets_text = _format_slot_targets(slot_targets)
+    priority_notes = _format_priority_notes(request.notes)
     system_prompt = (
         "당신은 여행 스켈레톤 JSON 복구 전문가입니다.\n"
         "입력으로 주어진 JSON의 형식/제약 위반만 수정하고 의도는 최대한 유지하세요.\n"
@@ -390,6 +419,9 @@ def _build_repair_prompt(
         "- 동행자: {companion_type}\n"
         "- 테마: {travel_themes}\n"
         "- 페이스: {pace_preference}\n\n"
+        "최우선 사용자 메모:\n"
+        "{priority_notes}\n"
+        "- 위 메모가 있으면 복구 후에도 다른 선호보다 우선 반영된 상태를 유지하세요\n\n"
         "검증 오류 목록:\n"
         "{validation_errors}\n\n"
         "문제 있는 JSON:\n"
@@ -409,6 +441,7 @@ def _build_repair_prompt(
         companion_type=_join_values(request.companion_type),
         travel_themes=_join_values(request.travel_themes),
         pace_preference=request.pace_preference,
+        priority_notes=priority_notes,
         validation_errors="\n".join([f"- {item}" for item in validation_errors]) if validation_errors else "- 없음",
         invalid_output=invalid_output or "{}",
         format_instructions=parser.get_format_instructions(),
