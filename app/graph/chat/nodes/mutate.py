@@ -74,6 +74,27 @@ def _find_day(itinerary: dict, day_number: int) -> dict | None:
     return None
 
 
+def _build_day_diff_keys(day: dict) -> list[str]:
+    """일차에 포함된 모든 장소 카드 diff key를 생성합니다."""
+    day_number = day.get("day_number")
+    if not isinstance(day_number, int):
+        return []
+    return [build_diff_key(day_number, index) for index in range(1, len(day.get("places", [])) + 1)]
+
+
+def _sort_diff_keys(diff_keys: list[str]) -> list[str]:
+    """diff key를 day, place 순서로 정렬하고 중복을 제거합니다."""
+    parsed: list[tuple[int, int, str]] = []
+    fallback: list[str] = []
+    for key in dict.fromkeys(diff_keys):
+        try:
+            day_part, place_part = key.split("_", 1)
+            parsed.append((int(day_part[3:]), int(place_part[5:]), key))
+        except Exception:
+            fallback.append(key)
+    return [key for _, _, key in sorted(parsed)] + fallback
+
+
 def _reorder_results_by_place_id(results: list, selected_place_id: str) -> list:
     selected_index = next(
         (index for index, place in enumerate(results) if place.place_id == selected_place_id),
@@ -97,6 +118,7 @@ async def mutate(state: ChatState) -> ChatState:
         return {**state, "error": "mutate에는 intent와 current_itinerary가 필요합니다."}
 
     op = intent["op"]
+    target_scope = intent.get("target_scope", "ITEM")
     target_day_num = intent["target_day"]
     target_index = intent["target_index"]
 
@@ -108,7 +130,7 @@ async def mutate(state: ChatState) -> ChatState:
     places = day.get("places", [])
     target_pos = target_index - 1
 
-    if op in (ChatOperation.REPLACE, ChatOperation.REMOVE, ChatOperation.MOVE):
+    if op in (ChatOperation.REPLACE, ChatOperation.REMOVE, ChatOperation.MOVE) and target_scope != "DAY_PLACES":
         if target_pos < 0 or target_pos >= len(places):
             return {**state, "error": f"{target_day_num}일차의 {target_index}번째 장소가 없습니다."}
 
@@ -116,12 +138,32 @@ async def mutate(state: ChatState) -> ChatState:
     warnings: list[str] = state.get("warnings", [])
     search_results: list = []
 
-    if op == ChatOperation.REPLACE:
+    if op == ChatOperation.REPLACE and target_scope == "DAY_PLACES":
+        dest_day_num = intent.get("destination_day")
+        if not dest_day_num:
+            return {
+                **state,
+                "status": ChatStatus.ASK_CLARIFICATION,
+                "change_summary": "교체할 두 일차를 모두 알려주세요. 예: '1일차랑 2일차 일정 바꿔줘'",
+            }
+        dest_day = _find_day(itinerary, dest_day_num)
+        if not dest_day:
+            return {**state, "error": f"{dest_day_num}일차를 찾을 수 없습니다."}
+
+        day["places"], dest_day["places"] = dest_day.get("places", []), day.get("places", [])
+        reorder_visit_sequence(day["places"])
+        reorder_visit_sequence(dest_day["places"])
+        diff_keys.extend(_build_day_diff_keys(day))
+        diff_keys.extend(_build_day_diff_keys(dest_day))
+        change_summary = f"{target_day_num}일차와 {dest_day_num}일차에 배치된 장소 일정을 서로 바꿨습니다."
+
+    elif op == ChatOperation.REPLACE:
         new_place, search_results, err = await _search_place(intent, day)
         if err:
             return {**state, "search_results": search_results, **err}
         places[target_pos] = _place_to_course_place(new_place, target_index)
         diff_keys.append(build_diff_key(target_day_num, target_index))
+        change_summary = f"{target_day_num}일차 {target_index}번째 장소를 새 장소로 교체했습니다."
 
     elif op == ChatOperation.ADD:
         if len(places) >= _MAX_PLACES_PER_DAY:
@@ -139,6 +181,7 @@ async def mutate(state: ChatState) -> ChatState:
         places.insert(insert_pos, _place_to_course_place(new_place, 0))
         reorder_visit_sequence(places)
         diff_keys.append(build_diff_key(target_day_num, insert_pos + 1))
+        change_summary = f"{target_day_num}일차 {insert_pos + 1}번째 위치에 새 장소를 추가했습니다."
 
     elif op == ChatOperation.REMOVE:
         if len(places) <= _MIN_PLACES_PER_DAY:
@@ -150,15 +193,10 @@ async def mutate(state: ChatState) -> ChatState:
         places.pop(target_pos)
         reorder_visit_sequence(places)
         diff_keys.append(build_diff_key(target_day_num, target_index))
+        change_summary = f"{target_day_num}일차 {target_index}번째 장소를 삭제했습니다."
 
     elif op == ChatOperation.MOVE:
         dest_day_num = intent.get("destination_day", target_day_num)
-        if dest_day_num != target_day_num:
-            return {
-                **state,
-                "status": ChatStatus.REJECTED,
-                "change_summary": "일자 간 이동은 지원하지 않습니다. 같은 일자 내 순서만 변경 가능합니다.",
-            }
         dest_index = max(1, intent.get("destination_index", 1))
         dest_pos = dest_index - 1
 
@@ -168,21 +206,42 @@ async def mutate(state: ChatState) -> ChatState:
             places.insert(dest_pos, moved)
             reorder_visit_sequence(places)
             diff_keys.append(build_diff_key(target_day_num, dest_pos + 1))
+            change_summary = f"{target_day_num}일차 {target_index}번째 장소를 {dest_pos + 1}번째로 옮겼습니다."
         else:
             dest_day = _find_day(itinerary, dest_day_num)
             if not dest_day:
                 return {**state, "error": f"{dest_day_num}일차를 찾을 수 없습니다."}
+            dest_places = dest_day.get("places", [])
+            if len(places) <= _MIN_PLACES_PER_DAY:
+                return {
+                    **state,
+                    "status": ChatStatus.REJECTED,
+                    "change_summary": "출발 일차에는 최소 1개 장소가 남아 있어야 합니다.",
+                }
+            if len(dest_places) >= _MAX_PLACES_PER_DAY:
+                return {
+                    **state,
+                    "status": ChatStatus.REJECTED,
+                    "change_summary": "도착 일차에는 최대 10개 장소까지만 배치할 수 있습니다.",
+                }
             moved = places.pop(target_pos)
             reorder_visit_sequence(places)
-            diff_keys.append(build_diff_key(target_day_num, 1))
-            dest_places = dest_day.get("places", [])
             dest_pos = min(dest_pos, len(dest_places))
             dest_places.insert(dest_pos, moved)
             reorder_visit_sequence(dest_places)
             dest_day["places"] = dest_places
-            diff_keys.append(build_diff_key(dest_day_num, dest_pos + 1))
+            diff_keys.extend(_build_day_diff_keys(day))
+            diff_keys.extend(_build_day_diff_keys(dest_day))
+            change_summary = (
+                f"{target_day_num}일차 {target_index}번째 장소를 "
+                f"{dest_day_num}일차 {dest_pos + 1}번째 위치로 옮겼습니다."
+            )
+    else:
+        change_summary = "요청한 수정 작업을 처리했습니다."
 
-    day["places"] = places
+    if target_scope != "DAY_PLACES":
+        day["places"] = places
+    diff_keys = _sort_diff_keys(diff_keys)
     diff_str = ",".join(diff_keys)
     append_job_log("mutate", f"op={op} day={target_day_num} idx={target_index} n={len(search_results)} diff={diff_str}")
 
@@ -192,6 +251,7 @@ async def mutate(state: ChatState) -> ChatState:
         "diff_keys": diff_keys,
         "warnings": warnings,
         "search_results": search_results,
+        "change_summary": change_summary,
     }
 
 

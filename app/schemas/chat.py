@@ -1,6 +1,7 @@
 """대화(Chat) 요청/응답 스키마."""
 
 from datetime import date
+from typing import Literal
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
@@ -89,6 +90,10 @@ class ChatIntent(BaseModel):
     """LLM이 추출한 수정 의도 모델."""
 
     op: ChatOperation = Field(..., description="수정 Operation (REPLACE / ADD / REMOVE / MOVE)")
+    target_scope: Literal["ITEM", "DAY_PLACES"] = Field(
+        default="ITEM",
+        description="수정 범위. ITEM은 장소 단위, DAY_PLACES는 일차의 장소 묶음 교체",
+    )
     target_day: int = Field(..., ge=1, description="대상 일자 (1-based)")
     target_index: int = Field(..., ge=1, description="대상 visit_sequence (1-based)")
     destination_day: int | None = Field(default=None, ge=1, description="이동 목적지 일자 (MOVE 시 필수, 1-based)")
@@ -112,6 +117,8 @@ class ChatIntent(BaseModel):
         if self.op == ChatOperation.MOVE:
             if self.destination_day is None or self.destination_index is None:
                 raise ValueError("MOVE 시 destination_day와 destination_index가 필요합니다.")
+        if self.op == ChatOperation.REPLACE and self.target_scope == "DAY_PLACES" and self.destination_day is None:
+            raise ValueError("DAY_PLACES 교체 시 destination_day가 필요합니다.")
         return self
 
 
