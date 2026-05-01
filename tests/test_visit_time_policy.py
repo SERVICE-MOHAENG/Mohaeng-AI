@@ -6,6 +6,7 @@ import asyncio
 import importlib
 
 from app.core.visit_time_policy import VisitTimeOutputMode, apply_visit_time_policy
+from app.graph.chat.nodes.cascade import cascade
 from app.schemas.enums import PlanningPreference
 
 
@@ -23,6 +24,39 @@ def _places() -> list[dict]:
 
 def _ten_places() -> list[dict]:
     return [{"place_name": chr(65 + index), "visit_sequence": index + 1} for index in range(10)]
+
+
+def _roadmap(planning_preference: PlanningPreference, places: list[dict]) -> dict:
+    return {
+        "start_date": "2026-02-11",
+        "end_date": "2026-02-11",
+        "trip_days": 1,
+        "nights": 0,
+        "people_count": 2,
+        "tags": ["도심"],
+        "title": "서울 일정",
+        "summary": "서울 당일 일정입니다.",
+        "planning_preference": planning_preference,
+        "itinerary": [{"day_number": 1, "daily_date": "2026-02-11", "places": places}],
+    }
+
+
+def _course_places(count: int) -> list[dict]:
+    return [
+        {
+            "place_name": f"장소 {index}",
+            "place_id": f"place-{index}",
+            "address": "서울",
+            "latitude": 37.5,
+            "longitude": 127.0,
+            "place_url": "https://maps.example.com",
+            "place_category": "OTHER",
+            "description": "방문 장소입니다.",
+            "visit_sequence": index,
+            "visit_time": "09:00",
+        }
+        for index in range(1, count + 1)
+    ]
 
 
 def test_apply_visit_time_policy_uses_even_hhmm_fallback_without_transit_warnings() -> None:
@@ -83,6 +117,34 @@ def test_apply_visit_time_policy_uses_valid_llm_proposals_for_planned_output() -
 
     assert [place["visit_time"] for place in places] == ["08:30", "12:15", "24:00"]
     assert warnings == []
+
+
+def test_cascade_applies_llm_visit_time_proposals_to_modified_planned_day() -> None:
+    state = {
+        "modified_itinerary": _roadmap(PlanningPreference.PLANNED, _course_places(3)),
+        "diff_keys": ["day1_place1"],
+        "visit_time_proposals": {1: {1: "08:00", 2: "12:00", 3: "24:00"}},
+    }
+
+    result = cascade(state)
+    places = result["modified_itinerary"]["itinerary"][0]["places"]
+
+    assert [place["visit_time"] for place in places] == ["08:00", "12:00", "24:00"]
+    assert result.get("warnings", []) == []
+
+
+def test_cascade_keeps_spontaneous_output_as_section_labels_without_llm_times() -> None:
+    state = {
+        "modified_itinerary": _roadmap(PlanningPreference.SPONTANEOUS, _course_places(3)),
+        "diff_keys": ["day1_place1"],
+        "visit_time_proposals": {1: {1: "08:00", 2: "12:00", 3: "24:00"}},
+    }
+
+    result = cascade(state)
+    places = result["modified_itinerary"]["itinerary"][0]["places"]
+
+    assert [place["visit_time"] for place in places] == ["MORNING", "AFTERNOON", "DINNER"]
+    assert result.get("warnings", []) == []
 
 
 def test_apply_visit_time_policy_rejects_out_of_range_or_decreasing_llm_proposals() -> None:

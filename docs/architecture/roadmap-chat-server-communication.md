@@ -190,6 +190,9 @@ sequenceDiagram
 - 교체/추가 장소의 Google Places `primaryType`과 `types`는 내부 정적 매핑으로 `place_category`를 산출하는 데만 사용합니다.
 - Google Places 원본 `primary_type`과 식사 anchor 판단값 같은 내부 힌트는 콜백에 포함하지 않습니다.
 - 하루 장소 수는 최소 1개, 최대 10개를 기준으로 합니다.
+- `planning_preference == PLANNED`이면 수정된 일차에 대해 LLM visit_time 제안을 생성하고, 서버가 `08:00` 이상 `24:00` 이하 `HH:MM` 형식과 시간 비감소 조건을 검증한 뒤 반영합니다.
+- LLM 제안이 누락되거나 유효하지 않아도 수정 결과는 실패시키지 않고 공용 fallback 분배 정책으로 보정합니다.
+- `planning_preference == SPONTANEOUS`이면 visit_time LLM 제안은 호출하지 않고 section label 기반 값을 사용합니다.
 - 콜백 전송 기본 타임아웃은 `CALLBACK_TIMEOUT_SECONDS`이며 기본값은 10초입니다.
 - 콜백 전송은 timeout, connection error, HTTP 429, HTTP 5xx에 대해 재시도합니다.
 
