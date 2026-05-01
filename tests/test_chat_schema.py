@@ -55,6 +55,21 @@ def _base_payload() -> dict:
     }
 
 
+def _course_place(index: int) -> dict:
+    return {
+        "place_name": f"장소 {index}",
+        "place_id": f"test-place-id-{index}",
+        "address": "서울 종로구",
+        "latitude": 37.579617,
+        "longitude": 126.977041,
+        "place_url": "https://example.com/place",
+        "place_category": "ATTRACTION",
+        "description": "테스트 장소입니다.",
+        "visit_sequence": index,
+        "visit_time": "09:00",
+    }
+
+
 def test_chat_request_accepts_context_fields() -> None:
     request = ChatRequest.model_validate(_base_payload())
     assert request.companion_type == ["FAMILY"]
@@ -65,6 +80,15 @@ def test_chat_request_accepts_context_fields() -> None:
 def test_chat_request_requires_context_fields() -> None:
     payload = _base_payload()
     payload.pop("companion_type")
+
+    with pytest.raises(ValidationError):
+        ChatRequest.model_validate(payload)
+
+
+@pytest.mark.parametrize("places", [[], [_course_place(index) for index in range(1, 12)]])
+def test_chat_request_rejects_daily_itinerary_place_count_out_of_range(places: list[dict]) -> None:
+    payload = _base_payload()
+    payload["current_itinerary"]["itinerary"][0]["places"] = places
 
     with pytest.raises(ValidationError):
         ChatRequest.model_validate(payload)

@@ -13,6 +13,7 @@ from app.core.timeout_policy import get_timeout_policy
 from app.graph.chat.nodes.analyze_intent import extract_region_hint_from_address
 from app.graph.chat.state import ChatState
 from app.graph.chat.utils import build_diff_key, reorder_visit_sequence
+from app.schemas.course import DAILY_ITINERARY_MAX_PLACES, DAILY_ITINERARY_MIN_PLACES
 from app.schemas.enums import ChatOperation, ChatStatus
 from app.services.google_places_service import get_google_places_service
 from app.services.place_rerank_service import select_place_id_for_chat
@@ -20,8 +21,8 @@ from app.services.place_rerank_service import select_place_id_for_chat
 logger = get_logger(__name__)
 
 _BBOX_MARGIN_KM = 10.0
-_MAX_PLACES_PER_DAY = 10
-_MIN_PLACES_PER_DAY = 1
+_MAX_PLACES_PER_DAY = DAILY_ITINERARY_MAX_PLACES
+_MIN_PLACES_PER_DAY = DAILY_ITINERARY_MIN_PLACES
 
 
 def _day_points(day: dict) -> list[tuple[float, float]]:
