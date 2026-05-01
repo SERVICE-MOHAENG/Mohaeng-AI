@@ -15,7 +15,7 @@ Mohaeng-AI는 `POST /api/v1/chat` 요청을 즉시 수락하고, 수정 결과�
 # 배경
 
 로드맵 수정은 현재 일정 JSON, 사용자 선호, 최근 대화 맥락을 함께 사용해야 합니다.
-NestJS는 최신 로드맵과 대화 이력을 조회해 Python에 전달하고, Mohaeng-AI는 의도 분석, Google Places 검색, JSON mutation, 방문 시간 재계산, 사용자 메시지 생성을 담당합니다.
+NestJS는 최신 로드맵과 대화 이력을 조회해 Python에 전달하고, Mohaeng-AI는 의도 분석, Google Places 검색, 단일 일차 동선 최적화, JSON mutation, 방문 시간 재계산, 사용자 메시지 생성을 담당합니다.
 
 # 본문
 
@@ -190,6 +190,8 @@ sequenceDiagram
 - 교체/추가 장소의 Google Places `primaryType`과 `types`는 내부 정적 매핑으로 `place_category`를 산출하는 데만 사용합니다.
 - Google Places 원본 `primary_type`과 식사 anchor 판단값 같은 내부 힌트는 콜백에 포함하지 않습니다.
 - 하루 장소 수는 공용 `DailyItinerary` 스키마 기준으로 최소 1개, 최대 10개입니다.
+- 단일 일차 동선 최적화는 기존 `app/core/route_optimizer.py`를 재사용하며 `place_category == FOOD`인 장소를 anchor로 유지합니다.
+- 단일 일차 동선 최적화 시 대상 일차의 모든 장소 카드 key를 `diff_keys`에 포함합니다.
 - 일차 간 장소 이동은 출발 일차가 최소 1개 장소를 유지하고 도착 일차가 최대 10개 장소를 넘지 않을 때만 허용합니다.
 - 일차 일정 묶음 교체는 각 일차의 `day_number`, `daily_date` 등 day-level 메타데이터를 유지하고 `places` 배열만 서로 교체합니다.
 - 일차 간 재배치 후 영향을 받은 모든 일차의 `visit_sequence`는 1부터 순차 정렬합니다.
