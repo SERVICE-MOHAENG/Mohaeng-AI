@@ -2,30 +2,17 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 
 from app.core.config import Settings, get_settings
 
-_SECTION_TIME_MAP = {
-    "MORNING": "09:00",
-    "LUNCH": "12:00",
-    "AFTERNOON": "14:00",
-    "DINNER": "18:00",
-    "EVENING": "20:00",
-    "NIGHT": "22:00",
-}
-_SEQUENCE_TIME_MAP = {
-    1: "09:00",
-    2: "12:00",
-    3: "14:00",
-    4: "18:00",
-    5: "20:00",
-    6: "22:00",
-    7: "23:00",
-}
-
 _DEFAULT_START = "09:00"
+_MIN_VISIT_TIME_MINUTES = 8 * 60
+_MAX_VISIT_TIME_MINUTES = 24 * 60
+_FALLBACK_END_MINUTES = 24 * 60
+_HHMM_PATTERN = re.compile(r"^(?P<hour>\d{2}):(?P<minute>\d{2})$")
 
 
 class VisitTimeOutputMode(StrEnum):
@@ -67,6 +54,9 @@ def parse_time_to_hhmm_minutes(value: str | None) -> int | None:
     elif is_am and hour == 12:
         hour = 0
 
+    if hour == 24 and minute == 0:
+        return _MAX_VISIT_TIME_MINUTES
+
     if not (0 <= hour < 24 and 0 <= minute < 60):
         return None
     return hour * 60 + minute
@@ -74,7 +64,9 @@ def parse_time_to_hhmm_minutes(value: str | None) -> int | None:
 
 def format_minutes_to_hhmm(total_minutes: int) -> str:
     """분 단위 시간을 HH:MM으로 포맷합니다."""
-    normalized = max(0, int(total_minutes))
+    normalized = max(0, min(int(total_minutes), _MAX_VISIT_TIME_MINUTES))
+    if normalized == _MAX_VISIT_TIME_MINUTES:
+        return "24:00"
     hour = (normalized // 60) % 24
     minute = normalized % 60
     return f"{hour:02d}:{minute:02d}"
@@ -127,16 +119,43 @@ def _format_visit_time(total_minutes: int, output_mode: VisitTimeOutputMode) -> 
     return format_minutes_to_hhmm(total_minutes)
 
 
-def _sequence_minutes(sequence: int, config: VisitTimePolicyConfig) -> int:
-    mapped = _SEQUENCE_TIME_MAP.get(sequence)
-    if mapped is not None:
-        parsed = parse_time_to_hhmm_minutes(mapped)
-        if parsed is not None:
-            return parsed
+def _is_hhmm_24h(value: str) -> bool:
+    match = _HHMM_PATTERN.match(value)
+    if not match:
+        return False
 
-    last_sequence = max(_SEQUENCE_TIME_MAP)
-    last_mapped = parse_time_to_hhmm_minutes(_SEQUENCE_TIME_MAP[last_sequence])
-    return last_mapped if last_mapped is not None else config.start_minutes
+    hour = int(match.group("hour"))
+    minute = int(match.group("minute"))
+    if hour == 24:
+        return minute == 0
+    return 0 <= hour < 24 and 0 <= minute < 60
+
+
+def _parse_valid_visit_time(value: str | None) -> int | None:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not _is_hhmm_24h(text):
+        return None
+
+    parsed = parse_time_to_hhmm_minutes(text)
+    if parsed is None:
+        return None
+    if not (_MIN_VISIT_TIME_MINUTES <= parsed <= _MAX_VISIT_TIME_MINUTES):
+        return None
+    return parsed
+
+
+def _fallback_minutes_for_position(index: int, total_count: int, config: VisitTimePolicyConfig) -> int:
+    start = max(_MIN_VISIT_TIME_MINUTES, min(config.start_minutes, _MAX_VISIT_TIME_MINUTES))
+    count = max(1, total_count)
+    if count == 1:
+        return start
+
+    available_minutes = max(0, _FALLBACK_END_MINUTES - start)
+    step = max(1, available_minutes // count)
+    return min(_MAX_VISIT_TIME_MINUTES, start + max(0, index) * step)
 
 
 def apply_visit_time_policy(
@@ -147,13 +166,17 @@ def apply_visit_time_policy(
     llm_proposals_by_sequence: dict[int, str] | None = None,
     output_mode: VisitTimeOutputMode | str = VisitTimeOutputMode.HHMM,
 ) -> tuple[list[dict], list[str]]:
-    """visit_sequence 기반 고정 visit_time 정책을 적용합니다."""
+    """LLM 제안을 검증해 visit_time을 결정하고 실패 구간은 안전하게 보정합니다."""
     if not places:
         return places, []
 
     resolved_config = config or build_visit_time_policy_config()
     resolved_output_mode = _normalize_output_mode(output_mode)
-    _ = day_number, llm_proposals_by_sequence
+    proposals_provided = llm_proposals_by_sequence is not None
+    proposals = llm_proposals_by_sequence or {}
+    warnings: list[str] = []
+    previous_minutes: int | None = None
+    total_count = len(places)
 
     for index, place in enumerate(places):
         sequence_raw = place.get("visit_sequence")
@@ -162,9 +185,33 @@ def apply_visit_time_policy(
         except (TypeError, ValueError):
             sequence = index + 1
 
-        assigned_time = _sequence_minutes(sequence, resolved_config)
+        assigned_time: int | None = None
+        if resolved_output_mode == VisitTimeOutputMode.HHMM and proposals_provided:
+            proposed_time = proposals.get(sequence)
+            proposed_minutes = _parse_valid_visit_time(proposed_time)
+            if proposed_time and proposed_minutes is None:
+                warnings.append(
+                    f"day={day_number} sequence={sequence} invalid_visit_time={proposed_time!r}; fallback applied"
+                )
+            elif proposed_minutes is not None and previous_minutes is not None and proposed_minutes < previous_minutes:
+                warnings.append(
+                    f"day={day_number} sequence={sequence} decreasing_visit_time={proposed_time!r}; fallback applied"
+                )
+            else:
+                assigned_time = proposed_minutes
+
+            if assigned_time is None and sequence not in proposals:
+                warnings.append(f"day={day_number} sequence={sequence} missing_visit_time; fallback applied")
+
+        if assigned_time is None:
+            assigned_time = _fallback_minutes_for_position(index, total_count, resolved_config)
+
+        if previous_minutes is not None and assigned_time < previous_minutes:
+            assigned_time = previous_minutes
+
         place["visit_time"] = _format_visit_time(assigned_time, resolved_output_mode)
         place.pop("section", None)
         place.pop("section_hint", None)
+        previous_minutes = assigned_time
 
-    return places, []
+    return places, warnings

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.core.visit_time_llm import propose_visit_times_for_days
 from app.graph.chat.state import ChatState
+from app.schemas.enums import PlanningPreference
 
 
 def _extract_modified_days(diff_keys: list[str]) -> set[int]:
@@ -23,6 +24,9 @@ async def propose_visit_time(state: ChatState) -> ChatState:
     itinerary = state.get("modified_itinerary")
     if not itinerary:
         return {**state, "error": "propose_visit_time에는 modified_itinerary가 필요합니다."}
+
+    if itinerary.get("planning_preference") != PlanningPreference.PLANNED:
+        return {**state, "visit_time_proposals": {}}
 
     modified_days = _extract_modified_days(state.get("diff_keys", []))
     if not modified_days:

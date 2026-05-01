@@ -121,14 +121,17 @@ REPLACE/ADD 검색어에는 현재 일자의 주소에서 추출한 지역 힌�
 
 ### 4. `propose_visit_time`
 
-수정된 일자의 장소 목록을 기준으로 LLM이 방문 시간 후보를 제안합니다.
-제안은 최종 확정값이 아니라 다음 `cascade` 단계의 공용 시간 정책 입력으로 사용됩니다.
+`planning_preference == PLANNED`인 경우에만 수정된 일자의 장소 목록을 기준으로 LLM이 방문 시간 후보를 제안합니다.
+LLM 제안은 다음 `cascade` 단계에서 형식, 허용 범위, 방문 순서 기준 시간 비감소 조건을 검증한 뒤 최종 `visit_time` 결정값으로 사용됩니다.
+`SPONTANEOUS` 로드맵에서는 이 노드가 LLM을 호출하지 않고 빈 proposal을 반환합니다.
 
 ### 5. `cascade`
 
 변경된 일자만 대상으로 방문 시간과 순서를 재정렬하고 제약을 검증합니다.
-`planning_preference`가 `PLANNED`이면 `HH:MM` 형식을, `SPONTANEOUS`이면 section 기반 값을 사용합니다.
-시간 계산과 경고 생성은 공용 visit time policy를 사용합니다.
+`planning_preference`가 `PLANNED`이면 `08:00` 이상 `24:00` 이하의 `HH:MM` 형식을 사용하고, LLM 제안이 누락되거나 유효하지 않은 구간은 서버 fallback으로 보정합니다.
+`24:00`은 유효한 종료 시각으로 허용하지만 `24:01` 이상은 거부합니다.
+`SPONTANEOUS`이면 LLM 제안 없이 section 기반 값을 사용합니다.
+시간 검증, fallback, 경고 생성은 공용 visit time policy를 사용합니다.
 
 ### 6. `respond`
 

@@ -20,7 +20,7 @@ class VisitTimeProposalSlot(BaseModel):
     """방문 순서별 visit_time 제안."""
 
     visit_sequence: int = Field(..., ge=1, description="방문 순서")
-    visit_time: str | None = Field(None, description="방문 시각 (HH:MM, 24시간)")
+    visit_time: str | None = Field(None, description="방문 시각 (08:00~24:00 범위의 24시간 HH:MM)")
 
 
 class VisitTimeProposalDay(BaseModel):
@@ -109,10 +109,15 @@ async def propose_visit_times_for_days(
 
     system_prompt = (
         "당신은 여행 일정의 visit_time을 배치하는 전문가입니다.\n"
-        "출력은 JSON만 반환하고, visit_time은 24시간 HH:MM 형식을 사용하세요.\n"
-        "visit_sequence 순서를 지키고 시간은 동일하거나 감소하지 않도록 점진적으로 증가해야 합니다.\n"
+        "출력은 JSON만 반환하고, visit_time은 반드시 24시간 HH:MM 형식을 사용하세요.\n"
+        "visit_time은 반드시 08:00 이상 24:00 이하로 출력하세요.\n"
+        "08:00보다 이른 시간과 24:00보다 늦은 시간은 절대 출력하지 마세요.\n"
+        "24:00은 하루 종료 시각으로만 사용할 수 있고 24:01, 25:00 같은 값은 금지입니다.\n"
+        "visit_sequence 순서를 지키고 시간이 감소하지 않도록 동일하거나 점진적으로 증가해야 합니다.\n"
+        "동일한 일차에서 최대 10개 장소까지 자연스럽고 현실적으로 배치하세요.\n"
         "section_hint, time_hint는 참고용이며 이동 동선을 고려해 자연스럽게 배치하세요.\n"
-        "입력에 없는 장소를 추가하거나 순서를 바꾸지 마세요."
+        "입력에 없는 장소를 추가하거나 순서를 바꾸지 마세요.\n"
+        "운영시간 데이터가 없으므로 실제 영업시간을 단정하지 마세요."
     )
     user_prompt = (
         "아래 일정 데이터의 각 장소에 대한 visit_time을 제안해주세요.\n"
