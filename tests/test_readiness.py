@@ -59,3 +59,26 @@ def test_collect_readiness_status_not_ready_when_openai_key_missing(monkeypatch)
 
     assert result["status"] == "not_ready"
     assert result["checks"]["openai"]["status"] == "fail"
+
+
+def test_collect_readiness_status_checks_openai_base_url_host(monkeypatch) -> None:
+    _set_required_env(
+        monkeypatch,
+        GOOGLE_PLACES_API_KEY="",
+        OPENAI_BASE_URL="https://openai-proxy.dsmhs.kr/v1",
+    )
+    calls: list[dict] = []
+
+    async def _fake_tcp(**kwargs):
+        calls.append(kwargs)
+        return {"status": "ok", "ok": True, "required": True, "detail": "mock-ok"}
+
+    monkeypatch.setattr("app.core.readiness._check_tcp_connectivity", _fake_tcp)
+
+    result = asyncio.run(collect_readiness_status())
+
+    assert result["status"] == "ready"
+    assert len(calls) == 1
+    assert calls[0]["host"] == "openai-proxy.dsmhs.kr"
+    assert calls[0]["port"] == 443
+    assert calls[0]["label"] == "OpenAI API"

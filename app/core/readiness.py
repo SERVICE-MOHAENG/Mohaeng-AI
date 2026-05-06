@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import socket
+from urllib.parse import urlparse
 
 from app.core.config import Settings, get_settings
 from app.core.timeout_policy import TimeoutPolicy, get_timeout_policy
@@ -39,9 +40,13 @@ async def _check_openai_readiness(settings: Settings, timeout_policy: TimeoutPol
     if not settings.OPENAI_API_KEY:
         return _fail("OPENAI_API_KEY가 설정되지 않았습니다.")
 
+    parsed_base_url = urlparse(settings.OPENAI_BASE_URL)
+    host = parsed_base_url.hostname or "openai-proxy.dsmhs.kr"
+    port = parsed_base_url.port or (443 if parsed_base_url.scheme == "https" else 80)
+
     return await _check_tcp_connectivity(
-        host="api.openai.com",
-        port=443,
+        host=host,
+        port=port,
         timeout_seconds=timeout_policy.external_api_timeout_seconds,
         label="OpenAI API",
     )

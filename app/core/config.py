@@ -8,12 +8,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DISCORD_ALLOWED_HOSTS = {"discord.com", "discordapp.com"}
 _DISCORD_WEBHOOK_PATH_PREFIX = "/api/webhooks/"
+_DEFAULT_OPENAI_BASE_URL = "https://openai-proxy.dsmhs.kr/v1"
 
 
 class Settings(BaseSettings):
     """환경 변수 기반 설정 모델."""
 
     OPENAI_API_KEY: str
+    OPENAI_BASE_URL: str = _DEFAULT_OPENAI_BASE_URL
     SERVICE_SECRET: str
     HMAC_SECRET: str
     LLM_MODEL_NAME: str = "gpt-4o-mini"
@@ -58,6 +60,17 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @field_validator("OPENAI_BASE_URL", mode="before")
+    @classmethod
+    def _validate_openai_base_url(cls, value: object) -> str:
+        url = str(value or _DEFAULT_OPENAI_BASE_URL).strip().rstrip("/")
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("OPENAI_BASE_URL must use HTTP or HTTPS.")
+        if not parsed.hostname:
+            raise ValueError("OPENAI_BASE_URL must include a host.")
+        return url
 
     @field_validator("DISCORD_WEBHOOK_URL", mode="before")
     @classmethod

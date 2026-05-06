@@ -94,11 +94,13 @@ def _get_chat_openai_client(
     temperature: float,
     timeout_seconds: int,
     api_key: str,
+    base_url: str,
 ) -> ChatOpenAI:
     return ChatOpenAI(
         model=model,
         temperature=temperature,
         api_key=api_key,
+        base_url=base_url,
         timeout=timeout_seconds,
     )
 
@@ -256,6 +258,7 @@ def invoke(
             resolved_temperature,
             resolved_timeout,
             resolved_settings.OPENAI_API_KEY,
+            resolved_settings.OPENAI_BASE_URL,
         )
         response = client.invoke(payload)
         latency = round((perf_counter() - started) * 1000)
@@ -330,6 +333,7 @@ def invoke(
         resolved_temperature,
         resolved_timeout,
         resolved_settings.OPENAI_API_KEY,
+        resolved_settings.OPENAI_BASE_URL,
     )
     try:
         response = fallback_client.invoke(payload)
@@ -404,6 +408,7 @@ async def ainvoke(
             resolved_temperature,
             resolved_timeout,
             resolved_settings.OPENAI_API_KEY,
+            resolved_settings.OPENAI_BASE_URL,
         )
         response = await client.ainvoke(payload)
         latency = round((perf_counter() - started) * 1000)
@@ -478,6 +483,7 @@ async def ainvoke(
         resolved_temperature,
         resolved_timeout,
         resolved_settings.OPENAI_API_KEY,
+        resolved_settings.OPENAI_BASE_URL,
     )
     try:
         response = await fallback_client.ainvoke(payload)

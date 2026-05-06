@@ -56,7 +56,7 @@ Mohaeng-AI는 프로세스 생존 확인을 위한 `/livez`와 외부 의존성 
       "status": "ok",
       "ok": true,
       "required": true,
-      "detail": "OpenAI API 연결 가능 (api.openai.com:443)"
+      "detail": "OpenAI API 연결 가능 (openai-proxy.dsmhs.kr:443)"
     },
     "google_places": {
       "status": "skip",
@@ -94,7 +94,7 @@ Mohaeng-AI는 프로세스 생존 확인을 위한 `/livez`와 외부 의존성 
 
 | 체크 | 필수 여부 | 설명 |
 | --- | --- | --- |
-| `openai` | 필수 | `OPENAI_API_KEY` 설정과 `api.openai.com:443` TCP 연결 가능 여부 |
+| `openai` | 필수 | `OPENAI_API_KEY` 설정과 `OPENAI_BASE_URL` 호스트(`openai-proxy.dsmhs.kr:443`) TCP 연결 가능 여부 |
 | `google_places` | 선택 | `GOOGLE_PLACES_API_KEY`가 있을 때 `places.googleapis.com:443` TCP 연결 가능 여부 |
 
 ## 구현 위치
